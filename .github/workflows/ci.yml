@@ -12,8 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-      - run: npm ci
+      - run: npm install
       - run: npm run lint
 
   typecheck:
@@ -23,9 +22,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-      - run: npm ci
+      - run: npm install
       - run: npm run typecheck
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - name: Run unit tests (no DB required)
+        run: cd apps/backend && npx jest --testPathPattern="__tests__/unit" --runInBand
+        env:
+          NODE_ENV: test
 
   test-backend:
     runs-on: ubuntu-latest
@@ -52,7 +63,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-      - run: npm ci
+      - run: npm install
       - run: cd apps/backend && npx prisma migrate deploy
-      - run: cd apps/backend && npm test
+      - name: Run integration tests
+        run: cd apps/backend && npx jest --testPathPattern="__tests__/[^/]+\.test\.ts$" --runInBand

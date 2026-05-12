@@ -1,30 +1,13 @@
 import cron from "node-cron";
 import axios from "axios";
 import { monitorRepository } from "../repositories/monitor.repository";
+import { analyseHeaders } from "../lib/monitor-utils";
 import { prisma } from "../db";
-
-export const SECURITY_HEADERS = [
-  "x-frame-options",
-  "content-security-policy",
-  "strict-transport-security",
-  "x-content-type-options",
-  "referrer-policy",
-  "permissions-policy",
-];
 
 async function checkHeaders(monitor: { id: string; url: string }) {
   try {
     const res = await axios.get(monitor.url, { timeout: 10_000, validateStatus: () => true });
-    const present: Record<string, string> = {};
-    const missing: string[] = [];
-
-    for (const h of SECURITY_HEADERS) {
-      const val = res.headers[h];
-      if (val) present[h] = val as string;
-      else missing.push(h);
-    }
-
-    const status = missing.length === 0 ? "pass" : "fail";
+    const { present, missing, status } = analyseHeaders(res.headers as Record<string, string>);
     await prisma.check.create({
       data: { monitorId: monitor.id, type: "headers", status, headers: { present, missing } },
     });
