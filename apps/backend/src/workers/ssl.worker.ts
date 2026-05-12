@@ -3,7 +3,9 @@ import tls from "tls";
 import { URL } from "url";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { incidentRepository } from "../repositories/incident.repository";
+import { alertService } from "../services/alert.service";
 import { prisma } from "../db";
+import type { Monitor } from "@prisma/client";
 
 const SSL_EXPIRY_WARN_DAYS = 14;
 
@@ -22,7 +24,7 @@ function getSslDaysLeft(hostname: string): Promise<{ daysLeft: number; validTo: 
   });
 }
 
-async function checkSsl(monitor: { id: string; url: string }) {
+async function checkSsl(monitor: Monitor) {
   try {
     const { hostname } = new URL(monitor.url);
     const { daysLeft } = await getSslDaysLeft(hostname);
@@ -35,10 +37,11 @@ async function checkSsl(monitor: { id: string; url: string }) {
     const openIncident = await incidentRepository.findOpenSslIncident(monitor.id);
 
     if (daysLeft <= SSL_EXPIRY_WARN_DAYS && !openIncident) {
-      await incidentRepository.create({
+      const incident = await incidentRepository.create({
         monitor: { connect: { id: monitor.id } },
         type: "ssl_expiry",
       });
+      alertService.notifySslExpiry(monitor, incident, daysLeft).catch(console.error);
     } else if (daysLeft > SSL_EXPIRY_WARN_DAYS && openIncident) {
       await incidentRepository.resolve(openIncident.id);
     }

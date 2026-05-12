@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -48,5 +48,11 @@ export const api = {
       http.get<{ success: boolean; data: SslCheckResult | null }>(`/api/monitors/${id}/ssl`).then((r) => r.data.data),
     headers: (id: string) =>
       http.get<{ success: boolean; data: HeadersCheckResult | null }>(`/api/monitors/${id}/headers`).then((r) => r.data.data),
+  },
+  settings: {
+    get: () =>
+      http.get<{ success: boolean; data: AlertSettings }>("/api/users/me/settings").then((r) => r.data.data),
+    update: (data: Partial<AlertSettings>) =>
+      http.put<{ success: boolean; data: AlertSettings }>("/api/users/me/settings", data).then((r) => r.data.data),
   },
 };

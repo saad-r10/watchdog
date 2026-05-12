@@ -1,11 +1,11 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
-import { useAuth } from "../hooks/useAuth";
 import { StatusBadge } from "../components/StatusBadge";
 import { Sparkline } from "../components/Sparkline";
 import { SslCard } from "../components/SslCard";
 import { HeadersCard } from "../components/HeadersCard";
+import { Nav } from "../components/Nav";
 
 function formatDuration(start: string, end?: string | null) {
   const ms = new Date(end ?? Date.now()).getTime() - new Date(start).getTime();
@@ -18,7 +18,6 @@ function formatDuration(start: string, end?: string | null) {
 
 export default function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -56,29 +55,17 @@ export default function MonitorDetailPage() {
 
   const sparklineData = [...checks].reverse().map((c) => c.responseTime ?? null);
 
-  function handleLogout() { logout(); navigate("/login"); }
-
   if (!monitor) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Monitor not found. <Link to="/dashboard" className="text-blue-600">Back to dashboard</Link></p>
+        <p className="text-gray-400">Monitor not found. <a href="/dashboard" className="text-blue-600">Back to dashboard</a></p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-900">Watchdog</h1>
-          <span className="text-gray-300">|</span>
-          <Link to="/dashboard" className="text-sm text-gray-500 hover:text-gray-800">Dashboard</Link>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">{user?.email}</span>
-          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-800">Sign out</button>
-        </div>
-      </header>
+      <Nav />
 
       <main className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}

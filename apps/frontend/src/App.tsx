@@ -5,6 +5,7 @@ import LoginPage from "./routes/login";
 import RegisterPage from "./routes/register";
 import MonitorsPage from "./routes/monitors";
 import MonitorDetailPage from "./routes/monitor-detail";
+import SettingsPage from "./routes/settings";
 
 export default function App() {
   return (
@@ -33,6 +34,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <MonitorDetailPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <SettingsPage />
           </PrivateRoute>
         }
       />
