@@ -1,14 +1,16 @@
-import { Router } from "express";
+import { Router, Request } from "express";
 import { authenticate } from "../middleware/auth";
 import { monitorService } from "../services/monitor.service";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
 
-const router = Router({ mergeParams: true });
+interface MonitorParams { id: string }
+
+const router = Router<MonitorParams>({ mergeParams: true });
 router.use(authenticate);
 
 // GET /api/monitors/:id/checks
-router.get("/checks", async (req, res, next) => {
+router.get("/checks", async (req: Request<MonitorParams>, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -20,7 +22,7 @@ router.get("/checks", async (req, res, next) => {
 });
 
 // GET /api/monitors/:id/stats
-router.get("/stats", async (req, res, next) => {
+router.get("/stats", async (req: Request<MonitorParams>, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const days = Math.min(Number(req.query.days) || 7, 30);
@@ -36,7 +38,7 @@ router.get("/stats", async (req, res, next) => {
 });
 
 // GET /api/monitors/:id/incidents
-router.get("/incidents", async (req, res, next) => {
+router.get("/incidents", async (req: Request<MonitorParams>, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const incidents = await incidentRepository.findByMonitor(req.params.id);
@@ -47,7 +49,7 @@ router.get("/incidents", async (req, res, next) => {
 });
 
 // GET /api/monitors/:id/ssl
-router.get("/ssl", async (req, res, next) => {
+router.get("/ssl", async (req: Request<MonitorParams>, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const check = await checkRepository.findLatestByType(req.params.id, "ssl");
@@ -58,7 +60,7 @@ router.get("/ssl", async (req, res, next) => {
 });
 
 // GET /api/monitors/:id/headers
-router.get("/headers", async (req, res, next) => {
+router.get("/headers", async (req: Request<MonitorParams>, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const check = await checkRepository.findLatestByType(req.params.id, "headers");
