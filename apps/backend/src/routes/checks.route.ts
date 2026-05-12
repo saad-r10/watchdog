@@ -7,9 +7,13 @@ import { incidentRepository } from "../repositories/incident.repository";
 const router = Router({ mergeParams: true });
 router.use(authenticate);
 
+function monitorId(req: { params: Record<string, string> }) {
+  return req.params.id;
+}
+
 router.get("/checks", async (req, res, next) => {
   try {
-    const id = req.params["id"];
+    const id = monitorId(req as any);
     await monitorService.getById(id, req.user.id);
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const checks = await checkRepository.findByMonitor(id, limit);
@@ -21,7 +25,7 @@ router.get("/checks", async (req, res, next) => {
 
 router.get("/stats", async (req, res, next) => {
   try {
-    const id = req.params["id"];
+    const id = monitorId(req as any);
     await monitorService.getById(id, req.user.id);
     const days = Math.min(Number(req.query.days) || 7, 30);
     const since = new Date(Date.now() - days * 86_400_000);
@@ -37,7 +41,7 @@ router.get("/stats", async (req, res, next) => {
 
 router.get("/incidents", async (req, res, next) => {
   try {
-    const id = req.params["id"];
+    const id = monitorId(req as any);
     await monitorService.getById(id, req.user.id);
     const incidents = await incidentRepository.findByMonitor(id);
     res.json({ success: true, data: incidents });
@@ -48,7 +52,7 @@ router.get("/incidents", async (req, res, next) => {
 
 router.get("/ssl", async (req, res, next) => {
   try {
-    const id = req.params["id"];
+    const id = monitorId(req as any);
     await monitorService.getById(id, req.user.id);
     const check = await checkRepository.findLatestByType(id, "ssl");
     res.json({ success: true, data: check ?? null });
@@ -59,7 +63,7 @@ router.get("/ssl", async (req, res, next) => {
 
 router.get("/headers", async (req, res, next) => {
   try {
-    const id = req.params["id"];
+    const id = monitorId(req as any);
     await monitorService.getById(id, req.user.id);
     const check = await checkRepository.findLatestByType(id, "headers");
     res.json({ success: true, data: check ?? null });
