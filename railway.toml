@@ -1,24 +1,30 @@
 [build]
-builder = "dockerfile"
+builder = "nixpacks"
 
 [[services]]
 name = "watchdog-backend"
-source = "apps/backend"
-dockerfilePath = "apps/backend/Dockerfile"
+
+[services.build]
+buildCommand = "npm install && cd apps/backend && npx prisma generate && npm run build"
 
 [services.deploy]
-startCommand = "npx prisma migrate deploy && node dist/index.js"
+startCommand = "cd apps/backend && npx prisma migrate deploy && node dist/index.js"
 healthcheckPath = "/health"
 
 [[services]]
 name = "watchdog-worker"
-source = "apps/backend"
-dockerfilePath = "apps/backend/Dockerfile"
+
+[services.build]
+buildCommand = "npm install && cd apps/backend && npx prisma generate && npm run build"
 
 [services.deploy]
-startCommand = "node dist/worker.js"
+startCommand = "cd apps/backend && node dist/worker.js"
 
 [[services]]
 name = "watchdog-frontend"
-source = "apps/frontend"
-dockerfilePath = "apps/frontend/Dockerfile"
+
+[services.build]
+buildCommand = "npm install && cd apps/frontend && npm run build"
+
+[services.deploy]
+startCommand = "cd apps/frontend && npx vite preview --port $PORT --host"
