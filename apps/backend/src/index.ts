@@ -5,6 +5,7 @@ import helmet from "helmet";
 import { errorHandler } from "./middleware/error";
 import authRouter from "./routes/auth.route";
 import monitorsRouter from "./routes/monitors.route";
+import usersRouter from "./routes/users.route";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);
 app.use("/api/monitors", monitorsRouter);
+app.use("/api/users", usersRouter);
 
 app.use(errorHandler);
 
