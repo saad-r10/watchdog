@@ -7,6 +7,7 @@ import authRouter from "./routes/auth.route";
 import monitorsRouter from "./routes/monitors.route";
 import checksRouter from "./routes/checks.route";
 import usersRouter from "./routes/users.route";
+import settingsRouter from "./routes/settings.route";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/monitors", monitorsRouter);
 app.use("/api/monitors/:id", checksRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/users/me/settings", settingsRouter);
 
 app.use(errorHandler);
 

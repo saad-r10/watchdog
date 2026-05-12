@@ -3,8 +3,10 @@ import axios from "axios";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
+import { alertService } from "../services/alert.service";
+import type { Monitor } from "@prisma/client";
 
-async function checkUptime(monitor: { id: string; url: string }) {
+async function checkUptime(monitor: Monitor) {
   const start = Date.now();
   let status: "up" | "down" = "down";
   let statusCode: number | null = null;
@@ -29,10 +31,11 @@ async function checkUptime(monitor: { id: string; url: string }) {
   const openIncident = await incidentRepository.findOpenByMonitor(monitor.id);
 
   if (status === "down" && !openIncident) {
-    await incidentRepository.create({
+    const incident = await incidentRepository.create({
       monitor: { connect: { id: monitor.id } },
       type: "downtime",
     });
+    alertService.notifyDowntime(monitor, incident).catch(console.error);
   } else if (status === "up" && openIncident) {
     await incidentRepository.resolve(openIncident.id);
   }

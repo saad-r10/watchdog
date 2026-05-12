@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api } from "../services/api";
-import { useAuth } from "../hooks/useAuth";
+import { Nav } from "../components/Nav";
 
 export default function MonitorsPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const [form, setForm] = useState({ name: "", url: "" });
 
   const { data: monitors = [], isLoading } = useQuery({
@@ -28,40 +26,13 @@ export default function MonitorsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["monitors"] }),
   });
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-gray-900">Watchdog</h1>
-          <span className="text-gray-300">|</span>
-          <span className="text-sm text-gray-500">Monitors</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">{user?.email}</span>
-          <Link to="/dashboard" className="text-sm text-blue-600 hover:underline font-medium">
-            Dashboard
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-500 hover:text-gray-800"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
-
+      <Nav current="monitors" />
       <main className="max-w-2xl mx-auto p-6">
         <form
           className="bg-white rounded-lg border p-5 mb-6 space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            createMutation.mutate(form);
-          }}
+          onSubmit={(e) => { e.preventDefault(); createMutation.mutate(form); }}
         >
           <h2 className="font-semibold text-gray-800">Add Monitor</h2>
           <input
@@ -87,9 +58,7 @@ export default function MonitorsPage() {
             >
               {createMutation.isPending ? "Adding..." : "Add Monitor"}
             </button>
-            {createMutation.isError && (
-              <p className="text-red-600 text-sm">Failed to add monitor.</p>
-            )}
+            {createMutation.isError && <p className="text-red-600 text-sm">Failed to add monitor.</p>}
           </div>
         </form>
 
@@ -102,7 +71,9 @@ export default function MonitorsPage() {
             {monitors.map((m) => (
               <div key={m.id} className="px-4 py-3 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-sm text-gray-900">{m.name}</p>
+                  <Link to={`/monitors/${m.id}`} className="font-medium text-sm text-gray-900 hover:text-blue-600">
+                    {m.name}
+                  </Link>
                   <p className="text-xs text-gray-400">{m.url}</p>
                 </div>
                 <button

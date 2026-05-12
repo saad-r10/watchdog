@@ -67,6 +67,12 @@ export interface HeadersCheckResult {
   checkedAt: string | null;
 }
 
+export interface AlertSettings {
+  alertEmail: string | null;
+  alertDowntime: boolean;
+  alertSslExpiry: boolean;
+}
+
 export interface MonitorStats {
   uptimePercent: number | null;
   avgResponseTime: number | null;
