@@ -41,6 +41,14 @@ export interface Check {
   checkedAt: string;
 }
 
+export interface MonitorStats {
+  uptimePercent: number | null;
+  avgResponseTime: number | null;
+  totalChecks: number;
+  lastStatus: "up" | "down" | null;
+  lastCheckedAt: string | null;
+}
+
 export interface Incident {
   id: string;
   monitorId: string;

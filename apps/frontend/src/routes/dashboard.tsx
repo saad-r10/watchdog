@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
+import { MonitorCard } from "../components/MonitorCard";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -9,14 +10,13 @@ export default function DashboardPage() {
   const { data: monitors = [], isLoading } = useQuery({
     queryKey: ["monitors"],
     queryFn: api.monitors.list,
+    refetchInterval: 30_000,
   });
 
   function handleLogout() {
     logout();
     navigate("/login");
   }
-
-  const activeCount = monitors.filter((m) => m.isActive).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -28,42 +28,27 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">{user?.email}</span>
-          <Link
-            to="/monitors"
-            className="text-sm text-blue-600 hover:underline font-medium"
-          >
+          <Link to="/monitors" className="text-sm text-blue-600 hover:underline font-medium">
             Monitors
           </Link>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-500 hover:text-gray-800"
-          >
+          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-800">
             Sign out
           </button>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto p-6">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Welcome back, {user?.name}
-          </h2>
-          <p className="text-sm text-gray-500">Here's what's being monitored.</p>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-lg border p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total</p>
-            <p className="text-3xl font-bold text-gray-900">{monitors.length}</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Welcome back, {user?.name}</h2>
+            <p className="text-sm text-gray-400">Auto-refreshes every 30 seconds.</p>
           </div>
-          <div className="bg-white rounded-lg border p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Active</p>
-            <p className="text-3xl font-bold text-green-600">{activeCount}</p>
-          </div>
-          <div className="bg-white rounded-lg border p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Paused</p>
-            <p className="text-3xl font-bold text-gray-400">{monitors.length - activeCount}</p>
-          </div>
+          <Link
+            to="/monitors"
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+          >
+            + Add monitor
+          </Link>
         </div>
 
         {isLoading ? (
@@ -79,23 +64,9 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border divide-y">
+          <div className="grid gap-4 sm:grid-cols-2">
             {monitors.map((m) => (
-              <div key={m.id} className="px-4 py-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm text-gray-900">{m.name}</p>
-                  <p className="text-xs text-gray-400">{m.url}</p>
-                </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    m.isActive
-                      ? "bg-green-50 text-green-700"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  {m.isActive ? "Active" : "Paused"}
-                </span>
-              </div>
+              <MonitorCard key={m.id} monitor={m} />
             ))}
           </div>
         )}
