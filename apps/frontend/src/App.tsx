@@ -4,6 +4,7 @@ import DashboardPage from "./routes/dashboard";
 import LoginPage from "./routes/login";
 import RegisterPage from "./routes/register";
 import MonitorsPage from "./routes/monitors";
+import MonitorDetailPage from "./routes/monitor-detail";
 
 export default function App() {
   return (
@@ -24,6 +25,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <MonitorsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/monitors/:id"
+        element={
+          <PrivateRoute>
+            <MonitorDetailPage />
           </PrivateRoute>
         }
       />
