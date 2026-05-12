@@ -5,9 +5,8 @@ import { monitorRepository } from "../repositories/monitor.repository";
 import { incidentRepository } from "../repositories/incident.repository";
 import { alertService } from "../services/alert.service";
 import { prisma } from "../db";
+import { getSslStatus, SSL_EXPIRY_WARN_DAYS } from "../lib/monitor-utils";
 import type { Monitor } from "@prisma/client";
-
-const SSL_EXPIRY_WARN_DAYS = 14;
 
 function getSslDaysLeft(hostname: string): Promise<{ daysLeft: number; validTo: Date }> {
   return new Promise((resolve, reject) => {
@@ -28,7 +27,7 @@ async function checkSsl(monitor: Monitor) {
   try {
     const { hostname } = new URL(monitor.url);
     const { daysLeft } = await getSslDaysLeft(hostname);
-    const status = daysLeft <= 0 ? "expired" : daysLeft <= SSL_EXPIRY_WARN_DAYS ? "expiring_soon" : "valid";
+    const status = getSslStatus(daysLeft);
 
     await prisma.check.create({
       data: { monitorId: monitor.id, type: "ssl", status, sslDaysLeft: daysLeft },
