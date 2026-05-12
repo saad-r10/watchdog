@@ -1,0 +1,230 @@
+# Watchdog
+
+Website Uptime & Security Monitor — real-time alerts for downtime, SSL expiry, and misconfigured headers.
+
+## Core Workflow
+
+1. **No Task, No Work**: Must be working on a branch (`issue-{number}-{slug}`) associated with a GitHub issue. Task is completed when PR is merged (reference with "Closes #N").
+
+## Pre-Work Checklist (MANDATORY)
+
+**Before ANY code/file changes, verify:**
+
+1. **Issue exists?** → If not, create one first with `gh issue create`
+2. **On correct branch?** → Run `git branch --show-current`
+   - If on `main`, STOP and create branch: `git checkout -b issue-{N}-{slug}`
+   - Branch name MUST match pattern `issue-{number}-{description}`
+3. **Branch up to date?** → `git pull origin main` before starting
+
+**Before closing ANY issue:**
+
+1. **PR created?** → Issues are closed via PR merge with "Closes #N", never manually
+2. **PR reviewed and merged?** → Wait for human approval
+
+**NEVER:**
+- Make file changes while on `main` branch
+- Close issues manually (let PR merge close them)
+- Skip the PR review cycle
+
+---
+
+## Common Commands
+
+```bash
+# Start dev (recommended order)
+docker-compose up -d                    # PostgreSQL
+cd apps/backend && npm run dev          # Backend API (port 3001)
+cd apps/backend && npm run worker       # Cron worker (separate terminal)
+cd apps/frontend && npm run dev         # Frontend (port 5173)
+
+# Database (Prisma)
+cd apps/backend && npx prisma migrate dev    # Run migrations
+cd apps/backend && npx prisma generate      # Regenerate client
+cd apps/backend && npx prisma studio        # Open Prisma Studio
+cd apps/backend && npx prisma db seed       # Seed database
+
+# Testing
+cd apps/backend && npm test              # Backend tests (Jest)
+cd apps/frontend && npm test             # Frontend tests
+npm run test                             # All tests from root
+
+# Linting / formatting
+npm run lint                             # ESLint across workspaces
+npm run typecheck                        # TypeScript across workspaces
+```
+
+### Service URLs (Development)
+
+| Service      | URL                       |
+|-------------|---------------------------|
+| Frontend     | http://localhost:5173     |
+| Backend API  | http://localhost:3001     |
+| Prisma Studio| http://localhost:5555     |
+
+---
+
+## Project Structure
+
+```
+watchdog/
+├── apps/
+│   ├── backend/src/
+│   │   ├── routes/          # Express routers
+│   │   ├── middleware/      # Auth, error handling
+│   │   ├── services/        # Business logic
+│   │   ├── repositories/    # Prisma data access
+│   │   ├── workers/         # node-cron jobs (uptime, SSL, headers)
+│   │   ├── db/              # Prisma client singleton + seed
+│   │   └── index.ts         # Express entry point
+│   └── frontend/src/
+│       ├── routes/          # React Router pages
+│       ├── components/      # React components (+ ui/)
+│       ├── hooks/           # Custom hooks
+│       ├── services/        # API client
+│       └── lib/             # Utilities
+├── packages/
+│   └── shared-types/        # Shared Zod schemas & TypeScript types
+├── .claude/
+│   ├── agents/              # Subagent definitions
+│   ├── hooks/               # Claude Code hooks
+│   ├── skills/              # Slash-command skills
+│   └── settings.json
+├── .github/workflows/       # CI/CD
+├── docs/                    # Architecture docs
+├── docker-compose.yml       # PostgreSQL
+└── CLAUDE.md
+```
+
+**Tech:** Backend: Node.js + Express + Prisma + node-cron + PostgreSQL. Frontend: Vite + React + React Router + TanStack Query + Tailwind. Auth: JWT + bcrypt. Alerts: Nodemailer. Testing: Jest + Supertest. Lint: ESLint + Prettier.
+
+---
+
+## Worker System (node-cron)
+
+Three recurring workers defined in `apps/backend/src/workers/`:
+
+| Worker | Schedule | Purpose |
+|--------|----------|---------|
+| `uptimeWorker` | Every minute | HTTP ping, record response time & status |
+| `sslWorker` | Every hour | Check SSL cert expiry days remaining |
+| `headerWorker` | Every 6 hours | Analyse security headers |
+
+Workers create `Incident` records on state changes (up→down, down→up) and trigger alert sends via `AlertService`.
+
+---
+
+## Alert System
+
+`AlertService` (`apps/backend/src/services/alert.service.ts`) handles:
+- **Cooldowns**: one alert per monitor per incident (no spam)
+- **Channels**: email via Nodemailer (SMTP)
+- **Triggers**: downtime, SSL expiry within 14 days, missing critical headers
+
+---
+
+## Database Models (Prisma)
+
+Key models in `apps/backend/prisma/schema.prisma`:
+
+| Model | Purpose |
+|-------|---------|
+| `User` | Registered user |
+| `Monitor` | A URL to watch (belongs to User) |
+| `Check` | Single uptime/ssl/header result |
+| `Incident` | Downtime or SSL-expiry event |
+| `Alert` | Sent alert record (with cooldown tracking) |
+
+---
+
+## Security Headers Checked
+
+`X-Frame-Options`, `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
+
+Each missing or misconfigured header is recorded as a finding on the `Check` result.
+
+---
+
+## CI/CD
+
+- **CI:** GitHub Actions runs lint, typecheck, and Jest tests on every PR
+- **Pre-commit hook:** Husky runs lint-staged
+- **CD:** Railway auto-deploys on push to `main`
+
+---
+
+## Environment Variables
+
+See `.env.example` at the root. Critical vars:
+
+| Var | Purpose |
+|-----|---------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | JWT signing secret |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Nodemailer SMTP |
+| `ALERT_FROM_EMAIL` | From address for alerts |
+| `PORT` | Backend port (default 3001) |
+
+---
+
+## Code Patterns
+
+### Express Route
+```typescript
+import { Router } from "express";
+import { z } from "zod";
+import { validate } from "../middleware/validate";
+import { authenticate } from "../middleware/auth";
+
+const router = Router();
+
+const createSchema = z.object({ url: z.string().url(), name: z.string().min(1) });
+
+router.post("/", authenticate, validate(createSchema), async (req, res, next) => {
+  try {
+    const { url, name } = req.body;
+    const monitor = await monitorService.create(req.user.id, { url, name });
+    res.status(201).json({ success: true, data: monitor });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;
+```
+
+### Prisma Repository
+```typescript
+import { prisma } from "../db";
+
+export const monitorRepository = {
+  async findByUser(userId: string) {
+    return prisma.monitor.findMany({ where: { userId } });
+  },
+  async create(data: { userId: string; url: string; name: string }) {
+    return prisma.monitor.create({ data });
+  },
+};
+```
+
+### node-cron Worker
+```typescript
+import cron from "node-cron";
+
+cron.schedule("* * * * *", async () => {
+  const monitors = await monitorRepository.findAllActive();
+  await Promise.allSettled(monitors.map(checkUptime));
+});
+```
+
+---
+
+## Troubleshooting
+
+| Error | Fix |
+|-------|-----|
+| Prisma client not found | `cd apps/backend && npx prisma generate` |
+| Migration drift | `npx prisma migrate reset` (dev only) |
+| CORS error | Check `VITE_API_URL` matches backend URL |
+| JWT invalid | Ensure `JWT_SECRET` is set and matches across restarts |
+| Nodemailer ECONNREFUSED | Check SMTP credentials; use Ethereal for local testing |
+| SSL check fails | Some hosts block TLS handshakes from cloud IPs; expected |

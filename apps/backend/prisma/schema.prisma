@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  monitors Monitor[]
+  alerts   Alert[]
+}
+
+model Monitor {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  url             String
+  intervalMinutes Int      @default(5)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checks    Check[]
+  incidents Incident[]
+}
+
+model Check {
+  id           String   @id @default(uuid())
+  monitorId    String
+  type         CheckType
+  status       String
+  statusCode   Int?
+  responseTime Int?
+  sslDaysLeft  Int?
+  headers      Json?
+  checkedAt    DateTime @default(now())
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+}
+
+model Incident {
+  id          String    @id @default(uuid())
+  monitorId   String
+  type        IncidentType
+  startedAt   DateTime  @default(now())
+  resolvedAt  DateTime?
+  isResolved  Boolean   @default(false)
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  alerts  Alert[]
+}
+
+model Alert {
+  id         String   @id @default(uuid())
+  userId     String
+  incidentId String
+  channel    String   @default("email")
+  sentAt     DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+}
+
+enum CheckType {
+  uptime
+  ssl
+  headers
+}
+
+enum IncidentType {
+  downtime
+  ssl_expiry
+  header_missing
+}
