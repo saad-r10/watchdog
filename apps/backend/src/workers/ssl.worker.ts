@@ -2,16 +2,20 @@ import cron from "node-cron";
 import tls from "tls";
 import { URL } from "url";
 import { monitorRepository } from "../repositories/monitor.repository";
+import { incidentRepository } from "../repositories/incident.repository";
 import { prisma } from "../db";
 
-function getSslDaysLeft(hostname: string): Promise<number> {
+const SSL_EXPIRY_WARN_DAYS = 14;
+
+function getSslDaysLeft(hostname: string): Promise<{ daysLeft: number; validTo: Date }> {
   return new Promise((resolve, reject) => {
     const socket = tls.connect({ host: hostname, port: 443, servername: hostname }, () => {
       const cert = socket.getPeerCertificate();
       socket.destroy();
-      if (!cert?.valid_to) return reject(new Error("No cert"));
-      const expiry = new Date(cert.valid_to).getTime();
-      resolve(Math.floor((expiry - Date.now()) / 86_400_000));
+      if (!cert?.valid_to) return reject(new Error("No certificate"));
+      const validTo = new Date(cert.valid_to);
+      const daysLeft = Math.floor((validTo.getTime() - Date.now()) / 86_400_000);
+      resolve({ daysLeft, validTo });
     });
     socket.on("error", reject);
     socket.setTimeout(10_000, () => { socket.destroy(); reject(new Error("Timeout")); });
@@ -21,11 +25,23 @@ function getSslDaysLeft(hostname: string): Promise<number> {
 async function checkSsl(monitor: { id: string; url: string }) {
   try {
     const { hostname } = new URL(monitor.url);
-    const sslDaysLeft = await getSslDaysLeft(hostname);
-    const status = sslDaysLeft > 0 ? "valid" : "expired";
+    const { daysLeft } = await getSslDaysLeft(hostname);
+    const status = daysLeft <= 0 ? "expired" : daysLeft <= SSL_EXPIRY_WARN_DAYS ? "expiring_soon" : "valid";
+
     await prisma.check.create({
-      data: { monitorId: monitor.id, type: "ssl", status, sslDaysLeft },
+      data: { monitorId: monitor.id, type: "ssl", status, sslDaysLeft: daysLeft },
     });
+
+    const openIncident = await incidentRepository.findOpenSslIncident(monitor.id);
+
+    if (daysLeft <= SSL_EXPIRY_WARN_DAYS && !openIncident) {
+      await incidentRepository.create({
+        monitor: { connect: { id: monitor.id } },
+        type: "ssl_expiry",
+      });
+    } else if (daysLeft > SSL_EXPIRY_WARN_DAYS && openIncident) {
+      await incidentRepository.resolve(openIncident.id);
+    }
   } catch {
     await prisma.check.create({
       data: { monitorId: monitor.id, type: "ssl", status: "error" },

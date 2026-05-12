@@ -41,6 +41,32 @@ export interface Check {
   checkedAt: string;
 }
 
+export const SECURITY_HEADERS = [
+  "x-frame-options",
+  "content-security-policy",
+  "strict-transport-security",
+  "x-content-type-options",
+  "referrer-policy",
+  "permissions-policy",
+] as const;
+
+export type SecurityHeader = (typeof SECURITY_HEADERS)[number];
+
+export interface SslCheckResult {
+  status: "valid" | "expiring_soon" | "expired" | "error" | null;
+  sslDaysLeft: number | null;
+  checkedAt: string | null;
+}
+
+export interface HeadersCheckResult {
+  status: "pass" | "fail" | "error" | null;
+  headers: {
+    present: Record<string, string>;
+    missing: string[];
+  } | null;
+  checkedAt: string | null;
+}
+
 export interface MonitorStats {
   uptimePercent: number | null;
   avgResponseTime: number | null;

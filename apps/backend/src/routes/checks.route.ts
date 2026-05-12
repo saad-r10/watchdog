@@ -46,4 +46,26 @@ router.get("/incidents", async (req, res, next) => {
   }
 });
 
+// GET /api/monitors/:id/ssl
+router.get("/ssl", async (req, res, next) => {
+  try {
+    await monitorService.getById(req.params.id, req.user.id);
+    const check = await checkRepository.findLatestByType(req.params.id, "ssl");
+    res.json({ success: true, data: check ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/monitors/:id/headers
+router.get("/headers", async (req, res, next) => {
+  try {
+    await monitorService.getById(req.params.id, req.user.id);
+    const check = await checkRepository.findLatestByType(req.params.id, "headers");
+    res.json({ success: true, data: check ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
