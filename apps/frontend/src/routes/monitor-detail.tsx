@@ -4,6 +4,8 @@ import { api } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 import { StatusBadge } from "../components/StatusBadge";
 import { Sparkline } from "../components/Sparkline";
+import { SslCard } from "../components/SslCard";
+import { HeadersCard } from "../components/HeadersCard";
 
 function formatDuration(start: string, end?: string | null) {
   const ms = new Date(end ?? Date.now()).getTime() - new Date(start).getTime();
@@ -132,6 +134,12 @@ export default function MonitorDetailPage() {
             />
           </div>
         )}
+
+        {/* Security checks */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SslCard monitorId={monitor.id} />
+          <HeadersCard monitorId={monitor.id} />
+        </div>
 
         {/* Incidents */}
         {incidents.length > 0 && (
