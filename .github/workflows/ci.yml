@@ -64,6 +64,6 @@ jobs:
         with:
           node-version: "20"
       - run: npm install
-      - run: cd apps/backend && npx prisma migrate deploy
+      - run: cd apps/backend && npx prisma db push
       - name: Run integration tests
         run: cd apps/backend && npx jest --testPathPattern="__tests__/[^/]+\.test\.ts$" --runInBand
