@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Nav } from "../components/Nav";
+import { motion } from "framer-motion";
 import { api } from "../services/api";
 
 export default function SettingsPage() {
@@ -38,81 +38,107 @@ export default function SettingsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Nav current="settings" />
-      <main className="max-w-xl mx-auto p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-6">Alert Settings</h2>
+    <div className="p-8 max-w-2xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Settings</h1>
+        <p className="text-sm text-slate-500 mt-1">Configure how and when Watchdog alerts you</p>
+      </div>
 
-        {isLoading ? (
-          <p className="text-gray-400 text-sm">Loading...</p>
-        ) : (
-          <form
-            className="bg-white rounded-lg border divide-y"
-            onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}
-          >
-            {/* Alert email */}
-            <div className="p-5">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Alert email address
-              </label>
-              <p className="text-xs text-gray-400 mb-3">
-                Leave blank to use your account email. Alerts are sent here when an incident is detected.
-              </p>
-              <input
-                type="email"
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="alerts@yourdomain.com"
-                value={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.value)}
-              />
-            </div>
+      {isLoading ? (
+        <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 animate-pulse space-y-4">
+          <div className="h-4 bg-slate-800 rounded w-1/3" />
+          <div className="h-10 bg-slate-800 rounded" />
+          <div className="h-4 bg-slate-800 rounded w-1/4" />
+        </div>
+      ) : (
+        <motion.form
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            mutation.mutate();
+          }}
+        >
+          {/* Alert email */}
+          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
+            <label className="block text-sm font-semibold text-white mb-1">
+              Alert email address
+            </label>
+            <p className="text-xs text-slate-500 mb-4">
+              Leave blank to use your account email. Alerts are sent here when an incident is detected.
+            </p>
+            <input
+              type="email"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+              placeholder="alerts@yourdomain.com"
+              value={alertEmail}
+              onChange={(e) => setAlertEmail(e.target.value)}
+            />
+          </div>
 
-            {/* Alert types */}
-            <div className="p-5 space-y-4">
-              <p className="text-sm font-medium text-gray-700">Notify me when…</p>
+          {/* Alert toggles */}
+          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 space-y-5">
+            <p className="text-sm font-semibold text-white">Notify me when…</p>
 
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={alertDowntime}
-                  onChange={(e) => setAlertDowntime(e.target.checked)}
-                />
-                <div>
-                  <p className="text-sm text-gray-800 font-medium">Site is down</p>
-                  <p className="text-xs text-gray-400">One email per incident, no repeat spam.</p>
+            <label className="flex items-start gap-4 cursor-pointer group">
+              <div className="mt-0.5">
+                <div
+                  onClick={() => setAlertDowntime((v) => !v)}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertDowntime ? "bg-violet-600" : "bg-slate-700"}`}
+                >
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertDowntime ? "translate-x-4" : "translate-x-0"}`} />
                 </div>
-              </label>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white group-hover:text-slate-200">Site is down</p>
+                <p className="text-xs text-slate-500 mt-0.5">One email per incident, no repeat spam.</p>
+              </div>
+            </label>
 
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={alertSslExpiry}
-                  onChange={(e) => setAlertSslExpiry(e.target.checked)}
-                />
-                <div>
-                  <p className="text-sm text-gray-800 font-medium">SSL certificate expiring soon</p>
-                  <p className="text-xs text-gray-400">Triggered when fewer than 14 days remain.</p>
+            <label className="flex items-start gap-4 cursor-pointer group">
+              <div className="mt-0.5">
+                <div
+                  onClick={() => setAlertSslExpiry((v) => !v)}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertSslExpiry ? "bg-violet-600" : "bg-slate-700"}`}
+                >
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertSslExpiry ? "translate-x-4" : "translate-x-0"}`} />
                 </div>
-              </label>
-            </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white group-hover:text-slate-200">SSL certificate expiring soon</p>
+                <p className="text-xs text-slate-500 mt-0.5">Triggered when fewer than 14 days remain.</p>
+              </div>
+            </label>
+          </div>
 
-            {/* Save */}
-            <div className="p-5 flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={mutation.isPending}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+          {/* Save */}
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-violet-500/20"
+            >
+              {mutation.isPending ? "Saving…" : "Save settings"}
+            </button>
+            {saved && (
+              <motion.span
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-sm text-emerald-400 font-medium flex items-center gap-1.5"
               >
-                {mutation.isPending ? "Saving…" : "Save settings"}
-              </button>
-              {saved && <p className="text-sm text-green-600 font-medium">Saved ✓</p>}
-              {mutation.isError && <p className="text-sm text-red-600">Failed to save.</p>}
-            </div>
-          </form>
-        )}
-      </main>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Saved
+              </motion.span>
+            )}
+            {mutation.isError && (
+              <p className="text-sm text-red-400">Failed to save.</p>
+            )}
+          </div>
+        </motion.form>
+      )}
     </div>
   );
 }
