@@ -1,11 +1,19 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import { api } from "../services/api";
 import { StatusBadge } from "../components/StatusBadge";
-import { Sparkline } from "../components/Sparkline";
 import { SslCard } from "../components/SslCard";
 import { HeadersCard } from "../components/HeadersCard";
-import { Nav } from "../components/Nav";
 
 function formatDuration(start: string, end?: string | null) {
   const ms = new Date(end ?? Date.now()).getTime() - new Date(start).getTime();
@@ -16,12 +24,25 @@ function formatDuration(start: string, end?: string | null) {
   return `${Math.floor(hrs / 24)}d ${hrs % 24}h`;
 }
 
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs shadow-xl">
+      <p className="text-slate-400 mb-1">{label}</p>
+      <p className="text-violet-400 font-semibold">{payload[0].value}ms</p>
+    </div>
+  );
+}
+
 export default function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const { data: monitors = [] } = useQuery({ queryKey: ["monitors"], queryFn: api.monitors.list });
+  const { data: monitors = [] } = useQuery({
+    queryKey: ["monitors"],
+    queryFn: api.monitors.list,
+  });
   const monitor = monitors.find((m) => m.id === id);
 
   const { data: stats } = useQuery({
@@ -53,131 +74,211 @@ export default function MonitorDetailPage() {
     },
   });
 
-  const sparklineData = [...checks].reverse().map((c) => c.responseTime ?? null);
+  const chartData = [...checks].reverse().map((c) => ({
+    time: new Date(c.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    ms: c.responseTime ?? undefined,
+  }));
 
   if (!monitor) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400">Monitor not found. <a href="/dashboard" className="text-blue-600">Back to dashboard</a></p>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400 text-sm">
+          Monitor not found.{" "}
+          <a href="/dashboard" className="text-violet-400 hover:underline">
+            Back to dashboard
+          </a>
+        </p>
       </div>
     );
   }
 
+  const isDown = stats?.lastStatus === "down";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Nav />
-
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-xl font-bold text-gray-900">{monitor.name}</h2>
-              <StatusBadge status={stats?.lastStatus ?? null} />
-            </div>
-            <a href={monitor.url} target="_blank" rel="noreferrer" className="text-sm text-blue-500 hover:underline">
-              {monitor.url}
-            </a>
+    <div className="p-8 max-w-5xl space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-start justify-between"
+      >
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-2xl font-bold text-white">{monitor.name}</h1>
+            <StatusBadge status={stats?.lastStatus ?? null} />
           </div>
-          <button
-            onClick={() => {
-              if (confirm("Delete this monitor and all its data?")) deleteMutation.mutate();
-            }}
-            className="text-xs text-red-500 hover:text-red-700"
+          <a
+            href={monitor.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm text-slate-400 hover:text-violet-400 transition-colors"
           >
-            Delete
-          </button>
+            {monitor.url} ↗
+          </a>
         </div>
+        <button
+          onClick={() => {
+            if (confirm("Delete this monitor and all its data?")) deleteMutation.mutate();
+          }}
+          className="text-xs text-slate-600 hover:text-red-400 transition-colors mt-1"
+        >
+          Delete monitor
+        </button>
+      </motion.div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg border p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Uptime (7d)</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "—"}
-            </p>
+      {/* Stats strip */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          {
+            label: "Uptime (7d)",
+            value: stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "—",
+            color: isDown ? "text-red-400" : "text-emerald-400",
+          },
+          {
+            label: "Avg response",
+            value: stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "—",
+            color: "text-white",
+          },
+          {
+            label: "Checks (7d)",
+            value: stats?.totalChecks ?? "—",
+            color: "text-violet-400",
+          },
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
+            className="bg-slate-900 rounded-xl border border-slate-800 px-6 py-5"
+          >
+            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">{stat.label}</p>
+            <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Response time chart */}
+      {chartData.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-slate-900 rounded-xl border border-slate-800 p-6"
+        >
+          <p className="text-xs text-slate-500 uppercase tracking-wider mb-6">
+            Response time — last {checks.length} checks
+          </p>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis
+                dataKey="time"
+                stroke="#334155"
+                tick={{ fill: "#475569", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                stroke="#334155"
+                tick={{ fill: "#475569", fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                unit="ms"
+                width={48}
+              />
+              <Tooltip content={<ChartTooltip />} />
+              <Line
+                type="monotone"
+                dataKey="ms"
+                stroke={isDown ? "#f87171" : "#8b5cf6"}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: isDown ? "#f87171" : "#8b5cf6", strokeWidth: 0 }}
+                connectNulls={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </motion.div>
+      )}
+
+      {/* SSL + Headers */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <SslCard monitorId={monitor.id} />
+        <HeadersCard monitorId={monitor.id} />
+      </div>
+
+      {/* Incidents */}
+      {incidents.length > 0 && (
+        <div className="bg-slate-900 rounded-xl border border-slate-800">
+          <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-2">
+            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-sm font-semibold text-white">Incidents</h3>
           </div>
-          <div className="bg-white rounded-lg border p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Avg response</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "—"}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg border p-4">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Checks (7d)</p>
-            <p className="text-2xl font-bold text-gray-900">{stats?.totalChecks ?? "—"}</p>
+          <div className="divide-y divide-slate-800">
+            {incidents.map((inc) => (
+              <div key={inc.id} className="px-6 py-4 flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${inc.isResolved ? "bg-slate-600" : "bg-red-500"}`}
+                  />
+                  <span className={inc.isResolved ? "text-slate-400" : "text-red-400"}>
+                    {inc.isResolved ? "Downtime" : "Ongoing downtime"}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400">{new Date(inc.startedAt).toLocaleString()}</p>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    {inc.isResolved
+                      ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}`
+                      : `Ongoing — ${formatDuration(inc.startedAt)}`}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Sparkline */}
-        {sparklineData.length > 1 && (
-          <div className="bg-white rounded-lg border p-4">
-            <p className="text-xs text-gray-400 mb-3">Response time — last {checks.length} checks</p>
-            <Sparkline
-              values={sparklineData}
-              width={700}
-              height={60}
-              color={stats?.lastStatus === "down" ? "#ef4444" : "#3b82f6"}
-            />
+      {/* Recent checks */}
+      <div className="bg-slate-900 rounded-xl border border-slate-800">
+        <div className="px-6 py-4 border-b border-slate-800">
+          <h3 className="text-sm font-semibold text-white">Recent checks</h3>
+        </div>
+        {checks.length === 0 ? (
+          <p className="px-6 py-8 text-sm text-slate-500">
+            No checks yet — the worker runs every minute.
+          </p>
+        ) : (
+          <div className="divide-y divide-slate-800/60">
+            {checks.map((c) => (
+              <div key={c.id} className="px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-xs font-bold tracking-wide ${
+                      c.status === "up" ? "text-emerald-400" : "text-red-400"
+                    }`}
+                  >
+                    {c.status.toUpperCase()}
+                  </span>
+                  {c.statusCode && (
+                    <span className="text-xs text-slate-600 font-mono">HTTP {c.statusCode}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-5 text-xs text-slate-500">
+                  {c.responseTime != null && (
+                    <span className="font-mono text-slate-400">{c.responseTime}ms</span>
+                  )}
+                  <span>{new Date(c.checkedAt).toLocaleTimeString()}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Security checks */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <SslCard monitorId={monitor.id} />
-          <HeadersCard monitorId={monitor.id} />
-        </div>
-
-        {/* Incidents */}
-        {incidents.length > 0 && (
-          <div className="bg-white rounded-lg border">
-            <div className="px-4 py-3 border-b">
-              <h3 className="text-sm font-semibold text-gray-800">Incidents</h3>
-            </div>
-            <div className="divide-y">
-              {incidents.map((inc) => (
-                <div key={inc.id} className="px-4 py-3 flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${inc.isResolved ? "bg-gray-300" : "bg-red-500"}`} />
-                    <span className="text-gray-700">{inc.isResolved ? "Downtime" : "Ongoing downtime"}</span>
-                  </div>
-                  <div className="text-right text-xs text-gray-400">
-                    <p>{new Date(inc.startedAt).toLocaleString()}</p>
-                    <p>{inc.isResolved ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}` : `Ongoing — ${formatDuration(inc.startedAt)}`}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recent checks */}
-        <div className="bg-white rounded-lg border">
-          <div className="px-4 py-3 border-b">
-            <h3 className="text-sm font-semibold text-gray-800">Recent checks</h3>
-          </div>
-          {checks.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-gray-400">No checks yet — the worker runs every minute.</p>
-          ) : (
-            <div className="divide-y">
-              {checks.map((c) => (
-                <div key={c.id} className="px-4 py-2 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className={`font-medium ${c.status === "up" ? "text-green-600" : "text-red-600"}`}>
-                      {c.status.toUpperCase()}
-                    </span>
-                    {c.statusCode && <span className="text-gray-400">HTTP {c.statusCode}</span>}
-                  </div>
-                  <div className="flex items-center gap-4 text-gray-400">
-                    {c.responseTime != null && <span>{c.responseTime}ms</span>}
-                    <span>{new Date(c.checkedAt).toLocaleTimeString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
