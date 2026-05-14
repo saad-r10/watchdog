@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Watchdog — Architecture Diagrams</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #161b27;
+      --border:    #1e2a3a;
+      --muted:     #64748b;
+      --subtle:    #334155;
+      --text:      #e2e8f0;
+      --text-dim:  #94a3b8;
+      --blue:      #60a5fa;
+      --purple:    #a78bfa;
+      --green:     #34d399;
+      --radius:    16px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    header h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 520px;
+      margin-inline: auto;
+    }
+
+    /* ── Nav pills ── */
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 52px;
+    }
+    nav a {
+      background: var(--surface);
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 5px 15px;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      border: 1px solid var(--border);
+      transition: background 0.15s, color 0.15s;
+    }
+    nav a:hover { background: var(--border); color: var(--text); }
+
+    /* ── Section cards ── */
+    .section {
+      max-width: 1400px;
+      margin: 0 auto 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-number {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    /* ── Two-column body ── */
+    .section-body {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      min-height: 0;
+    }
+
+    /* flip order on some cards */
+    .section-body.text-first {
+      grid-template-columns: 340px 1fr;
+    }
+    .section-body.text-first .diagram-pane { order: 2; }
+    .section-body.text-first .text-pane   { order: 1; border-left: none; border-right: 1px solid var(--border); }
+
+    /* collapse to single column below 900px */
+    @media (max-width: 900px) {
+      .section-body,
+      .section-body.text-first {
+        grid-template-columns: 1fr;
+      }
+      .section-body.text-first .diagram-pane { order: 1; }
+      .section-body.text-first .text-pane    { order: 2; border-right: none; border-left: none; border-top: 1px solid var(--border); }
+      .text-pane { border-left: none !important; border-top: 1px solid var(--border); }
+    }
+
+    .diagram-pane {
+      padding: 28px;
+      overflow-x: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .diagram-pane .mermaid {
+      width: 100%;
+    }
+    .diagram-pane .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .text-pane {
+      padding: 28px 28px 28px 24px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Text content pieces ── */
+    .explainer h3 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+    .explainer p {
+      font-size: 0.88rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+    }
+
+    .fact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .fact {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .fact-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .fact-text {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+    .fact-text strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid;
+    }
+    .tag.blue   { color: var(--blue);   border-color: #1e3a5f; background: #0d1f33; }
+    .tag.purple { color: var(--purple); border-color: #3b2f6b; background: #1a1030; }
+    .tag.green  { color: var(--green);  border-color: #134e3a; background: #0a2519; }
+    .tag.gray   { color: var(--text-dim); border-color: var(--border); background: var(--bg); }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--subtle);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Watchdog — Architecture</h1>
+  <p>Five diagrams covering environments, components, the worker pipeline, request flow, and the data model.</p>
+</header>
+
+<nav>
+  <a href="#env">1 · Local vs Prod</a>
+  <a href="#arch">2 · System Architecture</a>
+  <a href="#workers">3 · Worker Pipeline</a>
+  <a href="#request">4 · Request Flow</a>
+  <a href="#schema">5 · Database Schema</a>
+</nav>
+
+
+<!-- ─────────────────────────────────────────────
+     1. Local vs Production
+───────────────────────────────────────────── -->
+<div class="section" id="env">
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <span class="section-title">Local vs Production Environments</span>
+  </div>
+  <div class="section-body">
+    <div class="diagram-pane">
+      <div class="mermaid">
+flowchart TB
+    subgraph LOCAL["🖥  Local Development"]
+        direction TB
+        subgraph docker["Docker · docker-compose"]
+            PG_L[(PostgreSQL\n:5432)]
+        end
+        subgraph processes["Your Machine · Node.js"]
+            BE_L[Backend API\nlocalhost:3001]
+            WK_L[Cron Worker\nno port]
+            FE_L[Frontend\nlocalhost:5173]
+        end
+        BE_L -->|Prisma ORM| PG_L
+        WK_L -->|Prisma ORM| PG_L
+        FE_L -->|HTTP + JWT| BE_L
+    end
+    subgraph PROD["🚀  Production · Railway"]
+        direction TB
+        subgraph railway["Railway Services"]
+            BE_P[watchdog-backend\n*.up.railway.app]
+            WK_P[watchdog-worker\nno public URL]
+            FE_P[watchdog-frontend\n*.up.railway.app]
+            PG_P[(Postgres Plugin\ninternal URL)]
+        end
+        BE_P -->|Prisma ORM| PG_P
+        WK_P -->|Prisma ORM| PG_P
+        FE_P -->|HTTP + JWT| BE_P
+    end
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>The exact same code runs in both environments — only <em>where</em> each process lives is different. Locally you manage the infrastructure yourself; in production Railway hosts it all.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">🐳</span>
+          <span class="fact-text"><strong>Docker (local only)</strong> — spins up PostgreSQL so you don't need it installed. One <code>docker-compose up -d</code> and the DB is ready.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🚀</span>
+          <span class="fact-text"><strong>Railway (production)</strong> — each box in the diagram is a separate Railway service. The Postgres plugin provides a managed DB with an internal connection URL auto-injected as <code>DATABASE_URL</code>.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔒</span>
+          <span class="fact-text"><strong>Worker has no public URL</strong> — it's a background process that only talks outward (to monitored URLs) and inward (to the DB). No HTTP server, no port.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">⚡</span>
+          <span class="fact-text"><strong>Railway auto-deploys</strong> on every push to <code>main</code>, so shipping is just merging a PR.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag blue">Docker</span>
+        <span class="tag blue">Railway</span>
+        <span class="tag gray">PostgreSQL</span>
+        <span class="tag gray">Node.js</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────
+     2. System Architecture
+───────────────────────────────────────────── -->
+<div class="section" id="arch">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <span class="section-title">Overall System Architecture</span>
+  </div>
+  <div class="section-body text-first">
+    <div class="diagram-pane">
+      <div class="mermaid">
+flowchart LR
+    Browser["🌐 Browser\nReact + Vite\nTanStack Query"]
+
+    subgraph API["Express API · Node.js"]
+        MW["Middleware\nhelmet · cors · jwt"]
+        RT["Routes\n/api/auth\n/api/monitors\n/api/users\n/api/users/me/settings"]
+        SVC["Services\nmonitor · alert · email"]
+        REPO["Repositories\nmonitor · check\nincident · alert"]
+    end
+
+    subgraph Worker["Cron Worker · Node.js"]
+        UW["⏱ Uptime\n1 min"]
+        SW["⏱ SSL\n1 hour"]
+        HW["⏱ Headers\n6 hours"]
+    end
+
+    DB[(PostgreSQL\nvia Prisma)]
+    EXT["🌍 External URLs"]
+    EMAIL["📧 Nodemailer\nSMTP"]
+    TYPES["📦 shared-types\nZod · TypeScript"]
+
+    Browser -->|"Bearer JWT"| MW
+    MW --> RT --> SVC --> REPO --> DB
+    UW & SW & HW -->|HTTP / TLS| EXT
+    UW & SW & HW --> REPO
+    SVC --> EMAIL
+    TYPES -.->|shared| Browser
+    TYPES -.->|shared| API
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>The three main processes and how they relate. The API serves the browser; the Worker runs silently in the background; shared types keep both ends of the stack in sync.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">🌐</span>
+          <span class="fact-text"><strong>Frontend</strong> — pure SPA. It never touches the DB directly; everything goes through the API over HTTP with a JWT in the <code>Authorization</code> header.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔁</span>
+          <span class="fact-text"><strong>Layered backend</strong> — Routes → Services → Repositories. Routes handle HTTP, Services hold business logic, Repositories are the only things that touch Prisma/DB.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">⏱</span>
+          <span class="fact-text"><strong>Worker is completely independent</strong> — no HTTP server, no shared memory with the API. It reads monitors from the DB and writes check results back. That's it.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📦</span>
+          <span class="fact-text"><strong>shared-types</strong> — a local package (<code>@watchdog/shared-types</code>) with Zod schemas and TypeScript types used by both frontend and backend, preventing drift.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag blue">Express</span>
+        <span class="tag blue">React</span>
+        <span class="tag purple">Prisma</span>
+        <span class="tag purple">Zod</span>
+        <span class="tag green">TanStack Query</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────
+     3. Worker Pipeline
+───────────────────────────────────────────── -->
+<div class="section" id="workers">
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <span class="section-title">Worker Pipeline — What Each Worker Does</span>
+  </div>
+  <div class="section-body">
+    <div class="diagram-pane">
+      <div class="mermaid">
+flowchart TD
+    TICK1["⏱ every 1 min"] --> UW["Uptime Worker"]
+    TICK2["⏱ every 1 hour"] --> SW["SSL Worker"]
+    TICK3["⏱ every 6 hours"] --> HW["Headers Worker"]
+
+    UW -->|"GET url · 10s timeout"| URL1["Target URL"]
+    SW -->|"TLS handshake · port 443"| URL2["Target URL"]
+    HW -->|"GET url · read headers"| URL3["Target URL"]
+
+    URL1 --> CHK1["Check · uptime\nresponseTime · statusCode"]
+    URL2 --> CHK2["Check · ssl\nsslDaysLeft"]
+    URL3 --> CHK3["Check · headers\npresent / missing"]
+
+    CHK1 -->|"down + no open incident"| INC["Incident created"]
+    CHK2 -->|"daysLeft ≤ 14 + no open incident"| INC
+    CHK1 -->|"back up + open incident"| RES["Incident resolved ✓"]
+    CHK2 -->|"daysLeft > 14 + open incident"| RES
+
+    INC --> AS["AlertService\ncooldown check"]
+    AS -->|"enabled + not yet sent"| EM["📧 Email sent"]
+    AS --> AR["Alert record saved"]
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>All three workers follow the same pattern: poll every monitor → write a Check record → decide if an Incident should be opened or closed → trigger an alert if needed.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">🔴</span>
+          <span class="fact-text"><strong>Uptime worker</strong> — HTTP GET every minute. If the response status is ≥ 400 or the request times out, the monitor is "down". Records response time and status code every run.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔒</span>
+          <span class="fact-text"><strong>SSL worker</strong> — opens a raw TLS connection to port 443, reads the certificate's <code>valid_to</code> field, and calculates days remaining. Warns at ≤ 14 days.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🛡️</span>
+          <span class="fact-text"><strong>Headers worker</strong> — fetches the URL and inspects the response for security headers: <code>CSP</code>, <code>HSTS</code>, <code>X-Frame-Options</code>, and others. Saves which are present and which are missing.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔕</span>
+          <span class="fact-text"><strong>Alert cooldown</strong> — one email per incident, ever. The Alert record acts as a sent-flag so the worker never spams you even if it keeps detecting the same problem.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag blue">node-cron</span>
+        <span class="tag blue">axios</span>
+        <span class="tag purple">tls</span>
+        <span class="tag green">Nodemailer</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────
+     4. Request Flow
+───────────────────────────────────────────── -->
+<div class="section" id="request">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <span class="section-title">API Request Flow (authenticated endpoint)</span>
+  </div>
+  <div class="section-body text-first">
+    <div class="diagram-pane">
+      <div class="mermaid">
+sequenceDiagram
+    participant B as Browser
+    participant MW as Auth Middleware
+    participant RT as Route Handler
+    participant SVC as Service
+    participant REPO as Repository
+    participant DB as PostgreSQL
+
+    B->>MW: GET /api/monitors\nAuthorization: Bearer jwt
+    MW->>MW: jwt.verify(token, JWT_SECRET)
+    alt invalid / missing token
+        MW-->>B: 401 Unauthorized
+    end
+    MW->>RT: req.user = { id, email }
+    RT->>SVC: monitorService.listByUser(req.user.id)
+    SVC->>REPO: monitorRepository.findByUser(userId)
+    REPO->>DB: SELECT * FROM monitors\nWHERE userId = ?
+    DB-->>REPO: rows
+    REPO-->>SVC: Monitor[]
+    SVC-->>RT: Monitor[]
+    RT-->>B: 200 { success: true, data: [] }
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>A single authenticated API call traced from the browser all the way to Postgres and back. Every protected route follows this exact chain.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">🔑</span>
+          <span class="fact-text"><strong>JWT in every request</strong> — after login the frontend stores the token and attaches it as <code>Authorization: Bearer &lt;token&gt;</code> on every API call via an axios interceptor.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🚧</span>
+          <span class="fact-text"><strong>Middleware gates the route</strong> — <code>authenticate()</code> verifies the token before the route handler even runs. Invalid → 401, no further code executes.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🪜</span>
+          <span class="fact-text"><strong>Strict layering</strong> — the Route handler never calls Prisma directly. It calls a Service, which calls a Repository. This keeps business logic and DB queries separate and testable.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">👤</span>
+          <span class="fact-text"><strong>User ID scoping</strong> — the Service always filters by <code>req.user.id</code>, so a logged-in user can only ever see their own monitors. There's no admin bypass in the current codebase.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag blue">JWT</span>
+        <span class="tag blue">Express middleware</span>
+        <span class="tag purple">Prisma</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────
+     5. Database Schema
+───────────────────────────────────────────── -->
+<div class="section" id="schema">
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <span class="section-title">Database Schema (Prisma / PostgreSQL)</span>
+  </div>
+  <div class="section-body">
+    <div class="diagram-pane">
+      <div class="mermaid">
+erDiagram
+    User {
+        uuid id PK
+        string email
+        string password
+        string name
+        string alertEmail
+        bool alertDowntime
+        bool alertSslExpiry
+    }
+    Monitor {
+        uuid id PK
+        uuid userId FK
+        string name
+        string url
+        int intervalMinutes
+        bool isActive
+    }
+    Check {
+        uuid id PK
+        uuid monitorId FK
+        enum type
+        string status
+        int statusCode
+        int responseTime
+        int sslDaysLeft
+        json headers
+        datetime checkedAt
+    }
+    Incident {
+        uuid id PK
+        uuid monitorId FK
+        enum type
+        datetime startedAt
+        datetime resolvedAt
+        bool isResolved
+    }
+    Alert {
+        uuid id PK
+        uuid userId FK
+        uuid incidentId FK
+        string channel
+        datetime sentAt
+    }
+
+    User ||--o{ Monitor : "owns"
+    Monitor ||--o{ Check : "produces"
+    Monitor ||--o{ Incident : "triggers"
+    User ||--o{ Alert : "receives"
+    Incident ||--o{ Alert : "generates"
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>Five tables and how they connect. Everything in the system — checks, incidents, alerts — traces back to a Monitor, which traces back to a User.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">👤</span>
+          <span class="fact-text"><strong>User</strong> — stores credentials and alert preferences (<code>alertDowntime</code>, <code>alertSslExpiry</code>). The optional <code>alertEmail</code> lets you route alerts to a different address than your login email.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📡</span>
+          <span class="fact-text"><strong>Monitor</strong> — a URL you want to watch. Has an <code>isActive</code> flag so you can pause monitoring without deleting history.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📋</span>
+          <span class="fact-text"><strong>Check</strong> — one row per worker run per monitor. The <code>type</code> enum tells you which worker wrote it: <code>uptime</code>, <code>ssl</code>, or <code>headers</code>. This table grows the fastest.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🚨</span>
+          <span class="fact-text"><strong>Incident</strong> — created when something goes wrong, resolved when it recovers. The <code>resolvedAt</code> / <code>isResolved</code> pair tracks the full window of an outage.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📧</span>
+          <span class="fact-text"><strong>Alert</strong> — one row per email sent. Acts as both an audit log and a deduplication key — if a row exists for an incident, no second email is sent.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag purple">Prisma</span>
+        <span class="tag gray">PostgreSQL</span>
+        <span class="tag gray">UUID PKs</span>
+        <span class="tag gray">Cascade deletes</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<footer>Watchdog · docs/architecture.html</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark",
+    themeVariables: {
+      background: "#161b27",
+      primaryColor: "#1e3a5f",
+      primaryTextColor: "#e2e8f0",
+      primaryBorderColor: "#3b82f6",
+      lineColor: "#4f8ef7",
+      secondaryColor: "#1e2a3a",
+      tertiaryColor: "#0f1117",
+      edgeLabelBackground: "#1e2a3a",
+      nodeTextColor: "#e2e8f0",
+      clusterBkg: "#161b27",
+      clusterBorder: "#2d3550",
+      titleColor: "#94a3b8",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    },
+    flowchart: { curve: "basis", padding: 20 },
+    sequence: { actorMargin: 50, messageMargin: 30 },
+  });
+</script>
+</body>
+</html>
