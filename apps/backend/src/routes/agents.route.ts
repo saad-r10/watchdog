@@ -11,7 +11,8 @@ const router = Router();
 router.get("/", authenticate, async (req, res, next) => {
   try {
     const agents = await agentService.list(req.user.id);
-    const safe = agents.map(({ keyHash: _, ...a }) => a);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const safe = agents.map(({ keyHash, ...a }) => a);
     res.json({ success: true, data: safe });
   } catch (err) {
     next(err);
@@ -25,7 +26,8 @@ router.post(
   async (req, res, next) => {
     try {
       const { agent, key } = await agentService.create(req.user.id, req.body.name);
-      const { keyHash: _, ...safeAgent } = agent;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { keyHash, ...safeAgent } = agent;
       res.status(201).json({ success: true, data: { ...safeAgent, key } });
     } catch (err) {
       next(err);
