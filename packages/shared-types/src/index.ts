@@ -60,6 +60,7 @@ export interface AlertSettings {
   alertEmail: string | null;
   alertDowntime: boolean;
   alertSslExpiry: boolean;
+  webhookUrl: string | null;
 }
 
 export interface MonitorStats {

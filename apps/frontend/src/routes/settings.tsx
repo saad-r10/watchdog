@@ -13,15 +13,30 @@ export default function SettingsPage() {
   const [alertEmail, setAlertEmail] = useState("");
   const [alertDowntime, setAlertDowntime] = useState(true);
   const [alertSslExpiry, setAlertSslExpiry] = useState(true);
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [saved, setSaved] = useState(false);
+  const [testState, setTestState] = useState<"idle" | "sending" | "ok" | "error">("idle");
 
   useEffect(() => {
     if (data) {
       setAlertEmail(data.alertEmail ?? "");
       setAlertDowntime(data.alertDowntime);
       setAlertSslExpiry(data.alertSslExpiry);
+      setWebhookUrl(data.webhookUrl ?? "");
     }
   }, [data]);
+
+  async function handleTestWebhook() {
+    setTestState("sending");
+    try {
+      await api.settings.testWebhook();
+      setTestState("ok");
+    } catch {
+      setTestState("error");
+    } finally {
+      setTimeout(() => setTestState("idle"), 3000);
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -29,6 +44,7 @@ export default function SettingsPage() {
         alertEmail: alertEmail.trim() || null,
         alertDowntime,
         alertSslExpiry,
+        webhookUrl: webhookUrl.trim() || null,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["settings"] });
@@ -110,6 +126,36 @@ export default function SettingsPage() {
                 <p className="text-xs text-slate-500 mt-0.5">Triggered when fewer than 14 days remain.</p>
               </div>
             </label>
+          </div>
+
+          {/* Webhook */}
+          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
+            <label className="block text-sm font-semibold text-white mb-1">
+              Webhook URL
+            </label>
+            <p className="text-xs text-slate-500 mb-4">
+              Watchdog will POST a JSON payload to this URL on every incident — works with Slack, Discord, and any custom endpoint.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                placeholder="https://hooks.slack.com/services/…"
+                value={webhookUrl}
+                onChange={(e) => setWebhookUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleTestWebhook}
+                disabled={!webhookUrl.trim() || testState === "sending"}
+                className="flex-shrink-0 bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                {testState === "sending" ? "Sending…" : testState === "ok" ? "Sent ✓" : testState === "error" ? "Failed ✗" : "Test"}
+              </button>
+            </div>
+            <div className="mt-3 bg-slate-800 rounded-lg px-4 py-3 text-xs text-slate-500 font-mono leading-relaxed">
+              {"{ \"event\": \"downtime\", \"monitorName\": \"…\", \"monitorUrl\": \"…\", \"startedAt\": \"…\" }"}
+            </div>
           </div>
 
           {/* Save */}
