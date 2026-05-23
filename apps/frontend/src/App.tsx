@@ -8,6 +8,8 @@ import MonitorsPage from "./routes/monitors";
 import MonitorDetailPage from "./routes/monitor-detail";
 import SettingsPage from "./routes/settings";
 import AgentsPage from "./routes/agents";
+import StatusPagesPage from "./routes/status-pages";
+import StatusPagePublic from "./routes/status-page-public";
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,6 +30,8 @@ export default function App() {
       <Route path="/monitors/:id" element={<PrivateLayout><MonitorDetailPage /></PrivateLayout>} />
       <Route path="/settings" element={<PrivateLayout><SettingsPage /></PrivateLayout>} />
       <Route path="/agents" element={<PrivateLayout><AgentsPage /></PrivateLayout>} />
+      <Route path="/status-pages" element={<PrivateLayout><StatusPagesPage /></PrivateLayout>} />
+      <Route path="/status/:slug" element={<StatusPagePublic />} />
     </Routes>
   );
 }

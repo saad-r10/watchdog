@@ -129,3 +129,44 @@ export interface Monitor {
   createdAt: string;
   updatedAt: string;
 }
+
+export const CreateStatusPageSchema = z.object({
+  slug: z.string().min(2).max(48).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
+  title: z.string().min(1).max(80),
+});
+
+export const UpdateStatusPageMonitorsSchema = z.object({
+  monitorIds: z.array(z.string()),
+});
+
+export type CreateStatusPageInput = z.infer<typeof CreateStatusPageSchema>;
+
+export interface StatusPage {
+  id: string;
+  userId: string;
+  slug: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyBar {
+  date: string;
+  uptimePercent: number | null;
+}
+
+export interface StatusPageMonitorEntry {
+  id: string;
+  name: string;
+  url: string;
+  status: "up" | "down" | "unknown";
+  uptimePercent: number | null;
+  dailyBars: DailyBar[];
+}
+
+export interface PublicStatusPage {
+  page: { slug: string; title: string };
+  overall: "operational" | "degraded" | "outage";
+  monitors: StatusPageMonitorEntry[];
+  updatedAt: string;
+}

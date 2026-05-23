@@ -18,9 +18,10 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  monitors Monitor[]
-  alerts   Alert[]
-  agents   Agent[]
+  monitors     Monitor[]
+  alerts       Alert[]
+  agents       Agent[]
+  statusPages  StatusPage[]
 }
 
 model Agent {
@@ -46,10 +47,11 @@ model Monitor {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent     Agent?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  checks    Check[]
-  incidents Incident[]
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent       Agent?              @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  checks      Check[]
+  incidents   Incident[]
+  statusPages StatusPageMonitor[]
 }
 
 model Check {
@@ -87,6 +89,28 @@ model Alert {
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+}
+
+model StatusPage {
+  id        String   @id @default(uuid())
+  userId    String
+  slug      String   @unique
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitors StatusPageMonitor[]
+}
+
+model StatusPageMonitor {
+  statusPageId String
+  monitorId    String
+
+  statusPage StatusPage @relation(fields: [statusPageId], references: [id], onDelete: Cascade)
+  monitor    Monitor    @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@id([statusPageId, monitorId])
 }
 
 enum CheckType {
