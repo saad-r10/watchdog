@@ -15,6 +15,7 @@ model User {
   alertEmail       String?
   alertDowntime    Boolean  @default(true)
   alertSslExpiry   Boolean  @default(true)
+  webhookUrl       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

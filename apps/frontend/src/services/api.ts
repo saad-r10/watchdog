@@ -56,6 +56,8 @@ export const api = {
       http.get<{ success: boolean; data: AlertSettings }>("/api/users/me/settings").then((r) => r.data.data),
     update: (data: Partial<AlertSettings>) =>
       http.put<{ success: boolean; data: AlertSettings }>("/api/users/me/settings", data).then((r) => r.data.data),
+    testWebhook: () =>
+      http.post<{ success: boolean }>("/api/users/me/settings/test-webhook").then((r) => r.data),
   },
   agents: {
     list: () =>
