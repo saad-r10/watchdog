@@ -11,6 +11,7 @@ import settingsRouter from "./routes/settings.route";
 import agentsRouter from "./routes/agents.route";
 import statusPagesRouter from "./routes/status-pages.route";
 import statusRouter from "./routes/status.route";
+import maintenanceRouter from "./routes/maintenance.route";
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use("/api/users/me/settings", settingsRouter);
 app.use("/api/agents", agentsRouter);
 app.use("/api/status-pages", statusPagesRouter);
 app.use("/api/status", statusRouter);
+app.use("/api/monitors/:id/maintenance", maintenanceRouter);
 
 app.use(errorHandler);
 

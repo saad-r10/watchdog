@@ -3,6 +3,7 @@ import axios from "axios";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
+import { maintenanceRepository } from "../repositories/maintenance.repository";
 import { alertService } from "../services/alert.service";
 import type { Monitor } from "@prisma/client";
 
@@ -35,7 +36,10 @@ async function checkUptime(monitor: Monitor) {
       monitor: { connect: { id: monitor.id } },
       type: "downtime",
     });
-    alertService.notifyDowntime(monitor, incident).catch(console.error);
+    const inMaintenance = await maintenanceRepository.isActive(monitor.id);
+    if (!inMaintenance) {
+      alertService.notifyDowntime(monitor, incident).catch(console.error);
+    }
   } else if (status === "up" && openIncident) {
     await incidentRepository.resolve(openIncident.id);
   }

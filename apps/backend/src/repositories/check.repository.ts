@@ -13,10 +13,21 @@ export const checkRepository = {
     });
   },
   async getStats(monitorId: string, since: Date) {
-    const checks = await prisma.check.findMany({
-      where: { monitorId, type: "uptime", checkedAt: { gte: since } },
-      select: { status: true, responseTime: true },
-    });
+    // Exclude checks that fell within a maintenance window
+    const checks = await prisma.$queryRaw<Array<{ status: string; responseTime: number | null }>>`
+      SELECT status, "responseTime"
+      FROM "Check"
+      WHERE "monitorId" = ${monitorId}
+        AND type = 'uptime'
+        AND "checkedAt" >= ${since}
+        AND NOT EXISTS (
+          SELECT 1 FROM "MaintenanceWindow" mw
+          WHERE mw."monitorId" = ${monitorId}
+            AND mw."startsAt" <= "checkedAt"
+            AND mw."endsAt"   >= "checkedAt"
+        )
+    `;
+
     if (checks.length === 0) return { uptimePercent: null, avgResponseTime: null, totalChecks: 0 };
 
     const upCount = checks.filter((c) => c.status === "up").length;
