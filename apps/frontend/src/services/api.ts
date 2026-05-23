@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -50,6 +50,14 @@ export const api = {
       http.get<{ success: boolean; data: HeadersCheckResult | null }>(`/api/monitors/${id}/headers`).then((r) => r.data.data),
     responseTimes: (id: string, range: ResponseTimeRange) =>
       http.get<{ success: boolean; data: ResponseTimeBucket[] }>(`/api/monitors/${id}/response-times`, { params: { range } }).then((r) => r.data.data),
+    maintenance: {
+      list: (id: string) =>
+        http.get<{ success: boolean; data: MaintenanceWindow[] }>(`/api/monitors/${id}/maintenance`).then((r) => r.data.data),
+      create: (id: string, data: { startsAt: string; endsAt: string; description?: string }) =>
+        http.post<{ success: boolean; data: MaintenanceWindow }>(`/api/monitors/${id}/maintenance`, data).then((r) => r.data.data),
+      delete: (monitorId: string, windowId: string) =>
+        http.delete(`/api/monitors/${monitorId}/maintenance/${windowId}`),
+    },
   },
   settings: {
     get: () =>

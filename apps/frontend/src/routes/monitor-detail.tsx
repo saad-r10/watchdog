@@ -104,6 +104,36 @@ export default function MonitorDetailPage() {
     refetchInterval: 60_000,
   });
 
+  const { data: maintenanceWindows = [] } = useQuery({
+    queryKey: ["monitor-maintenance", id],
+    queryFn: () => api.monitors.maintenance.list(id!),
+    enabled: !!id,
+  });
+
+  const now = new Date();
+  const isInMaintenance = maintenanceWindows.some(
+    (w) => new Date(w.startsAt) <= now && new Date(w.endsAt) >= now
+  );
+
+  const [mForm, setMForm] = useState({ startsAt: "", endsAt: "", description: "" });
+
+  const createMaintenanceMutation = useMutation({
+    mutationFn: () => api.monitors.maintenance.create(id!, {
+      startsAt: new Date(mForm.startsAt).toISOString(),
+      endsAt: new Date(mForm.endsAt).toISOString(),
+      description: mForm.description || undefined,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["monitor-maintenance", id] });
+      setMForm({ startsAt: "", endsAt: "", description: "" });
+    },
+  });
+
+  const deleteMaintenanceMutation = useMutation({
+    mutationFn: (windowId: string) => api.monitors.maintenance.delete(id!, windowId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["monitor-maintenance", id] }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => api.monitors.delete(id!),
     onSuccess: () => {
@@ -143,6 +173,11 @@ export default function MonitorDetailPage() {
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-bold text-white">{monitor.name}</h1>
             <StatusBadge status={stats?.lastStatus ?? null} />
+            {isInMaintenance && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-medium">
+                Maintenance
+              </span>
+            )}
           </div>
           <a
             href={monitor.url}
@@ -272,6 +307,98 @@ export default function MonitorDetailPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <SslCard monitorId={monitor.id} />
         <HeadersCard monitorId={monitor.id} />
+      </div>
+
+      {/* Maintenance windows */}
+      <div className="bg-slate-900 rounded-xl border border-slate-800">
+        <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-2">
+          <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <h3 className="text-sm font-semibold text-white">Maintenance windows</h3>
+        </div>
+
+        <div className="px-6 py-5 border-b border-slate-800">
+          <form
+            className="grid grid-cols-2 gap-3"
+            onSubmit={(e) => { e.preventDefault(); createMaintenanceMutation.mutate(); }}
+          >
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Start</label>
+              <input
+                type="datetime-local"
+                required
+                value={mForm.startsAt}
+                onChange={(e) => setMForm((f) => ({ ...f, startsAt: e.target.value }))}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">End</label>
+              <input
+                type="datetime-local"
+                required
+                value={mForm.endsAt}
+                onChange={(e) => setMForm((f) => ({ ...f, endsAt: e.target.value }))}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+              />
+            </div>
+            <div className="col-span-2 flex gap-3">
+              <input
+                type="text"
+                placeholder="Description (optional)"
+                value={mForm.description}
+                onChange={(e) => setMForm((f) => ({ ...f, description: e.target.value }))}
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={createMaintenanceMutation.isPending}
+                className="bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors whitespace-nowrap"
+              >
+                {createMaintenanceMutation.isPending ? "Scheduling…" : "Schedule"}
+              </button>
+            </div>
+            {createMaintenanceMutation.isError && (
+              <p className="col-span-2 text-red-400 text-xs">Failed — check that end is after start.</p>
+            )}
+          </form>
+        </div>
+
+        {maintenanceWindows.length === 0 ? (
+          <p className="px-6 py-5 text-sm text-slate-500">No upcoming maintenance windows.</p>
+        ) : (
+          <div className="divide-y divide-slate-800/60">
+            {maintenanceWindows.map((w) => {
+              const active = new Date(w.startsAt) <= now && new Date(w.endsAt) >= now;
+              return (
+                <div key={w.id} className="px-6 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {active && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 flex-shrink-0">
+                        Active
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{w.description ?? "Maintenance"}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {new Date(w.startsAt).toLocaleString()} → {new Date(w.endsAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteMaintenanceMutation.mutate(w.id)}
+                    disabled={deleteMaintenanceMutation.isPending}
+                    className="ml-4 text-xs text-slate-600 hover:text-red-400 disabled:opacity-50 transition-colors flex-shrink-0"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Incidents */}

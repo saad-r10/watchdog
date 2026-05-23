@@ -131,6 +131,15 @@ export interface Monitor {
   updatedAt: string;
 }
 
+export interface MaintenanceWindow {
+  id: string;
+  monitorId: string;
+  startsAt: string;
+  endsAt: string;
+  description: string | null;
+  createdAt: string;
+}
+
 export interface ResponseTimeBucket {
   bucket: string;
   avgMs: number | null;

@@ -50,9 +50,10 @@ model Monitor {
 
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   agent       Agent?              @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  checks      Check[]
-  incidents   Incident[]
-  statusPages StatusPageMonitor[]
+  checks              Check[]
+  incidents           Incident[]
+  statusPages         StatusPageMonitor[]
+  maintenanceWindows  MaintenanceWindow[]
 }
 
 model Check {
@@ -112,6 +113,17 @@ model StatusPageMonitor {
   monitor    Monitor    @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 
   @@id([statusPageId, monitorId])
+}
+
+model MaintenanceWindow {
+  id          String   @id @default(uuid())
+  monitorId   String
+  startsAt    DateTime
+  endsAt      DateTime
+  description String?
+  createdAt   DateTime @default(now())
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 }
 
 enum CheckType {
