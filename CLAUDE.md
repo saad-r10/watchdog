@@ -170,6 +170,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | `Alert` | Sent alert record (with cooldown tracking) |
 | `StatusPage` | A public-facing status page with a unique slug (belongs to User) |
 | `StatusPageMonitor` | Join table linking monitors to a StatusPage |
+| `MaintenanceWindow` | Scheduled downtime window for a Monitor — alerts suppressed, excluded from uptime % |
 
 ---
 
