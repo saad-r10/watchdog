@@ -113,6 +113,21 @@ Workers create `Incident` records on state changes (up→down, down→up) and tr
 
 ---
 
+## Agent System
+
+Agents run on user infrastructure and push check results to Watchdog via `POST /api/agents/checkin` using an `X-Agent-Key` header.
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `GET /api/agents` | JWT | List user's agents |
+| `POST /api/agents` | JWT | Create agent (returns one-time key) |
+| `DELETE /api/agents/:id` | JWT | Revoke agent |
+| `POST /api/agents/checkin` | `X-Agent-Key` | Submit check results, update `lastSeenAt` |
+
+Key format: `wdg_<agentId>.<secret>` — the agent ID is embedded so the key can be verified in O(1) (find by ID, then bcrypt compare). The raw key is shown once on creation; only its bcrypt hash (`keyHash`) is stored.
+
+---
+
 ## Alert System
 
 `AlertService` (`apps/backend/src/services/alert.service.ts`) handles:
@@ -129,7 +144,8 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | Model | Purpose |
 |-------|---------|
 | `User` | Registered user |
-| `Monitor` | A URL to watch (belongs to User) |
+| `Agent` | API-key-authenticated agent that reports check results from user infrastructure |
+| `Monitor` | A URL to watch (belongs to User, optionally assigned to an Agent) |
 | `Check` | Single uptime/ssl/header result |
 | `Incident` | Downtime or SSL-expiry event |
 | `Alert` | Sent alert record (with cooldown tracking) |

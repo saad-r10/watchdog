@@ -22,6 +22,7 @@ const monitor = {
   userId: "user-1",
   name: "Test",
   url: "https://example.com",
+  agentId: null,
   intervalMinutes: 1,
   isActive: true,
   createdAt: new Date(),

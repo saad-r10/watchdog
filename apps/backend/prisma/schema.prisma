@@ -20,11 +20,25 @@ model User {
 
   monitors Monitor[]
   alerts   Alert[]
+  agents   Agent[]
+}
+
+model Agent {
+  id         String    @id @default(uuid())
+  userId     String
+  name       String
+  keyHash    String    @unique
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitors Monitor[]
 }
 
 model Monitor {
   id              String   @id @default(uuid())
   userId          String
+  agentId         String?
   name            String
   url             String
   intervalMinutes Int      @default(5)
@@ -33,6 +47,7 @@ model Monitor {
   updatedAt       DateTime @updatedAt
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent     Agent?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
   checks    Check[]
   incidents Incident[]
 }
