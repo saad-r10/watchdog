@@ -61,6 +61,20 @@ router.get("/ssl", async (req, res, next) => {
   }
 });
 
+router.get("/response-times", async (req, res, next) => {
+  try {
+    const id = monitorId(req as any);
+    await monitorService.getById(id, req.user.id);
+    const range = ["24h", "7d", "30d"].includes(req.query.range as string)
+      ? (req.query.range as "24h" | "7d" | "30d")
+      : "24h";
+    const data = await checkRepository.findResponseTimes(id, range);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/headers", async (req, res, next) => {
   try {
     const id = monitorId(req as any);

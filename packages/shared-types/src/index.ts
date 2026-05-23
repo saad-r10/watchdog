@@ -130,6 +130,16 @@ export interface Monitor {
   updatedAt: string;
 }
 
+export interface ResponseTimeBucket {
+  bucket: string;
+  avgMs: number | null;
+  minMs: number | null;
+  maxMs: number | null;
+  hasDown: boolean;
+}
+
+export type ResponseTimeRange = "24h" | "7d" | "30d";
+
 export const CreateStatusPageSchema = z.object({
   slug: z.string().min(2).max(48).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
   title: z.string().min(1).max(80),
