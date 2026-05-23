@@ -1,6 +1,7 @@
 import axios from "axios";
 import { checkRepository } from "../../repositories/check.repository";
 import { incidentRepository } from "../../repositories/incident.repository";
+import { maintenanceRepository } from "../../repositories/maintenance.repository";
 import { alertService } from "../../services/alert.service";
 import { monitorRepository } from "../../repositories/monitor.repository";
 
@@ -8,12 +9,14 @@ jest.mock("axios");
 jest.mock("node-cron", () => ({ schedule: jest.fn() }));
 jest.mock("../../repositories/check.repository");
 jest.mock("../../repositories/incident.repository");
+jest.mock("../../repositories/maintenance.repository");
 jest.mock("../../repositories/monitor.repository");
 jest.mock("../../services/alert.service");
 
 const mockAxios = axios as jest.Mocked<typeof axios>;
 const mockCheckRepo = checkRepository as jest.Mocked<typeof checkRepository>;
 const mockIncidentRepo = incidentRepository as jest.Mocked<typeof incidentRepository>;
+const mockMaintenanceRepo = maintenanceRepository as jest.Mocked<typeof maintenanceRepository>;
 const mockAlertService = alertService as jest.Mocked<typeof alertService>;
 const mockMonitorRepo = monitorRepository as jest.Mocked<typeof monitorRepository>;
 
@@ -43,6 +46,7 @@ beforeEach(() => {
   mockCheckRepo.create.mockResolvedValue({} as any);
   mockIncidentRepo.create.mockResolvedValue(incident);
   mockIncidentRepo.resolve.mockResolvedValue({ ...incident, isResolved: true });
+  mockMaintenanceRepo.isActive.mockResolvedValue(false);
   mockAlertService.notifyDowntime.mockResolvedValue(undefined);
 });
 
