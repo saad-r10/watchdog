@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -9,11 +10,13 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceDot,
 } from "recharts";
 import { api } from "../services/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { SslCard } from "../components/SslCard";
 import { HeadersCard } from "../components/HeadersCard";
+import type { ResponseTimeRange } from "@watchdog/shared-types";
 
 function formatDuration(start: string, end?: string | null) {
   const ms = new Date(end ?? Date.now()).getTime() - new Date(start).getTime();
@@ -24,20 +27,48 @@ function formatDuration(start: string, end?: string | null) {
   return `${Math.floor(hrs / 24)}d ${hrs % 24}h`;
 }
 
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs shadow-xl">
-      <p className="text-slate-400 mb-1">{label}</p>
-      <p className="text-violet-400 font-semibold">{payload[0].value}ms</p>
-    </div>
-  );
+const RANGES: { label: string; value: ResponseTimeRange }[] = [
+  { label: "24h", value: "24h" },
+  { label: "7d", value: "7d" },
+  { label: "30d", value: "30d" },
+];
+
+function formatBucket(iso: string, range: ResponseTimeRange) {
+  const d = new Date(iso);
+  if (range === "24h") return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (range === "7d") return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function makeChartTooltip(range: ResponseTimeRange) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return function ChartTooltip({ active, payload }: any) {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    return (
+      <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-xs shadow-xl space-y-1">
+        <p className="text-slate-400">{formatBucket(d.bucket, range)}</p>
+        {d.avgMs != null ? (
+          <>
+            <p className="text-violet-400 font-semibold">{d.avgMs}ms avg</p>
+            {d.minMs != null && d.maxMs != null && d.minMs !== d.maxMs && (
+              <p className="text-slate-500">{d.minMs}–{d.maxMs}ms range</p>
+            )}
+          </>
+        ) : (
+          <p className="text-red-400 font-semibold">Down</p>
+        )}
+        {d.hasDown && d.avgMs != null && <p className="text-red-400">⚠ Downtime in this period</p>}
+      </div>
+    );
+  };
 }
 
 export default function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [range, setRange] = useState<ResponseTimeRange>("24h");
 
   const { data: monitors = [] } = useQuery({
     queryKey: ["monitors"],
@@ -66,6 +97,13 @@ export default function MonitorDetailPage() {
     refetchInterval: 30_000,
   });
 
+  const { data: responseTimes = [] } = useQuery({
+    queryKey: ["monitor-response-times", id, range],
+    queryFn: () => api.monitors.responseTimes(id!, range),
+    enabled: !!id,
+    refetchInterval: 60_000,
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => api.monitors.delete(id!),
     onSuccess: () => {
@@ -74,10 +112,9 @@ export default function MonitorDetailPage() {
     },
   });
 
-  const chartData = [...checks].reverse().map((c) => ({
-    time: new Date(c.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    ms: c.responseTime ?? undefined,
-  }));
+  const downDots = responseTimes
+    .filter((r) => r.hasDown && r.avgMs == null)
+    .map((r) => r.bucket);
 
   if (!monitor) {
     return (
@@ -159,26 +196,44 @@ export default function MonitorDetailPage() {
       </div>
 
       {/* Response time chart */}
-      {chartData.length > 1 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-slate-900 rounded-xl border border-slate-800 p-6"
-        >
-          <p className="text-xs text-slate-500 uppercase tracking-wider mb-6">
-            Response time — last {checks.length} checks
-          </p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="bg-slate-900 rounded-xl border border-slate-800 p-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Response time</p>
+          <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
+            {RANGES.map((r) => (
+              <button
+                key={r.value}
+                onClick={() => setRange(r.value)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  range === r.value
+                    ? "bg-violet-600 text-white shadow"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {responseTimes.length === 0 ? (
+          <p className="text-sm text-slate-500 text-center py-12">No data for this period yet.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={responseTimes} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis
-                dataKey="time"
+                dataKey="bucket"
                 stroke="#334155"
                 tick={{ fill: "#475569", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
+                tickFormatter={(v) => formatBucket(v, range)}
               />
               <YAxis
                 stroke="#334155"
@@ -186,22 +241,32 @@ export default function MonitorDetailPage() {
                 axisLine={false}
                 tickLine={false}
                 unit="ms"
-                width={48}
+                width={52}
               />
-              <Tooltip content={<ChartTooltip />} />
+              <Tooltip content={makeChartTooltip(range)} />
               <Line
                 type="monotone"
-                dataKey="ms"
-                stroke={isDown ? "#f87171" : "#8b5cf6"}
+                dataKey="avgMs"
+                stroke="#8b5cf6"
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, fill: isDown ? "#f87171" : "#8b5cf6", strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: "#8b5cf6", strokeWidth: 0 }}
                 connectNulls={false}
               />
+              {downDots.map((bucket) => (
+                <ReferenceDot
+                  key={bucket}
+                  x={bucket}
+                  y={0}
+                  r={4}
+                  fill="#f87171"
+                  stroke="none"
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
 
       {/* SSL + Headers */}
       <div className="grid gap-4 sm:grid-cols-2">
