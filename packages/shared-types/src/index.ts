@@ -18,17 +18,6 @@ export type CreateMonitorInput = z.infer<typeof CreateMonitorSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 
-export interface Monitor {
-  id: string;
-  userId: string;
-  name: string;
-  url: string;
-  intervalMinutes: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Check {
   id: string;
   monitorId: string;
@@ -88,4 +77,55 @@ export interface Incident {
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
+}
+
+export const CreateAgentSchema = z.object({
+  name: z.string().min(1),
+});
+
+export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
+
+export interface Agent {
+  id: string;
+  userId: string;
+  name: string;
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+export interface AgentWithKey extends Agent {
+  key: string;
+}
+
+export const AgentCheckResultSchema = z.object({
+  results: z.array(
+    z.object({
+      monitorId: z.string(),
+      type: z.enum(["uptime", "ssl", "headers"]),
+      status: z.string(),
+      statusCode: z.number().int().optional(),
+      responseTime: z.number().int().optional(),
+      sslDaysLeft: z.number().int().optional(),
+      headers: z
+        .object({
+          present: z.array(z.string()),
+          missing: z.array(z.string()),
+        })
+        .optional(),
+    })
+  ),
+});
+
+export type AgentCheckResult = z.infer<typeof AgentCheckResultSchema>;
+
+export interface Monitor {
+  id: string;
+  userId: string;
+  agentId: string | null;
+  name: string;
+  url: string;
+  intervalMinutes: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

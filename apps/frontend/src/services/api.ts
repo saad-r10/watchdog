@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -54,5 +54,12 @@ export const api = {
       http.get<{ success: boolean; data: AlertSettings }>("/api/users/me/settings").then((r) => r.data.data),
     update: (data: Partial<AlertSettings>) =>
       http.put<{ success: boolean; data: AlertSettings }>("/api/users/me/settings", data).then((r) => r.data.data),
+  },
+  agents: {
+    list: () =>
+      http.get<{ success: boolean; data: Agent[] }>("/api/agents").then((r) => r.data.data),
+    create: (data: { name: string }) =>
+      http.post<{ success: boolean; data: AgentWithKey }>("/api/agents", data).then((r) => r.data.data),
+    delete: (id: string) => http.delete(`/api/agents/${id}`),
   },
 };
