@@ -128,6 +128,24 @@ Key format: `wdg_<agentId>.<secret>` — the agent ID is embedded so the key can
 
 ---
 
+## Status Page System
+
+Public-facing status pages at `/status/:slug` — no authentication required to view.
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `GET /api/status-pages` | JWT | List user's status pages |
+| `POST /api/status-pages` | JWT | Create a page (slug must be unique, lowercase, hyphens only) |
+| `DELETE /api/status-pages/:id` | JWT | Delete a page |
+| `PUT /api/status-pages/:id/monitors` | JWT | Set which monitors appear on the page |
+| `GET /api/status/:slug` | None | Public: returns overall status + per-monitor uptime + 90-day bars |
+
+The public endpoint computes 90-day daily uptime bars via a raw SQL `GROUP BY DATE` query on the `Check` table. Overall status is `operational` (all up), `degraded` (some down), or `outage` (all down).
+
+Frontend route `/status/:slug` is a standalone page (no sidebar/auth wrapper) — safe to share with customers.
+
+---
+
 ## Alert System
 
 `AlertService` (`apps/backend/src/services/alert.service.ts`) handles:
@@ -149,6 +167,8 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | `Check` | Single uptime/ssl/header result |
 | `Incident` | Downtime or SSL-expiry event |
 | `Alert` | Sent alert record (with cooldown tracking) |
+| `StatusPage` | A public-facing status page with a unique slug (belongs to User) |
+| `StatusPageMonitor` | Join table linking monitors to a StatusPage |
 
 ---
 

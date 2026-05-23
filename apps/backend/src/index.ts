@@ -9,6 +9,8 @@ import checksRouter from "./routes/checks.route";
 import usersRouter from "./routes/users.route";
 import settingsRouter from "./routes/settings.route";
 import agentsRouter from "./routes/agents.route";
+import statusPagesRouter from "./routes/status-pages.route";
+import statusRouter from "./routes/status.route";
 
 const app = express();
 
@@ -26,6 +28,8 @@ app.use("/api/monitors/:id", checksRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/users/me/settings", settingsRouter);
 app.use("/api/agents", agentsRouter);
+app.use("/api/status-pages", statusPagesRouter);
+app.use("/api/status", statusRouter);
 
 app.use(errorHandler);
 
