@@ -16,6 +16,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node src/db/seed.ts",
+    "mock-webhook": "ts-node src/scripts/mock-webhook.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -52,6 +53,7 @@
     "typescript": "^5.4.0"
   },
   "prisma": {
-    "schema": "prisma/schema.prisma"
+    "schema": "prisma/schema.prisma",
+    "seed": "ts-node src/db/seed.ts"
   }
 }
