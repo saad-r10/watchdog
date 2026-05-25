@@ -63,6 +63,61 @@ npm run typecheck                        # TypeScript across workspaces
 
 ---
 
+## Local Feature Testing
+
+Run the seed to populate demo data:
+
+```bash
+cd apps/backend && npx prisma db seed
+```
+
+In a separate terminal, start the mock webhook receiver:
+
+```bash
+cd apps/backend && npm run mock-webhook
+```
+
+Then start the full stack (docker + backend + worker + frontend) and verify each feature:
+
+| Feature | How to verify |
+|---------|---------------|
+| Login | http://localhost:5173 → demo@watchdog.dev / password123 |
+| Response time graph | Click "GitHub" → scroll to "Response Times" → toggle 24h / 7d / 30d |
+| Maintenance window (active) | Click "Example API" → see yellow "Maintenance" badge in header |
+| Maintenance window (upcoming) | Click "GitHub" → see upcoming window listed in Maintenance section |
+| Agent online badge | Navigate to /agents → "Local Test Agent" shows green "Online" badge |
+| Agent checkin (curl) | See curl commands below |
+| Webhook | Navigate to /settings → enter http://localhost:3002/webhook → click "Test Webhook" → watch mock-webhook terminal |
+| Status page | Navigate to /status-pages → click the link → public page at /status/demo-status |
+| Broken monitor | Click "Broken Site" → open incident shown, all checks down |
+
+### Testing with curl
+
+```bash
+# 1. Login and save token
+TOKEN=$(curl -s -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@watchdog.dev","password":"password123"}' | jq -r '.token')
+
+# 2. List monitors
+curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/monitors | jq
+
+# 3. Agent checkin (replace IDs from seed output)
+curl -X POST http://localhost:3001/api/agents/checkin \
+  -H "X-Agent-Key: wdg_<AGENT_ID>.testsecret123" \
+  -H "Content-Type: application/json" \
+  -d '{"results":[{"monitorId":"<MONITOR_4_ID>","type":"uptime","status":"up","statusCode":200,"responseTime":142}]}'
+
+# 4. Public status page (no auth)
+curl http://localhost:3001/api/status/demo-status | jq
+
+# 5. Test webhook delivery
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:3001/api/users/me/settings/test-webhook | jq
+```
+
+---
+
 ## Project Structure
 
 ```

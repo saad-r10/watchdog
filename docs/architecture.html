@@ -226,7 +226,7 @@
 
 <header>
   <h1>Watchdog — Architecture</h1>
-  <p>Five diagrams covering environments, components, the worker pipeline, request flow, and the data model.</p>
+  <p>Seven diagrams covering environments, components, the worker pipeline, request flow, the data model, the agent system, and the status page flow.</p>
 </header>
 
 <nav>
@@ -235,6 +235,8 @@
   <a href="#workers">3 · Worker Pipeline</a>
   <a href="#request">4 · Request Flow</a>
   <a href="#schema">5 · Database Schema</a>
+  <a href="#agents">6 · Agent System</a>
+  <a href="#status-flow">7 · Status Page Flow</a>
 </nav>
 
 
@@ -327,10 +329,11 @@ flowchart TB
       <div class="mermaid">
 flowchart LR
     Browser["🌐 Browser\nReact + Vite\nTanStack Query"]
+    AGENT["🤖 Agent Runner\n(user infra)"]
 
     subgraph API["Express API · Node.js"]
         MW["Middleware\nhelmet · cors · jwt"]
-        RT["Routes\n/api/auth\n/api/monitors\n/api/users\n/api/users/me/settings"]
+        RT["Routes\n/api/auth\n/api/monitors\n/api/users\n/api/users/me/settings\n/api/agents\n/api/agents/checkin\n/api/status-pages\n/api/status/:slug"]
         SVC["Services\nmonitor · alert · email"]
         REPO["Repositories\nmonitor · check\nincident · alert"]
     end
@@ -344,13 +347,16 @@ flowchart LR
     DB[(PostgreSQL\nvia Prisma)]
     EXT["🌍 External URLs"]
     EMAIL["📧 Nodemailer\nSMTP"]
+    WEBHOOK["🔗 WebhookService\nHTTP POST"]
     TYPES["📦 shared-types\nZod · TypeScript"]
 
     Browser -->|"Bearer JWT"| MW
+    AGENT -->|"X-Agent-Key"| RT
     MW --> RT --> SVC --> REPO --> DB
     UW & SW & HW -->|HTTP / TLS| EXT
     UW & SW & HW --> REPO
     SVC --> EMAIL
+    SVC --> WEBHOOK
     TYPES -.->|shared| Browser
     TYPES -.->|shared| API
       </div>
@@ -358,7 +364,7 @@ flowchart LR
     <div class="text-pane">
       <div class="explainer">
         <h3>What this shows</h3>
-        <p>The three main processes and how they relate. The API serves the browser; the Worker runs silently in the background; shared types keep both ends of the stack in sync.</p>
+        <p>The three main processes and how they relate. The API serves the browser and external agents; the Worker runs silently in the background; shared types keep both ends of the stack in sync.</p>
       </div>
       <div class="divider"></div>
       <div class="fact-list">
@@ -367,12 +373,20 @@ flowchart LR
           <span class="fact-text"><strong>Frontend</strong> — pure SPA. It never touches the DB directly; everything goes through the API over HTTP with a JWT in the <code>Authorization</code> header.</span>
         </div>
         <div class="fact">
+          <span class="fact-icon">🤖</span>
+          <span class="fact-text"><strong>Agent Runner</strong> — external processes on user infrastructure push check results via <code>POST /api/agents/checkin</code> using an <code>X-Agent-Key</code> header. No JWT required — key format is <code>wdg_&lt;agentId&gt;.&lt;secret&gt;</code>.</span>
+        </div>
+        <div class="fact">
           <span class="fact-icon">🔁</span>
           <span class="fact-text"><strong>Layered backend</strong> — Routes → Services → Repositories. Routes handle HTTP, Services hold business logic, Repositories are the only things that touch Prisma/DB.</span>
         </div>
         <div class="fact">
           <span class="fact-icon">⏱</span>
           <span class="fact-text"><strong>Worker is completely independent</strong> — no HTTP server, no shared memory with the API. It reads monitors from the DB and writes check results back. That's it.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔔</span>
+          <span class="fact-text"><strong>Dual-channel alerts</strong> — <code>AlertService</code> fires both email (Nodemailer) and webhook (<code>WebhookService</code>) in parallel using <code>Promise.allSettled</code>, so a failed webhook never blocks email delivery.</span>
         </div>
         <div class="fact">
           <span class="fact-icon">📦</span>
@@ -422,14 +436,17 @@ flowchart TD
     CHK2 -->|"daysLeft > 14 + open incident"| RES
 
     INC --> AS["AlertService\ncooldown check"]
-    AS -->|"enabled + not yet sent"| EM["📧 Email sent"]
+    AS --> MAINT{"In maintenance\nwindow?"}
+    MAINT -->|yes| SKIP["⏸ alert suppressed"]
+    MAINT -->|"no + enabled\n+ not yet sent"| EM["📧 Email sent"]
+    MAINT -->|"no + enabled\n+ not yet sent"| WH["🔗 Webhook POST"]
     AS --> AR["Alert record saved"]
       </div>
     </div>
     <div class="text-pane">
       <div class="explainer">
         <h3>What this shows</h3>
-        <p>All three workers follow the same pattern: poll every monitor → write a Check record → decide if an Incident should be opened or closed → trigger an alert if needed.</p>
+        <p>All three workers follow the same pattern: poll every monitor → write a Check record → decide if an Incident should be opened or closed → trigger alerts if needed (unless suppressed by a maintenance window).</p>
       </div>
       <div class="divider"></div>
       <div class="fact-list">
@@ -446,8 +463,16 @@ flowchart TD
           <span class="fact-text"><strong>Headers worker</strong> — fetches the URL and inspects the response for security headers: <code>CSP</code>, <code>HSTS</code>, <code>X-Frame-Options</code>, and others. Saves which are present and which are missing.</span>
         </div>
         <div class="fact">
+          <span class="fact-icon">🔧</span>
+          <span class="fact-text"><strong>Maintenance windows</strong> — if an active <code>MaintenanceWindow</code> exists for a monitor when an incident fires, <code>AlertService</code> suppresses the alert entirely. Uptime stats also exclude maintenance periods from the uptime % calculation.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔔</span>
+          <span class="fact-text"><strong>Dual-channel delivery</strong> — when alerts are sent, email and webhook are fired in parallel via <code>Promise.allSettled</code>. A webhook timeout never delays or blocks the email.</span>
+        </div>
+        <div class="fact">
           <span class="fact-icon">🔕</span>
-          <span class="fact-text"><strong>Alert cooldown</strong> — one email per incident, ever. The Alert record acts as a sent-flag so the worker never spams you even if it keeps detecting the same problem.</span>
+          <span class="fact-text"><strong>Alert cooldown</strong> — one alert per incident, ever. The Alert record acts as a sent-flag so the worker never spams you even if it keeps detecting the same problem.</span>
         </div>
       </div>
       <div class="divider"></div>
@@ -456,6 +481,7 @@ flowchart TD
         <span class="tag blue">axios</span>
         <span class="tag purple">tls</span>
         <span class="tag green">Nodemailer</span>
+        <span class="tag green">WebhookService</span>
       </div>
     </div>
   </div>
@@ -546,15 +572,24 @@ erDiagram
     User {
         uuid id PK
         string email
-        string password
+        string passwordHash
         string name
         string alertEmail
         bool alertDowntime
         bool alertSslExpiry
+        string webhookUrl
+    }
+    Agent {
+        uuid id PK
+        uuid userId FK
+        string name
+        string keyHash
+        datetime lastSeenAt
     }
     Monitor {
         uuid id PK
         uuid userId FK
+        uuid agentId FK
         string name
         string url
         int intervalMinutes
@@ -586,28 +621,56 @@ erDiagram
         string channel
         datetime sentAt
     }
+    MaintenanceWindow {
+        uuid id PK
+        uuid monitorId FK
+        datetime startsAt
+        datetime endsAt
+        string description
+    }
+    StatusPage {
+        uuid id PK
+        uuid userId FK
+        string slug
+        string title
+    }
+    StatusPageMonitor {
+        uuid id PK
+        uuid statusPageId FK
+        uuid monitorId FK
+    }
 
+    User ||--o{ Agent : "owns"
     User ||--o{ Monitor : "owns"
+    User ||--o{ StatusPage : "owns"
+    User ||--o{ Alert : "receives"
+    Agent ||--o{ Monitor : "assigned"
     Monitor ||--o{ Check : "produces"
     Monitor ||--o{ Incident : "triggers"
-    User ||--o{ Alert : "receives"
+    Monitor ||--o{ MaintenanceWindow : "has"
+    Monitor ||--o{ StatusPageMonitor : "appears on"
+    StatusPage ||--o{ StatusPageMonitor : "includes"
     Incident ||--o{ Alert : "generates"
       </div>
     </div>
     <div class="text-pane">
       <div class="explainer">
         <h3>What this shows</h3>
-        <p>Five tables and how they connect. Everything in the system — checks, incidents, alerts — traces back to a Monitor, which traces back to a User.</p>
+        <p>Nine tables and how they connect. Everything in the system — checks, incidents, alerts, status pages, maintenance windows — traces back to a Monitor, which traces back to a User.</p>
       </div>
       <div class="divider"></div>
       <div class="fact-list">
         <div class="fact">
           <span class="fact-icon">👤</span>
-          <span class="fact-text"><strong>User</strong> — stores credentials and alert preferences (<code>alertDowntime</code>, <code>alertSslExpiry</code>). The optional <code>alertEmail</code> lets you route alerts to a different address than your login email.</span>
+          <span class="fact-text"><strong>User</strong> — stores credentials and alert preferences (<code>alertDowntime</code>, <code>alertSslExpiry</code>). The optional <code>webhookUrl</code> enables webhook delivery alongside email.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🤖</span>
+          <span class="fact-text"><strong>Agent</strong> — represents an external agent runner. Stores a bcrypt <code>keyHash</code> (raw key never persisted), and <code>lastSeenAt</code> for the online/offline badge. Monitors carry an optional FK to an agent.</span>
         </div>
         <div class="fact">
           <span class="fact-icon">📡</span>
-          <span class="fact-text"><strong>Monitor</strong> — a URL you want to watch. Has an <code>isActive</code> flag so you can pause monitoring without deleting history.</span>
+          <span class="fact-text"><strong>Monitor</strong> — a URL to watch. Has an <code>isActive</code> flag and an optional <code>agentId</code> FK — when set, check results come from the agent runner instead of the internal workers.</span>
         </div>
         <div class="fact">
           <span class="fact-icon">📋</span>
@@ -615,11 +678,15 @@ erDiagram
         </div>
         <div class="fact">
           <span class="fact-icon">🚨</span>
-          <span class="fact-text"><strong>Incident</strong> — created when something goes wrong, resolved when it recovers. The <code>resolvedAt</code> / <code>isResolved</code> pair tracks the full window of an outage.</span>
+          <span class="fact-text"><strong>Incident / Alert</strong> — Incident tracks the full window of an outage; Alert is one row per channel per send, acting as both an audit log and deduplication key.</span>
         </div>
         <div class="fact">
-          <span class="fact-icon">📧</span>
-          <span class="fact-text"><strong>Alert</strong> — one row per email sent. Acts as both an audit log and a deduplication key — if a row exists for an incident, no second email is sent.</span>
+          <span class="fact-icon">🔧</span>
+          <span class="fact-text"><strong>MaintenanceWindow</strong> — scheduled per-monitor downtime. During an active window, alerts are suppressed and the period is excluded from uptime % via a <code>NOT EXISTS</code> subquery.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📄</span>
+          <span class="fact-text"><strong>StatusPage / StatusPageMonitor</strong> — a public-facing page with a unique slug. <code>StatusPageMonitor</code> is the join table linking which monitors appear on which page.</span>
         </div>
       </div>
       <div class="divider"></div>
@@ -628,6 +695,135 @@ erDiagram
         <span class="tag gray">PostgreSQL</span>
         <span class="tag gray">UUID PKs</span>
         <span class="tag gray">Cascade deletes</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────
+     6. Agent System Flow
+───────────────────────────────────────────── -->
+<div class="section" id="agents">
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <span class="section-title">Agent System Flow</span>
+  </div>
+  <div class="section-body text-first">
+    <div class="diagram-pane">
+      <div class="mermaid">
+sequenceDiagram
+    participant AG as Agent Runner (user's machine)
+    participant MW as Agent Auth Middleware
+    participant RT as /checkin route
+    participant SVC as AgentService
+    participant DB as PostgreSQL
+
+AG->>MW: POST /api/agents/checkin\nX-Agent-Key: wdg_agentId.secret
+MW->>MW: parse agentId from key prefix
+MW->>DB: SELECT agent WHERE id = agentId
+MW->>MW: bcrypt.compare(secret, keyHash)
+alt invalid key
+    MW-->>AG: 401 Unauthorized
+end
+MW->>RT: req.agent attached
+RT->>SVC: recordCheckin(agent, results[])
+SVC->>DB: UPDATE lastSeenAt
+SVC->>DB: INSERT Check records (batch)
+RT-->>AG: 200 { success: true }
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>How an external agent authenticates and submits check results. The key format encodes the agent ID so lookup is O(1), with bcrypt used only to verify the secret portion.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">🔑</span>
+          <span class="fact-text"><strong>O(1) key lookup</strong> — the key format <code>wdg_&lt;agentId&gt;.&lt;secret&gt;</code> embeds the agent ID. The middleware parses the prefix, does a single PK lookup, then bcrypt-compares the secret against the stored <code>keyHash</code>. No table scan needed.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🔐</span>
+          <span class="fact-text"><strong>One-time key display</strong> — the raw key is shown exactly once in the UI at creation time. Only its bcrypt hash (<code>keyHash</code>) is stored in the database; the plaintext is never persisted anywhere.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🟢</span>
+          <span class="fact-text"><strong>Online/offline badge</strong> — every successful checkin updates <code>lastSeenAt</code>. The UI shows a green "Online" badge if <code>lastSeenAt</code> is within the past 2 minutes, red "Offline" otherwise.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📦</span>
+          <span class="fact-text"><strong>Batch check ingestion</strong> — a single checkin payload carries a <code>results[]</code> array. <code>AgentService</code> inserts all Check records in one batched write, keeping latency low even for agents monitoring many internal endpoints.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag blue">X-Agent-Key</span>
+        <span class="tag purple">bcrypt</span>
+        <span class="tag gray">O(1) lookup</span>
+        <span class="tag gray">lastSeenAt</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────
+     7. Status Page Data Flow
+───────────────────────────────────────────── -->
+<div class="section" id="status-flow">
+  <div class="section-header">
+    <div class="section-number">7</div>
+    <span class="section-title">Status Page Data Flow</span>
+  </div>
+  <div class="section-body">
+    <div class="diagram-pane">
+      <div class="mermaid">
+flowchart LR
+    VISITOR["🌐 Visitor\n(no auth needed)"] -->|"GET /api/status/:slug"| PUB["Public Route"]
+    PUB --> REPO["StatusPageRepo\ngetPublic(slug)"]
+    REPO -->|"find page + monitors\nlatest check per monitor"| DB[(PostgreSQL)]
+    REPO -->|"getDailyBars()\nDATE_TRUNC GROUP BY\n90 days raw SQL"| DB
+    DB --> REPO
+    REPO --> CALC{"compute\noverall"}
+    CALC -->|all up| OP["operational ✅"]
+    CALC -->|some down| DEG["degraded ⚠️"]
+    CALC -->|all down| OUT["outage 🔴"]
+    REPO --> JSON["PublicStatusPage JSON"]
+    JSON --> FE["React /status/:slug\nstandalone — no sidebar\nno auth wrapper"]
+      </div>
+    </div>
+    <div class="text-pane">
+      <div class="explainer">
+        <h3>What this shows</h3>
+        <p>How a public status page is served — from a visitor hitting a slug URL all the way through the data layer and back as a rendered React page, with no authentication required at any step.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="fact-list">
+        <div class="fact">
+          <span class="fact-icon">🌐</span>
+          <span class="fact-text"><strong>No auth required</strong> — <code>GET /api/status/:slug</code> is a public route. Anyone with the URL can view the page — safe to share with customers, embed in a runbook, or link from a README.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">📊</span>
+          <span class="fact-text"><strong>90-day daily uptime bars</strong> — computed via a raw SQL <code>DATE_TRUNC('day', ...) GROUP BY</code> query on the <code>Check</code> table. Each bar represents one day's uptime percentage for that monitor.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🚦</span>
+          <span class="fact-text"><strong>Overall status logic</strong> — <code>operational</code> if all monitors are up, <code>degraded</code> if some are down, <code>outage</code> if all are down. Computed server-side from the latest check per monitor.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-icon">🖼️</span>
+          <span class="fact-text"><strong>Standalone frontend route</strong> — <code>/status/:slug</code> renders without the app's sidebar or auth wrapper. It's a fully self-contained page that works for unauthenticated visitors.</span>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="tag-row">
+        <span class="tag blue">Public route</span>
+        <span class="tag purple">Raw SQL</span>
+        <span class="tag green">DATE_TRUNC</span>
+        <span class="tag gray">No auth</span>
       </div>
     </div>
   </div>
