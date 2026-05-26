@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { execSync } from "child_process";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -12,6 +13,10 @@ import agentsRouter from "./routes/agents.route";
 import statusPagesRouter from "./routes/status-pages.route";
 import statusRouter from "./routes/status.route";
 import maintenanceRouter from "./routes/maintenance.route";
+
+if (process.env.NODE_ENV === "production") {
+  execSync("npx prisma migrate deploy", { stdio: "inherit" });
+}
 
 const app = express();
 
