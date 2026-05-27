@@ -30,4 +30,13 @@ export const incidentRepository = {
       take: limit,
     });
   },
+
+  async findRecentByUser(userId: string, limit = 15) {
+    return prisma.incident.findMany({
+      where: { monitor: { userId } },
+      include: { monitor: { select: { name: true, url: true } } },
+      orderBy: { startedAt: "desc" },
+      take: limit,
+    });
+  },
 };

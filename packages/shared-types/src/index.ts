@@ -188,6 +188,32 @@ export interface StatusPageMonitorEntry {
   dailyBars: DailyBar[];
 }
 
+export interface DashboardIncident {
+  id: string;
+  monitorId: string;
+  monitorName: string;
+  monitorUrl: string;
+  type: "downtime" | "ssl_expiry" | "header_missing";
+  startedAt: string;
+  resolvedAt: string | null;
+  isResolved: boolean;
+  durationMinutes: number | null;
+}
+
+export interface DashboardSummary {
+  total: number;
+  up: number;
+  down: number;
+  unknown: number;
+  avgUptime: number | null;
+  activeIncidents: number;
+}
+
+export interface DashboardData {
+  summary: DashboardSummary;
+  recentIncidents: DashboardIncident[];
+}
+
 export interface PublicStatusPage {
   page: { slug: string; title: string };
   overall: "operational" | "degraded" | "outage";
