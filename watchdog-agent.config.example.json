@@ -1,0 +1,11 @@
+{
+  "agentKey": "wdg_<agentId>.<secret>",
+  "watchdogUrl": "http://localhost:3001",
+  "monitors": [
+    {
+      "monitorId": "<uuid from Watchdog>",
+      "url": "http://localhost:4000",
+      "intervalMinutes": 1
+    }
+  ]
+}

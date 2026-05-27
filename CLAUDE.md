@@ -118,6 +118,38 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 ---
 
+## Agent Runner
+
+The agent runner is a standalone script that polls URLs on your machine and reports results to Watchdog on a schedule — no manual curl commands needed.
+
+```bash
+# 1. Copy the example config
+cp watchdog-agent.config.example.json watchdog-agent.config.json
+
+# 2. Fill in your agentKey, watchdogUrl, and monitors
+#    (agentKey is shown once when you create an agent in the UI)
+
+# 3. Run it
+cd apps/backend && npm run agent-runner
+# or point at a custom config path:
+cd apps/backend && npm run agent-runner -- ../../my-config.json
+```
+
+`watchdog-agent.config.json` is gitignored — never commit your agent key.
+
+Config format:
+```json
+{
+  "agentKey": "wdg_<agentId>.<secret>",
+  "watchdogUrl": "http://localhost:3001",
+  "monitors": [
+    { "monitorId": "<uuid>", "url": "http://localhost:4000", "intervalMinutes": 1 }
+  ]
+}
+```
+
+---
+
 ## Project Structure
 
 ```
