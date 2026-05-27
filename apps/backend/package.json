@@ -17,6 +17,7 @@
     "db:studio": "prisma studio",
     "db:seed": "ts-node src/db/seed.ts",
     "mock-webhook": "ts-node src/scripts/mock-webhook.ts",
+    "agent-runner": "ts-node src/scripts/agent-runner.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
