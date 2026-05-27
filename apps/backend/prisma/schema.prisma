@@ -65,6 +65,8 @@ model Check {
   responseTime Int?
   sslDaysLeft  Int?
   headers      Json?
+  metricName   String?
+  metricValue  Float?
   checkedAt    DateTime @default(now())
 
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
@@ -130,6 +132,7 @@ enum CheckType {
   uptime
   ssl
   headers
+  metric
 }
 
 enum IncidentType {

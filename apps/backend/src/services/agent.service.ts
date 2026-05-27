@@ -63,12 +63,14 @@ export const agentService = {
     agentId: string,
     results: Array<{
       monitorId: string;
-      type: "uptime" | "ssl" | "headers";
+      type: "uptime" | "ssl" | "headers" | "metric";
       status: string;
       statusCode?: number;
       responseTime?: number;
       sslDaysLeft?: number;
       headers?: { present: string[]; missing: string[] };
+      metricName?: string;
+      metricValue?: number;
     }>
   ) {
     await agentRepository.updateLastSeen(agentId);
@@ -88,6 +90,8 @@ export const agentService = {
                 missing: r.headers.missing,
               }
             : undefined,
+          metricName: r.metricName,
+          metricValue: r.metricValue,
         })
       )
     );

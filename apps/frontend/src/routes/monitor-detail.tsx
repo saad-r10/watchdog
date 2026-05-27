@@ -435,6 +435,60 @@ export default function MonitorDetailPage() {
         </div>
       )}
 
+      {/* Metrics */}
+      {checks.some((c) => c.type === "metric") && (
+        <div className="bg-slate-900 rounded-xl border border-slate-800">
+          <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-2">
+            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <h3 className="text-sm font-semibold text-white">System metrics</h3>
+          </div>
+          {(() => {
+            const metricNames = [...new Set(checks.filter((c) => c.type === "metric" && c.metricName).map((c) => c.metricName!))];
+            return (
+              <div className="divide-y divide-slate-800/60">
+                {metricNames.map((name) => {
+                  const latest = checks.find((c) => c.type === "metric" && c.metricName === name);
+                  const history = checks.filter((c) => c.type === "metric" && c.metricName === name).slice(0, 10).reverse();
+                  const unit = name === "load" ? "" : "%";
+                  const isHigh = latest?.status === "down";
+                  return (
+                    <div key={name} className="px-6 py-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white capitalize">{name}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded font-mono ${isHigh ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                            {latest?.metricValue != null ? `${latest.metricValue}${unit}` : "—"}
+                          </span>
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          {latest ? new Date(latest.checkedAt).toLocaleTimeString() : ""}
+                        </span>
+                      </div>
+                      <div className="flex items-end gap-1 h-8">
+                        {history.map((c, i) => {
+                          const pct = c.metricValue != null ? Math.min(c.metricValue, 100) : 0;
+                          const bad = c.status === "down";
+                          return (
+                            <div
+                              key={i}
+                              title={`${c.metricValue}${unit} at ${new Date(c.checkedAt).toLocaleTimeString()}`}
+                              style={{ height: `${Math.max(pct, 4)}%` }}
+                              className={`flex-1 rounded-sm transition-colors ${bad ? "bg-red-500/60" : "bg-violet-500/60"}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Recent checks */}
       <div className="bg-slate-900 rounded-xl border border-slate-800">
         <div className="px-6 py-4 border-b border-slate-800">
@@ -446,7 +500,7 @@ export default function MonitorDetailPage() {
           </p>
         ) : (
           <div className="divide-y divide-slate-800/60">
-            {checks.map((c) => (
+            {checks.filter((c) => c.type !== "metric").map((c) => (
               <div key={c.id} className="px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span

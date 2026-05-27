@@ -21,12 +21,14 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers";
+  type: "uptime" | "ssl" | "headers" | "metric";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
   sslDaysLeft?: number | null;
   headers?: Record<string, unknown> | null;
+  metricName?: string | null;
+  metricValue?: number | null;
   checkedAt: string;
 }
 
@@ -102,7 +104,7 @@ export const AgentCheckResultSchema = z.object({
   results: z.array(
     z.object({
       monitorId: z.string(),
-      type: z.enum(["uptime", "ssl", "headers"]),
+      type: z.enum(["uptime", "ssl", "headers", "metric"]),
       status: z.string(),
       statusCode: z.number().int().optional(),
       responseTime: z.number().int().optional(),
@@ -113,6 +115,8 @@ export const AgentCheckResultSchema = z.object({
           missing: z.array(z.string()),
         })
         .optional(),
+      metricName: z.string().optional(),
+      metricValue: z.number().optional(),
     })
   ),
 });
