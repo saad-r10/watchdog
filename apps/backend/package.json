@@ -18,6 +18,8 @@
     "db:seed": "ts-node src/db/seed.ts",
     "mock-webhook": "ts-node src/scripts/mock-webhook.ts",
     "agent-runner": "ts-node src/scripts/agent-runner.ts",
+    "demo-app": "ts-node src/scripts/demo-app.ts",
+    "check": "ts-node src/scripts/health-check.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
