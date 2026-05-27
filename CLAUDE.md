@@ -65,13 +65,45 @@ npm run typecheck                        # TypeScript across workspaces
 
 ## Local Feature Testing
 
-Run the seed to populate demo data:
+### One-command start
 
 ```bash
+npm run dev:full
+```
+
+Starts everything in one shot: Postgres, backend API, cron worker, frontend, mock webhook receiver, demo app (port 4000), and agent runner. Seeds the database automatically on first run.
+
+To check all services are healthy:
+
+```bash
+npm run check
+```
+
+To wipe and reset the database to a clean demo state:
+
+```bash
+npm run dev:reset
+```
+
+### Demo app (port 4000)
+
+The demo app is a minimal Express server that simulates up/down:
+
+```bash
+curl -X POST http://localhost:4000/break   # simulate outage → 503
+curl -X POST http://localhost:4000/fix     # restore → 200
+```
+
+Watch the agent runner detect the change and the monitor flip red/green in the UI within 1 minute.
+
+### Manual start (if needed)
+
+```bash
+docker-compose up -d postgres
 cd apps/backend && npx prisma db seed
 ```
 
-In a separate terminal, start the mock webhook receiver:
+In separate terminals:
 
 ```bash
 cd apps/backend && npm run mock-webhook

@@ -9,6 +9,9 @@
   "scripts": {
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev:full": "docker-compose up -d postgres && wait-on tcp:5432 && npm run --workspace=apps/backend db:seed -- --skip-if-seeded 2>/dev/null; concurrently --names \"API,WORKER,FRONTEND,WEBHOOK,DEMO,AGENT\" --prefix-colors \"blue,cyan,green,magenta,yellow,white\" \"npm run dev --workspace=apps/backend\" \"npm run worker --workspace=apps/backend\" \"npm run dev --workspace=apps/frontend\" \"npm run mock-webhook --workspace=apps/backend\" \"npm run demo-app --workspace=apps/backend\" \"npm run agent-runner --workspace=apps/backend -- watchdog-agent.config.json\"",
+    "check": "npm run check --workspace=apps/backend",
+    "dev:reset": "bash scripts/dev-reset.sh",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint apps packages --ext .ts,.tsx",
@@ -17,9 +20,11 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "^9.2.1",
     "eslint": "^8.57.0",
     "prettier": "^3.2.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "wait-on": "^9.0.10"
   },
   "engines": {
     "node": ">=20.0.0",
