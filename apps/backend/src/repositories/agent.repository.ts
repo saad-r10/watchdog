@@ -5,6 +5,11 @@ export const agentRepository = {
     return prisma.agent.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
+      include: {
+        monitors: {
+          select: { id: true, name: true, url: true },
+        },
+      },
     });
   },
 

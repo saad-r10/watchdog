@@ -21,6 +21,7 @@ export const UpdateMonitorSchema = z.object({
   url: z.string().url().optional(),
   intervalMinutes: z.number().int().min(1).max(60).optional(),
   isActive: z.boolean().optional(),
+  agentId: z.string().uuid().nullable().optional(),
 });
 export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
@@ -96,12 +97,19 @@ export const CreateAgentSchema = z.object({
 
 export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
 
+export interface AgentMonitor {
+  id: string;
+  name: string;
+  url: string;
+}
+
 export interface Agent {
   id: string;
   userId: string;
   name: string;
   lastSeenAt: string | null;
   createdAt: string;
+  monitors: AgentMonitor[];
 }
 
 export interface AgentWithKey extends Agent {

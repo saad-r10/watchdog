@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
-import type { AgentWithKey } from "@watchdog/shared-types";
+import type { Agent, AgentWithKey, Monitor } from "@watchdog/shared-types";
+
+const WATCHDOG_URL =
+  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+    ? `https://${window.location.hostname.replace("frontend", "backend")}`
+    : "http://localhost:3001";
 
 function timeSince(dateStr: string | null): string {
   if (!dateStr) return "Never";
@@ -20,11 +25,255 @@ function isOnline(lastSeenAt: string | null): boolean {
   return Date.now() - new Date(lastSeenAt).getTime() < 2 * 60_000;
 }
 
+function buildConfig(key: string, _agentId: string, monitors: { id: string; url: string }[], watchdogUrl: string) {
+  return JSON.stringify(
+    {
+      agentKey: key,
+      watchdogUrl,
+      monitors: monitors.map((m) => ({
+        monitorId: m.id,
+        url: m.url,
+        intervalMinutes: 1,
+      })),
+    },
+    null,
+    2
+  );
+}
+
+function ConfigSnippet({ agentKey, agentId, monitors, placeholder }: {
+  agentKey: string;
+  agentId: string;
+  monitors: { id: string; url: string }[];
+  placeholder?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const config = buildConfig(agentKey, agentId, monitors, WATCHDOG_URL);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(config);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-xs text-slate-500">watchdog-agent.config.json</p>
+        <button
+          onClick={handleCopy}
+          className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-700 transition-colors"
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <pre className="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto leading-relaxed">
+        {placeholder
+          ? config.replace(agentKey, "wdg_<your-key>")
+          : config}
+      </pre>
+      {placeholder && (
+        <p className="text-xs text-slate-600 mt-1.5">Replace <code className="text-slate-500">wdg_&lt;your-key&gt;</code> with the key you copied when this agent was created.</p>
+      )}
+    </div>
+  );
+}
+
+function AgentRow({
+  agent,
+  allMonitors,
+  onRevoke,
+}: {
+  agent: Agent;
+  allMonitors: Monitor[];
+  onRevoke: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+  const [expanded, setExpanded] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+
+  const assignedIds = new Set(agent.monitors.map((m) => m.id));
+  const unassigned = allMonitors.filter((m) => !assignedIds.has(m.id));
+  const online = isOnline(agent.lastSeenAt);
+
+  const assignMutation = useMutation({
+    mutationFn: (monitorId: string) =>
+      api.monitors.update(monitorId, { agentId: agent.id }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      qc.invalidateQueries({ queryKey: ["monitors"] });
+    },
+  });
+
+  const unassignMutation = useMutation({
+    mutationFn: (monitorId: string) =>
+      api.monitors.update(monitorId, { agentId: null }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agents"] });
+      qc.invalidateQueries({ queryKey: ["monitors"] });
+    },
+  });
+
+  return (
+    <div className="border-b border-slate-800 last:border-0">
+      {/* Header row */}
+      <div
+        className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-800/30 transition-colors"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              online ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-slate-600"
+            }`}
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white">{agent.name}</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Last seen: {timeSince(agent.lastSeenAt)}
+              {agent.monitors.length > 0 && (
+                <span className="ml-2 text-slate-600">
+                  · {agent.monitors.length} monitor{agent.monitors.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full border ${
+              online
+                ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                : "text-slate-500 border-slate-700 bg-slate-800"
+            }`}
+          >
+            {online ? "Online" : "Offline"}
+          </span>
+          <svg
+            className={`w-4 h-4 text-slate-500 transition-transform ${expanded ? "rotate-180" : ""}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Expanded panel */}
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5 pt-1 border-t border-slate-800/60 space-y-5">
+
+              {/* Assigned monitors */}
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                  Assigned monitors
+                </p>
+                {agent.monitors.length === 0 ? (
+                  <p className="text-xs text-slate-600">No monitors assigned yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {agent.monitors.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-white">{m.name}</p>
+                          <p className="text-xs text-slate-500 truncate">{m.url}</p>
+                        </div>
+                        <button
+                          onClick={() => unassignMutation.mutate(m.id)}
+                          disabled={unassignMutation.isPending}
+                          className="text-xs text-slate-500 hover:text-red-400 ml-3 flex-shrink-0 disabled:opacity-50 transition-colors"
+                        >
+                          Unassign
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Assign unassigned monitors */}
+                {unassigned.length > 0 && (
+                  <div className="mt-2">
+                    <select
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          assignMutation.mutate(e.target.value);
+                          e.target.value = "";
+                        }
+                      }}
+                      disabled={assignMutation.isPending}
+                    >
+                      <option value="" disabled>Assign a monitor…</option>
+                      {unassigned.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name} — {m.url}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Config snippet */}
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  Config file
+                </p>
+                <ConfigSnippet
+                  agentKey="wdg_<your-key>"
+                  agentId={agent.id}
+                  monitors={agent.monitors}
+                  placeholder
+                />
+              </div>
+
+              {/* Revoke */}
+              <div className="flex items-center gap-2 pt-1">
+                {confirmRevoke ? (
+                  <>
+                    <span className="text-xs text-slate-400">Revoke this agent? Its key will stop working.</span>
+                    <button
+                      onClick={() => { onRevoke(agent.id); setConfirmRevoke(false); }}
+                      className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors font-medium"
+                    >
+                      Revoke
+                    </button>
+                    <button
+                      onClick={() => setConfirmRevoke(false)}
+                      className="text-xs text-slate-500 hover:text-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setConfirmRevoke(true)}
+                    className="text-xs text-slate-500 hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                  >
+                    Revoke agent
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function AgentsPage() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
-  const [newKey, setNewKey] = useState<AgentWithKey | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [newAgent, setNewAgent] = useState<AgentWithKey | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
 
   const { data: agents = [], isLoading } = useQuery({
     queryKey: ["agents"],
@@ -32,12 +281,17 @@ export default function AgentsPage() {
     refetchInterval: 30_000,
   });
 
+  const { data: monitors = [] } = useQuery({
+    queryKey: ["monitors"],
+    queryFn: api.monitors.list,
+  });
+
   const createMutation = useMutation({
     mutationFn: api.agents.create,
     onSuccess: (agent) => {
       qc.invalidateQueries({ queryKey: ["agents"] });
       setName("");
-      setNewKey(agent);
+      setNewAgent(agent);
     },
   });
 
@@ -46,11 +300,11 @@ export default function AgentsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["agents"] }),
   });
 
-  function handleCopy() {
-    if (!newKey) return;
-    navigator.clipboard.writeText(newKey.key);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  function handleCopyKey() {
+    if (!newAgent) return;
+    navigator.clipboard.writeText(newAgent.key);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2000);
   }
 
   return (
@@ -58,13 +312,13 @@ export default function AgentsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Agents</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Agents run on your own infrastructure and report check results directly to Watchdog
+          Agents run on your own infrastructure and push check results to Watchdog
         </p>
       </div>
 
-      {/* New key banner */}
+      {/* New agent banner */}
       <AnimatePresence>
-        {newKey && (
+        {newAgent && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -74,32 +328,31 @@ export default function AgentsPage() {
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
                 <p className="text-sm font-semibold text-emerald-400">Agent created — copy your key now</p>
-                <p className="text-xs text-emerald-600 mt-0.5">This key will not be shown again.</p>
+                <p className="text-xs text-emerald-700 mt-0.5">This key will not be shown again.</p>
               </div>
               <button
-                onClick={() => setNewKey(null)}
-                className="text-emerald-700 hover:text-emerald-400 transition-colors text-lg leading-none"
+                onClick={() => setNewAgent(null)}
+                className="text-emerald-700 hover:text-emerald-400 transition-colors text-xl leading-none"
               >
                 ×
               </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-4">
               <code className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-xs text-emerald-300 font-mono break-all">
-                {newKey.key}
+                {newAgent.key}
               </code>
               <button
-                onClick={handleCopy}
+                onClick={handleCopyKey}
                 className="flex-shrink-0 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
               >
-                {copied ? "Copied!" : "Copy"}
+                {copiedKey ? "Copied!" : "Copy key"}
               </button>
             </div>
-            <p className="mt-3 text-xs text-emerald-700">
-              Send results:{" "}
-              <code className="text-emerald-500">
-                POST /api/agents/checkin — X-Agent-Key: {newKey.key.slice(0, 20)}…
-              </code>
-            </p>
+            <ConfigSnippet
+              agentKey={newAgent.key}
+              agentId={newAgent.id}
+              monitors={monitors.map((m) => ({ id: m.id, url: m.url }))}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -147,87 +400,33 @@ export default function AgentsPage() {
       ) : agents.length === 0 ? (
         <p className="text-center text-slate-500 py-12">No agents yet. Create one above.</p>
       ) : (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 divide-y divide-slate-800">
-          {agents.map((agent, i) => {
-            const online = isOnline(agent.lastSeenAt);
-            return (
-              <motion.div
-                key={agent.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.04 }}
-                className="flex items-center justify-between px-5 py-4"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      online ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-slate-600"
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{agent.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Last seen: {timeSince(agent.lastSeenAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 ml-4 flex-shrink-0">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full border ${
-                      online
-                        ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-                        : "text-slate-500 border-slate-700 bg-slate-800"
-                    }`}
-                  >
-                    {online ? "Online" : "Offline"}
-                  </span>
-                  <button
-                    onClick={() => deleteMutation.mutate(agent.id)}
-                    disabled={deleteMutation.isPending}
-                    className="text-xs text-slate-600 hover:text-red-400 disabled:opacity-50 transition-colors"
-                  >
-                    Revoke
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
+        <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+          {agents.map((agent) => (
+            <AgentRow
+              key={agent.id}
+              agent={agent}
+              allMonitors={monitors}
+              onRevoke={(id) => deleteMutation.mutate(id)}
+            />
+          ))}
         </div>
       )}
 
       {/* Usage docs */}
       <div className="mt-8 bg-slate-900 rounded-xl border border-slate-800 p-6">
-        <h2 className="text-sm font-semibold text-white mb-4">How to use agents</h2>
-        <div className="space-y-4 text-xs text-slate-400">
-          <div>
-            <p className="text-slate-300 font-medium mb-1">1. Create an agent and copy the key</p>
-            <p>The key is shown only once. Store it securely on your server.</p>
-          </div>
-          <div>
-            <p className="text-slate-300 font-medium mb-1">2. Run checks from your server</p>
-            <p>Make HTTP requests to your monitored URLs and collect results.</p>
-          </div>
-          <div>
-            <p className="text-slate-300 font-medium mb-1">3. POST results to Watchdog</p>
-            <pre className="bg-slate-800 rounded-lg p-3 text-slate-300 overflow-x-auto mt-2 leading-relaxed">
-{`POST /api/agents/checkin
-X-Agent-Key: wdg_<your-key>
-Content-Type: application/json
-
-{
-  "results": [
-    {
-      "monitorId": "<uuid>",
-      "type": "uptime",
-      "status": "up",
-      "statusCode": 200,
-      "responseTime": 142
-    }
-  ]
-}`}
+        <h2 className="text-sm font-semibold text-white mb-4">How it works</h2>
+        <ol className="space-y-3 text-xs text-slate-400 list-decimal list-inside">
+          <li>Create an agent and copy the key — shown once only.</li>
+          <li>Assign monitors to the agent using the expand panel above.</li>
+          <li>
+            Copy the generated <code className="text-slate-300">watchdog-agent.config.json</code> to
+            your server and run:
+            <pre className="bg-slate-800 rounded-lg p-3 text-slate-300 mt-2 overflow-x-auto">
+              npm run agent-runner -- /path/to/watchdog-agent.config.json
             </pre>
-          </div>
-        </div>
+          </li>
+          <li>The agent polls each URL and reports results every minute. The dot turns green when it checks in.</li>
+        </ol>
       </div>
     </div>
   );
