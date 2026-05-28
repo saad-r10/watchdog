@@ -15,6 +15,14 @@ export const RegisterSchema = z.object({
 export const LoginSchema = RegisterSchema.omit({ name: true });
 
 export type CreateMonitorInput = z.infer<typeof CreateMonitorSchema>;
+
+export const UpdateMonitorSchema = z.object({
+  name: z.string().min(1).optional(),
+  url: z.string().url().optional(),
+  intervalMinutes: z.number().int().min(1).max(60).optional(),
+  isActive: z.boolean().optional(),
+});
+export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 

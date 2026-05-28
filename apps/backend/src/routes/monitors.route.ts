@@ -40,6 +40,22 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
+const updateSchema = z.object({
+  name: z.string().min(1).optional(),
+  url: z.string().url().optional(),
+  intervalMinutes: z.number().int().min(1).max(60).optional(),
+  isActive: z.boolean().optional(),
+});
+
+router.patch("/:id", validate(updateSchema), async (req, res, next) => {
+  try {
+    const monitor = await monitorService.update(req.params.id, req.user.id, req.body);
+    res.json({ success: true, data: monitor });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete("/:id", async (req, res, next) => {
   try {
     await monitorService.delete(req.params.id, req.user.id);
