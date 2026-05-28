@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -73,6 +73,10 @@ export const api = {
     create: (data: { name: string }) =>
       http.post<{ success: boolean; data: AgentWithKey }>("/api/agents", data).then((r) => r.data.data),
     delete: (id: string) => http.delete(`/api/agents/${id}`),
+  },
+  dashboard: {
+    get: () =>
+      http.get<{ success: boolean; data: DashboardData }>("/api/dashboard").then((r) => r.data.data),
   },
   statusPages: {
     list: () =>

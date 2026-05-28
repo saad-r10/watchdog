@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { Prisma as PrismaClient } from "@prisma/client";
 import type { Check, Prisma } from "@prisma/client";
 
 export const checkRepository = {
@@ -54,6 +55,41 @@ export const checkRepository = {
       where: { monitorId, type },
       orderBy: { checkedAt: "desc" },
     });
+  },
+
+  async findLatestPerMonitor(monitorIds: string[]): Promise<Array<{ monitorId: string; status: string; checkedAt: Date }>> {
+    if (monitorIds.length === 0) return [];
+    const idList = PrismaClient.join(monitorIds);
+    return prisma.$queryRaw<Array<{ monitorId: string; status: string; checkedAt: Date }>>`
+      SELECT DISTINCT ON ("monitorId") "monitorId", status, "checkedAt"
+      FROM "Check"
+      WHERE "monitorId"::text IN (${idList})
+        AND type = 'uptime'
+      ORDER BY "monitorId", "checkedAt" DESC
+    `;
+  },
+
+  async getBulkUptimeStats(monitorIds: string[], days: number): Promise<Array<{ monitorId: string; upCount: number; total: number }>> {
+    if (monitorIds.length === 0) return [];
+    const since = new Date(Date.now() - days * 86_400_000);
+    const [totalRows, upRows] = await Promise.all([
+      prisma.check.groupBy({
+        by: ["monitorId"],
+        where: { monitorId: { in: monitorIds }, type: "uptime", checkedAt: { gte: since } },
+        _count: { id: true },
+      }),
+      prisma.check.groupBy({
+        by: ["monitorId"],
+        where: { monitorId: { in: monitorIds }, type: "uptime", status: "up", checkedAt: { gte: since } },
+        _count: { id: true },
+      }),
+    ]);
+    const upMap = new Map(upRows.map((r) => [r.monitorId, r._count.id]));
+    return totalRows.map((r) => ({
+      monitorId: r.monitorId,
+      upCount: upMap.get(r.monitorId) ?? 0,
+      total: r._count.id,
+    }));
   },
 
   async findResponseTimes(
