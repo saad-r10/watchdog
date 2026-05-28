@@ -25,6 +25,10 @@ export const monitorService = {
   async listByUser(userId: string) {
     return monitorRepository.findByUser(userId);
   },
+  async update(id: string, userId: string, input: { name?: string; url?: string; intervalMinutes?: number; isActive?: boolean }) {
+    await monitorService.getById(id, userId);
+    return monitorRepository.update(id, input);
+  },
   async delete(id: string, userId: string) {
     await monitorService.getById(id, userId);
     await monitorRepository.delete(id);

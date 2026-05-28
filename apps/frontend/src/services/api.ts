@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -37,6 +37,8 @@ export const api = {
       http.get<{ success: boolean; data: Monitor[] }>("/api/monitors").then((r) => r.data.data),
     create: (data: { name: string; url: string; intervalMinutes?: number }) =>
       http.post<{ success: boolean; data: Monitor }>("/api/monitors", data).then((r) => r.data.data),
+    update: (id: string, data: UpdateMonitorInput) =>
+      http.patch<{ success: boolean; data: Monitor }>(`/api/monitors/${id}`, data).then((r) => r.data.data),
     delete: (id: string) => http.delete(`/api/monitors/${id}`),
     checks: (id: string, limit = 50) =>
       http.get<{ success: boolean; data: Check[] }>(`/api/monitors/${id}/checks`, { params: { limit } }).then((r) => r.data.data),
