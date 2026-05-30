@@ -216,6 +216,19 @@ export interface DashboardIncident {
   durationMinutes: number | null;
 }
 
+export interface AppNotification {
+  id: string;
+  sentAt: string;
+  incidentId: string;
+  type: "downtime" | "ssl_expiry" | "header_missing";
+  isResolved: boolean;
+  resolvedAt: string | null;
+  startedAt: string;
+  monitorId: string;
+  monitorName: string;
+  monitorUrl: string;
+}
+
 export interface DashboardSummary {
   total: number;
   up: number;

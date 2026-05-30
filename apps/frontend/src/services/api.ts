@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput, AppNotification } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -79,6 +79,10 @@ export const api = {
   dashboard: {
     get: () =>
       http.get<{ success: boolean; data: DashboardData }>("/api/dashboard").then((r) => r.data.data),
+  },
+  notifications: {
+    list: () =>
+      http.get<{ success: boolean; data: AppNotification[] }>("/api/notifications").then((r) => r.data.data),
   },
   statusPages: {
     list: () =>
