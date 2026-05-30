@@ -1,15 +1,11 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-function createTransport() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: Number(process.env.SMTP_PORT) === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+let resend: Resend | null = null;
+
+function getClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null;
+  if (!resend) resend = new Resend(process.env.RESEND_API_KEY);
+  return resend;
 }
 
 export interface EmailPayload {
@@ -19,13 +15,13 @@ export interface EmailPayload {
 }
 
 export async function sendEmail(payload: EmailPayload): Promise<void> {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-    console.warn("SMTP not configured — skipping email:", payload.subject);
+  const client = getClient();
+  if (!client) {
+    console.warn("RESEND_API_KEY not configured — skipping email:", payload.subject);
     return;
   }
-  const transport = createTransport();
-  await transport.sendMail({
-    from: process.env.ALERT_FROM_EMAIL ?? process.env.SMTP_USER,
+  await client.emails.send({
+    from: process.env.ALERT_FROM_EMAIL ?? "alerts@watchdog.dev",
     ...payload,
   });
 }
