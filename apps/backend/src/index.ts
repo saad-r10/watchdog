@@ -14,6 +14,7 @@ import statusPagesRouter from "./routes/status-pages.route";
 import statusRouter from "./routes/status.route";
 import maintenanceRouter from "./routes/maintenance.route";
 import dashboardRouter from "./routes/dashboard.route";
+import notificationsRouter from "./routes/notifications.route";
 
 if (process.env.NODE_ENV === "production") {
   execSync("npx prisma migrate deploy", { stdio: "inherit" });
@@ -39,6 +40,7 @@ app.use("/api/status-pages", statusPagesRouter);
 app.use("/api/status", statusRouter);
 app.use("/api/monitors/:id/maintenance", maintenanceRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/notifications", notificationsRouter);
 
 app.use(errorHandler);
 
