@@ -317,8 +317,8 @@ See `.env.example` at the root. Critical vars:
 |-----|---------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `JWT_SECRET` | JWT signing secret |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Nodemailer SMTP |
-| `ALERT_FROM_EMAIL` | From address for alerts |
+| `RESEND_API_KEY` | Resend API key for sending alert emails |
+| `ALERT_FROM_EMAIL` | From address for alerts (must be a verified Resend sender) |
 | `PORT` | Backend port (default 3001) |
 
 ---
