@@ -220,6 +220,7 @@ export interface AppNotification {
   id: string;
   sentAt: string;
   incidentId: string;
+  alertType: "downtime" | "recovery";
   type: "downtime" | "ssl_expiry" | "header_missing";
   isResolved: boolean;
   resolvedAt: string | null;

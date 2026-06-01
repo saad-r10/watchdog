@@ -12,6 +12,7 @@ router.get("/", async (req, res, next) => {
       id: a.id,
       sentAt: a.sentAt,
       incidentId: a.incidentId,
+      alertType: a.type,
       type: a.incident.type,
       isResolved: a.incident.isResolved,
       resolvedAt: a.incident.resolvedAt,
