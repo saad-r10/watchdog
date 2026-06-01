@@ -1,12 +1,14 @@
 import axios from "axios";
 
 export interface WebhookPayload {
-  event: "downtime" | "ssl_expiry" | "test";
+  event: "downtime" | "recovery" | "ssl_expiry" | "test";
   monitorId?: string;
   monitorName?: string;
   monitorUrl?: string;
   incidentId?: string;
   startedAt?: string;
+  resolvedAt?: string;
+  durationMinutes?: number | null;
   message?: string;
 }
 

@@ -41,7 +41,8 @@ async function checkUptime(monitor: Monitor) {
       alertService.notifyDowntime(monitor, incident).catch(console.error);
     }
   } else if (status === "up" && openIncident) {
-    await incidentRepository.resolve(openIncident.id);
+    const resolved = await incidentRepository.resolve(openIncident.id);
+    alertService.notifyRecovery(monitor, resolved).catch(console.error);
   }
 }
 

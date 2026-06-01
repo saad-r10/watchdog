@@ -25,14 +25,14 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-const TYPE_LABEL: Record<string, string> = {
+const INCIDENT_TYPE_LABEL: Record<string, string> = {
   downtime: "Downtime detected",
   ssl_expiry: "SSL expiry warning",
   header_missing: "Missing security headers",
 };
 
 function NotificationItem({ n }: { n: AppNotification }) {
-  const isDowntime = n.type === "downtime";
+  const isRecovery = n.alertType === "recovery";
 
   return (
     <Link
@@ -41,14 +41,18 @@ function NotificationItem({ n }: { n: AppNotification }) {
     >
       <div
         className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-          isDowntime
-            ? n.isResolved
-              ? "bg-emerald-500/15 text-emerald-400"
-              : "bg-red-500/15 text-red-400"
+          isRecovery
+            ? "bg-emerald-500/15 text-emerald-400"
+            : n.type === "downtime"
+            ? "bg-red-500/15 text-red-400"
             : "bg-yellow-500/15 text-yellow-400"
         }`}
       >
-        {isDowntime ? (
+        {isRecovery ? (
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+        ) : n.type === "downtime" ? (
           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
           </svg>
@@ -64,12 +68,9 @@ function NotificationItem({ n }: { n: AppNotification }) {
           <p className="text-xs font-semibold text-white truncate">{n.monitorName}</p>
           <span className="text-xs text-slate-600 flex-shrink-0">{timeAgo(n.sentAt)}</span>
         </div>
-        <p className="text-xs text-slate-400 mt-0.5">{TYPE_LABEL[n.type] ?? n.type}</p>
-        {n.isResolved ? (
-          <p className="text-xs text-emerald-500 mt-0.5">Resolved</p>
-        ) : (
-          <p className="text-xs text-red-400 mt-0.5">Still active</p>
-        )}
+        <p className={`text-xs mt-0.5 ${isRecovery ? "text-emerald-400" : "text-slate-400"}`}>
+          {isRecovery ? "Site recovered" : (INCIDENT_TYPE_LABEL[n.type] ?? n.type)}
+        </p>
       </div>
     </Link>
   );

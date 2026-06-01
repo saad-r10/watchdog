@@ -89,6 +89,7 @@ model Alert {
   userId     String
   incidentId String
   channel    String   @default("email")
+  type       String   @default("downtime")
   sentAt     DateTime @default(now())
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
