@@ -16,6 +16,7 @@ interface AuthUser {
   id: string;
   email: string;
   name: string;
+  emailVerified: boolean;
 }
 
 interface AuthResponse {
@@ -33,6 +34,10 @@ export const api = {
       http.post<{ ok: boolean }>("/api/auth/forgot-password", { email }).then((r) => r.data),
     resetPassword: (token: string, password: string) =>
       http.post<{ ok: boolean }>("/api/auth/reset-password", { token, password }).then((r) => r.data),
+    verifyEmail: (token: string) =>
+      http.get<{ ok: boolean }>(`/api/auth/verify-email?token=${token}`).then((r) => r.data),
+    resendVerification: () =>
+      http.post<{ ok: boolean }>("/api/auth/resend-verification").then((r) => r.data),
     me: () =>
       http.get<{ success: boolean; data: AuthUser }>("/api/users/me").then((r) => r.data.data),
   },

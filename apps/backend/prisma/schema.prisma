@@ -12,6 +12,7 @@ model User {
   email            String   @unique
   password         String
   name             String
+  emailVerified    Boolean  @default(false)
   alertEmail       String?
   alertDowntime    Boolean  @default(true)
   alertSslExpiry   Boolean  @default(true)
@@ -19,11 +20,12 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  monitors           Monitor[]
-  alerts             Alert[]
-  agents             Agent[]
-  statusPages        StatusPage[]
-  passwordResetTokens PasswordResetToken[]
+  monitors                  Monitor[]
+  alerts                    Alert[]
+  agents                    Agent[]
+  statusPages               StatusPage[]
+  passwordResetTokens       PasswordResetToken[]
+  emailVerificationTokens   EmailVerificationToken[]
 }
 
 model Agent {
@@ -128,6 +130,17 @@ model MaintenanceWindow {
   createdAt   DateTime @default(now())
 
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PasswordResetToken {
