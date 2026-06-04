@@ -16,7 +16,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form.email, form.password, form.name);
-      navigate("/dashboard");
+      navigate("/onboarding");
     } catch {
       setError("Registration failed. Email may already be in use.");
     } finally {

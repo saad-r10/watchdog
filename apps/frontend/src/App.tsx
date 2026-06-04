@@ -10,6 +10,7 @@ import SettingsPage from "./routes/settings";
 import AgentsPage from "./routes/agents";
 import StatusPagesPage from "./routes/status-pages";
 import StatusPagePublic from "./routes/status-page-public";
+import OnboardingPage from "./routes/onboarding";
 import ForgotPasswordPage from "./routes/forgot-password";
 import ResetPasswordPage from "./routes/reset-password";
 import VerifyEmailPage from "./routes/verify-email";
@@ -28,6 +29,7 @@ export default function App() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/onboarding" element={<PrivateRoute><OnboardingPage /></PrivateRoute>} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
