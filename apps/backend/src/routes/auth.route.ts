@@ -2,12 +2,37 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { prisma } from "../db";
 import { sendEmail, passwordResetHtml, verifyEmailHtml } from "../services/email.service";
 
 const router = Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many accounts created from this IP. Please try again later." },
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many reset attempts. Please try again in 15 minutes." },
+});
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -17,7 +42,7 @@ const registerSchema = z.object({
 
 const loginSchema = registerSchema.omit({ name: true });
 
-router.post("/register", validate(registerSchema), async (req, res, next) => {
+router.post("/register", registerLimiter, validate(registerSchema), async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -32,7 +57,7 @@ router.post("/register", validate(registerSchema), async (req, res, next) => {
   }
 });
 
-router.post("/login", validate(loginSchema), async (req, res, next) => {
+router.post("/login", loginLimiter, validate(loginSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
@@ -65,7 +90,7 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8),
 });
 
-router.post("/forgot-password", validate(forgotPasswordSchema), async (req, res, next) => {
+router.post("/forgot-password", forgotPasswordLimiter, validate(forgotPasswordSchema), async (req, res, next) => {
   try {
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
