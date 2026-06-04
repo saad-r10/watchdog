@@ -77,6 +77,30 @@ export function recoveryAlertHtml(monitorName: string, url: string, resolvedAt: 
   `;
 }
 
+export function passwordResetHtml(resetUrl: string): string {
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#7c3aed;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">🔑 Reset your password</h2>
+      </div>
+      <div style="border:1px solid #ddd6fe;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 16px;color:#374151">
+          We received a request to reset your Watchdog password. Click the button below to choose a new one.
+        </p>
+        <a href="${resetUrl}" style="display:inline-block;background:#7c3aed;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+          Reset password
+        </a>
+        <p style="margin:16px 0 0;color:#6b7280;font-size:13px">
+          This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
 export function sslAlertHtml(monitorName: string, url: string, daysLeft: number): string {
   const urgent = daysLeft <= 3;
   const colour = urgent ? "#ef4444" : "#f59e0b";
