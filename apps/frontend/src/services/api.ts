@@ -29,6 +29,10 @@ export const api = {
       http.post<AuthResponse>("/api/auth/register", data).then((r) => r.data),
     login: (data: { email: string; password: string }) =>
       http.post<AuthResponse>("/api/auth/login", data).then((r) => r.data),
+    forgotPassword: (email: string) =>
+      http.post<{ ok: boolean }>("/api/auth/forgot-password", { email }).then((r) => r.data),
+    resetPassword: (token: string, password: string) =>
+      http.post<{ ok: boolean }>("/api/auth/reset-password", { token, password }).then((r) => r.data),
     me: () =>
       http.get<{ success: boolean; data: AuthUser }>("/api/users/me").then((r) => r.data.data),
   },

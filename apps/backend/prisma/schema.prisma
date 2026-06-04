@@ -19,10 +19,11 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  monitors     Monitor[]
-  alerts       Alert[]
-  agents       Agent[]
-  statusPages  StatusPage[]
+  monitors           Monitor[]
+  alerts             Alert[]
+  agents             Agent[]
+  statusPages        StatusPage[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Agent {
@@ -127,6 +128,17 @@ model MaintenanceWindow {
   createdAt   DateTime @default(now())
 
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum CheckType {

@@ -10,6 +10,8 @@ import SettingsPage from "./routes/settings";
 import AgentsPage from "./routes/agents";
 import StatusPagesPage from "./routes/status-pages";
 import StatusPagePublic from "./routes/status-page-public";
+import ForgotPasswordPage from "./routes/forgot-password";
+import ResetPasswordPage from "./routes/reset-password";
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,6 +27,8 @@ export default function App() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/dashboard" element={<PrivateLayout><DashboardPage /></PrivateLayout>} />
       <Route path="/monitors" element={<PrivateLayout><MonitorsPage /></PrivateLayout>} />
       <Route path="/monitors/:id" element={<PrivateLayout><MonitorDetailPage /></PrivateLayout>} />
