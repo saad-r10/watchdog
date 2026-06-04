@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api } from "../services/api";
 import { MonitorCard } from "../components/MonitorCard";
+import { isOnboardingDone } from "./onboarding";
 import type { DashboardIncident } from "@watchdog/shared-types";
 
 function formatDuration(startedAt: string, resolvedAt: string | null): string {
@@ -69,6 +70,7 @@ function IncidentRow({ incident }: { incident: DashboardIncident }) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: api.dashboard.get,
@@ -234,22 +236,38 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-24 bg-slate-900 rounded-xl border border-slate-800"
+          className="bg-slate-900 rounded-xl border border-slate-800 px-8 py-16 text-center max-w-lg mx-auto"
         >
-          <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mx-auto mb-5">
+            <svg className="w-8 h-8 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
           </div>
-          <p className="text-white font-semibold mb-1">No monitors yet</p>
-          <p className="text-slate-500 text-sm mb-6">Start watching your first site in seconds</p>
-          <Link
-            to="/monitors"
-            className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 transition-colors text-sm font-medium"
-          >
-            Add your first monitor
-          </Link>
+          <h2 className="text-lg font-bold text-white mb-2">No monitors yet</h2>
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            Add a URL and Watchdog will check it every minute — alerting you the moment it goes down.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {!isOnboardingDone() && (
+              <button
+                onClick={() => navigate("/onboarding")}
+                className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 transition-colors text-sm font-medium"
+              >
+                Start setup guide
+              </button>
+            )}
+            <Link
+              to="/monitors"
+              className={`px-5 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                isOnboardingDone()
+                  ? "bg-violet-600 text-white hover:bg-violet-700"
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700"
+              }`}
+            >
+              Add monitor manually
+            </Link>
+          </div>
         </motion.div>
       ) : (
         <>
