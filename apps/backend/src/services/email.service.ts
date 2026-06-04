@@ -77,6 +77,30 @@ export function recoveryAlertHtml(monitorName: string, url: string, resolvedAt: 
   `;
 }
 
+export function verifyEmailHtml(verifyUrl: string, name: string): string {
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#7c3aed;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">👋 Verify your email, ${name}</h2>
+      </div>
+      <div style="border:1px solid #ddd6fe;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 16px;color:#374151">
+          Thanks for signing up for Watchdog. Click the button below to verify your email address.
+        </p>
+        <a href="${verifyUrl}" style="display:inline-block;background:#7c3aed;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+          Verify email
+        </a>
+        <p style="margin:16px 0 0;color:#6b7280;font-size:13px">
+          This link expires in 24 hours. If you didn't create a Watchdog account, you can safely ignore this email.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
 export function passwordResetHtml(resetUrl: string): string {
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">

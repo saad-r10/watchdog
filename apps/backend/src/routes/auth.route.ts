@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { prisma } from "../db";
-import { sendEmail, passwordResetHtml } from "../services/email.service";
+import { sendEmail, passwordResetHtml, verifyEmailHtml } from "../services/email.service";
 
 const router = Router();
 
@@ -25,7 +25,8 @@ router.post("/register", validate(registerSchema), async (req, res, next) => {
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({ data: { email, password: hash, name } });
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-    res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    sendVerificationEmail(user.id, user.email, user.name).catch(console.error);
+    res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: false } });
   } catch (err) {
     next(err);
   }
@@ -39,11 +40,24 @@ router.post("/login", validate(loginSchema), async (req, res, next) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
   } catch (err) {
     next(err);
   }
 });
+
+async function sendVerificationEmail(userId: string, email: string, name: string) {
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await prisma.emailVerificationToken.create({ data: { userId, tokenHash, expiresAt } });
+  const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173";
+  await sendEmail({
+    to: email,
+    subject: "Verify your Watchdog email",
+    html: verifyEmailHtml(`${frontendUrl}/verify-email?token=${rawToken}`, name),
+  });
+}
 
 const forgotPasswordSchema = z.object({ email: z.string().email() });
 const resetPasswordSchema = z.object({
@@ -95,6 +109,42 @@ router.post("/reset-password", validate(resetPasswordSchema), async (req, res, n
       prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
 
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/verify-email", async (req, res, next) => {
+  try {
+    const raw = String(req.query.token ?? "");
+    if (!raw) return res.status(400).json({ error: "Missing token." });
+    const tokenHash = crypto.createHash("sha256").update(raw).digest("hex");
+    const record = await prisma.emailVerificationToken.findUnique({ where: { tokenHash } });
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      return res.status(400).json({ error: "Invalid or expired verification link." });
+    }
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: record.userId }, data: { emailVerified: true } }),
+      prisma.emailVerificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+import { authenticate } from "../middleware/auth";
+
+router.post("/resend-verification", authenticate, async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, email: true, name: true, emailVerified: true },
+    });
+    if (!user) return res.status(404).json({ error: "User not found." });
+    if (user.emailVerified) return res.json({ ok: true });
+    await sendVerificationEmail(user.id, user.email, user.name);
     res.json({ ok: true });
   } catch (err) {
     next(err);
