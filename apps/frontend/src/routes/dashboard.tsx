@@ -108,12 +108,12 @@ export default function DashboardPage() {
         </div>
         <Link
           to="/monitors"
-          className="flex items-center gap-2 bg-violet-600 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-violet-700 transition-colors font-medium shadow-lg shadow-violet-500/20"
+          className="flex items-center gap-2 bg-violet-600 text-white text-sm px-3 sm:px-4 py-2.5 rounded-lg hover:bg-violet-700 transition-colors font-medium shadow-lg shadow-violet-500/20 flex-shrink-0"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add monitor
+          <span className="hidden sm:inline">Add monitor</span>
         </Link>
       </div>
 
