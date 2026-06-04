@@ -8,6 +8,12 @@ import { alertService } from "../services/alert.service";
 import type { Monitor } from "@prisma/client";
 
 async function checkUptime(monitor: Monitor) {
+  const lastCheck = await checkRepository.getLatest(monitor.id);
+  if (lastCheck) {
+    const elapsed = Date.now() - new Date(lastCheck.checkedAt).getTime();
+    if (elapsed < monitor.intervalMinutes * 60_000) return;
+  }
+
   const start = Date.now();
   let status: "up" | "down" = "down";
   let statusCode: number | null = null;
