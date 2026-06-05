@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import path from "path";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import { agentService } from "../services/agent.service";
@@ -42,6 +43,12 @@ router.delete("/:id", authenticate, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// Download the standalone agent runner bundle
+router.get("/runner", (_req, res) => {
+  const bundlePath = path.join(__dirname, "../../dist/agent-runner.bundle.js");
+  res.download(bundlePath, "agent-runner.js");
 });
 
 // Agent checkin endpoint (uses agent key, not JWT)
