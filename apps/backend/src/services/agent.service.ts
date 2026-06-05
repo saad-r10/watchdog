@@ -2,6 +2,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { agentRepository } from "../repositories/agent.repository";
 import { checkRepository } from "../repositories/check.repository";
+import { monitorRepository } from "../repositories/monitor.repository";
 
 function generateKey(agentId: string): string {
   const secret = crypto.randomBytes(24).toString("hex");
@@ -74,6 +75,17 @@ export const agentService = {
     }>
   ) {
     await agentRepository.updateLastSeen(agentId);
+
+    // Auto-assign monitors to this agent on first checkin
+    const monitorIds = [...new Set(results.map((r) => r.monitorId))];
+    await Promise.allSettled(
+      monitorIds.map(async (monitorId) => {
+        const monitor = await monitorRepository.findById(monitorId);
+        if (monitor && monitor.agentId === null) {
+          await monitorRepository.update(monitorId, { agent: { connect: { id: agentId } } });
+        }
+      })
+    );
 
     await Promise.allSettled(
       results.map((r) =>
