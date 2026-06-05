@@ -12,7 +12,7 @@ export const monitorRepository = {
     return prisma.monitor.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
   },
   async findAllActive(): Promise<Monitor[]> {
-    return prisma.monitor.findMany({ where: { isActive: true } });
+    return prisma.monitor.findMany({ where: { isActive: true, paused: false } });
   },
   async update(id: string, data: Prisma.MonitorUpdateInput): Promise<Monitor> {
     return prisma.monitor.update({ where: { id }, data });

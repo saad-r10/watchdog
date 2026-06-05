@@ -21,6 +21,7 @@ export const UpdateMonitorSchema = z.object({
   url: z.string().url().optional(),
   intervalMinutes: z.number().int().min(1).max(60).optional(),
   isActive: z.boolean().optional(),
+  paused: z.boolean().optional(),
   agentId: z.string().uuid().nullable().optional(),
 });
 export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
@@ -147,6 +148,7 @@ export interface Monitor {
   url: string;
   intervalMinutes: number;
   isActive: boolean;
+  paused: boolean;
   createdAt: string;
   updatedAt: string;
 }

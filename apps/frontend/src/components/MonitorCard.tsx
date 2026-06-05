@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { api } from "../services/api";
@@ -7,16 +7,23 @@ import { Sparkline } from "./Sparkline";
 import type { Monitor } from "@watchdog/shared-types";
 
 export function MonitorCard({ monitor }: { monitor: Monitor }) {
+  const qc = useQueryClient();
+
   const { data: stats } = useQuery({
     queryKey: ["monitor-stats", monitor.id],
     queryFn: () => api.monitors.stats(monitor.id),
-    refetchInterval: 30_000,
+    refetchInterval: monitor.paused ? false : 30_000,
   });
 
   const { data: checks = [] } = useQuery({
     queryKey: ["monitor-checks", monitor.id, 20],
     queryFn: () => api.monitors.checks(monitor.id, 20),
-    refetchInterval: 30_000,
+    refetchInterval: monitor.paused ? false : 30_000,
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: (paused: boolean) => api.monitors.update(monitor.id, { paused }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["monitors"] }),
   });
 
   const sparklineData = [...checks].reverse().map((c) => c.responseTime ?? null);
@@ -34,11 +41,32 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
       >
         <div className="flex items-start justify-between mb-4">
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-sm text-white truncate">{monitor.name}</p>
+            <p className={`font-semibold text-sm truncate ${monitor.paused ? "text-slate-400" : "text-white"}`}>
+              {monitor.name}
+            </p>
             <p className="text-xs text-slate-500 truncate mt-0.5">{monitor.url}</p>
           </div>
-          <div className="ml-3 flex-shrink-0">
-            <StatusBadge status={stats?.lastStatus ?? null} />
+          <div className="ml-3 flex-shrink-0 flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                pauseMutation.mutate(!monitor.paused);
+              }}
+              disabled={pauseMutation.isPending}
+              title={monitor.paused ? "Resume monitoring" : "Pause monitoring"}
+              className="text-slate-600 hover:text-slate-300 transition-colors disabled:opacity-40"
+            >
+              {monitor.paused ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+              )}
+            </button>
+            <StatusBadge status={stats?.lastStatus ?? null} paused={monitor.paused} />
           </div>
         </div>
 

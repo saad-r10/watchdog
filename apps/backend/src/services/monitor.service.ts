@@ -25,7 +25,7 @@ export const monitorService = {
   async listByUser(userId: string) {
     return monitorRepository.findByUser(userId);
   },
-  async update(id: string, userId: string, input: { name?: string; url?: string; intervalMinutes?: number; isActive?: boolean; agentId?: string | null }) {
+  async update(id: string, userId: string, input: { name?: string; url?: string; intervalMinutes?: number; isActive?: boolean; paused?: boolean; agentId?: string | null }) {
     await monitorService.getById(id, userId);
     const { agentId, ...rest } = input;
     const data: Record<string, unknown> = { ...rest };

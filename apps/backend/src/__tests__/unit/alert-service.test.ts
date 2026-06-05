@@ -21,6 +21,7 @@ const monitor = {
   agentId: null,
   intervalMinutes: 5,
   isActive: true,
+  paused: false,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

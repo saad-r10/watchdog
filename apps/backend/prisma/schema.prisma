@@ -48,6 +48,7 @@ model Monitor {
   url             String
   intervalMinutes Int      @default(5)
   isActive        Boolean  @default(true)
+  paused          Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
