@@ -44,7 +44,7 @@ export const api = {
   monitors: {
     list: () =>
       http.get<{ success: boolean; data: Monitor[] }>("/api/monitors").then((r) => r.data.data),
-    create: (data: { name: string; url: string; intervalMinutes?: number }) =>
+    create: (data: { name: string; url: string; intervalMinutes?: number; agentId?: string }) =>
       http.post<{ success: boolean; data: Monitor }>("/api/monitors", data).then((r) => r.data.data),
     update: (id: string, data: UpdateMonitorInput) =>
       http.patch<{ success: boolean; data: Monitor }>(`/api/monitors/${id}`, data).then((r) => r.data.data),

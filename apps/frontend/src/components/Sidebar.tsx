@@ -31,15 +31,6 @@ const navItems = [
     ),
   },
   {
-    label: "Agents",
-    href: "/agents",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3a2 2 0 002 2h2a2 2 0 002-2M9 3h6m-3 9v.01M12 16h.01" />
-      </svg>
-    ),
-  },
-  {
     label: "Settings",
     href: "/settings",
     icon: (

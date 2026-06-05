@@ -25,13 +25,7 @@ interface EditForm {
   intervalMinutes: number;
 }
 
-function MonitorRow({
-  monitor,
-  onDelete,
-}: {
-  monitor: Monitor;
-  onDelete: (id: string) => void;
-}) {
+function MonitorRow({ monitor, onDelete }: { monitor: Monitor; onDelete: (id: string) => void }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -59,17 +53,12 @@ function MonitorRow({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`border-b border-slate-800 last:border-0 transition-colors ${
-        isPaused ? "opacity-50" : ""
-      }`}
+      className={`border-b border-slate-800 last:border-0 transition-colors ${isPaused ? "opacity-50" : ""}`}
     >
       {editing ? (
         <form
           className="px-5 py-4 space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            updateMutation.mutate(editForm);
-          }}
+          onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(editForm); }}
         >
           <div className="flex gap-3">
             <input
@@ -85,56 +74,42 @@ function MonitorRow({
               value={editForm.intervalMinutes}
               onChange={(e) => setEditForm((f) => ({ ...f, intervalMinutes: Number(e.target.value) }))}
             >
-              {INTERVALS.map((i) => (
-                <option key={i.value} value={i.value}>{i.label}</option>
-              ))}
+              {INTERVALS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
             </select>
           </div>
           <input
             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
             placeholder="https://example.com"
-            type="url"
             value={editForm.url}
             onChange={(e) => setEditForm((f) => ({ ...f, url: e.target.value }))}
             required
           />
           <div className="flex items-center gap-2">
-            <button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className="bg-violet-600 text-white px-4 py-1.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors"
-            >
+            <button type="submit" disabled={updateMutation.isPending}
+              className="bg-violet-600 text-white px-4 py-1.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors">
               {updateMutation.isPending ? "Saving…" : "Save"}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setEditForm({ name: monitor.name, url: monitor.url, intervalMinutes: monitor.intervalMinutes });
-              }}
-              className="text-sm text-slate-500 hover:text-slate-300 px-3 py-1.5 transition-colors"
-            >
+            <button type="button"
+              onClick={() => { setEditing(false); setEditForm({ name: monitor.name, url: monitor.url, intervalMinutes: monitor.intervalMinutes }); }}
+              className="text-sm text-slate-500 hover:text-slate-300 px-3 py-1.5 transition-colors">
               Cancel
             </button>
-            {updateMutation.isError && (
-              <span className="text-xs text-red-400">Failed to save.</span>
-            )}
+            {updateMutation.isError && <span className="text-xs text-red-400">Failed to save.</span>}
           </div>
         </form>
       ) : (
         <div className="flex items-center justify-between px-5 py-4 hover:bg-slate-800/30 transition-colors group">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <Link
-                to={`/monitors/${monitor.id}`}
-                className="font-medium text-sm text-white hover:text-violet-400 transition-colors"
-              >
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link to={`/monitors/${monitor.id}`}
+                className="font-medium text-sm text-white hover:text-violet-400 transition-colors">
                 {monitor.name}
               </Link>
               {isPaused && (
-                <span className="text-xs text-slate-500 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">
-                  Paused
-                </span>
+                <span className="text-xs text-slate-500 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">Paused</span>
+              )}
+              {monitor.agentId && (
+                <span className="text-xs text-violet-400 px-1.5 py-0.5 rounded bg-violet-500/10 border border-violet-500/20">Agent</span>
               )}
               <span className="text-xs text-slate-600">{intervalLabel(monitor.intervalMinutes)}</span>
             </div>
@@ -142,24 +117,14 @@ function MonitorRow({
           </div>
 
           <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            {/* Edit */}
-            <button
-              onClick={() => setEditing(true)}
-              className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              title="Edit"
-            >
+            <button onClick={() => setEditing(true)}
+              className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" title="Edit">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
             </button>
-
-            {/* Pause / Resume */}
-            <button
-              onClick={() => updateMutation.mutate({ isActive: isPaused })}
-              disabled={updateMutation.isPending}
-              className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50"
-              title={isPaused ? "Resume" : "Pause"}
-            >
+            <button onClick={() => updateMutation.mutate({ isActive: isPaused })} disabled={updateMutation.isPending}
+              className="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50" title={isPaused ? "Resume" : "Pause"}>
               {isPaused ? (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -171,29 +136,20 @@ function MonitorRow({
                 </svg>
               )}
             </button>
-
-            {/* Delete */}
             {confirmDelete ? (
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => onDelete(monitor.id)}
-                  className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-500/10 transition-colors font-medium"
-                >
+                <button onClick={() => onDelete(monitor.id)}
+                  className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-500/10 transition-colors font-medium">
                   Confirm
                 </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  className="text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded transition-colors"
-                >
+                <button onClick={() => setConfirmDelete(false)}
+                  className="text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded transition-colors">
                   Cancel
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors"
-                title="Delete"
-              >
+              <button onClick={() => setConfirmDelete(true)}
+                className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-colors" title="Delete">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
@@ -208,19 +164,32 @@ function MonitorRow({
 
 export default function MonitorsPage() {
   const qc = useQueryClient();
-  const [form, setForm] = useState({ name: "", url: "", intervalMinutes: 5 });
+  const [monitoringType, setMonitoringType] = useState<"cloud" | "agent">("cloud");
+  const [form, setForm] = useState({ name: "", url: "", intervalMinutes: 5, agentId: "" });
 
   const { data: monitors = [], isLoading } = useQuery({
     queryKey: ["monitors"],
     queryFn: api.monitors.list,
   });
 
+  const { data: agents = [] } = useQuery({
+    queryKey: ["agents"],
+    queryFn: api.agents.list,
+  });
+
   const createMutation = useMutation({
-    mutationFn: api.monitors.create,
+    mutationFn: () =>
+      api.monitors.create({
+        name: form.name,
+        url: form.url,
+        intervalMinutes: form.intervalMinutes,
+        ...(monitoringType === "agent" && form.agentId ? { agentId: form.agentId } : {}),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["monitors"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      setForm({ name: "", url: "", intervalMinutes: 5 });
+      setForm({ name: "", url: "", intervalMinutes: 5, agentId: "" });
+      setMonitoringType("cloud");
     },
   });
 
@@ -249,12 +218,49 @@ export default function MonitorsPage() {
       {/* Add monitor form */}
       <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 mb-6">
         <h2 className="text-sm font-semibold text-white mb-4">Add a monitor</h2>
+
+        {/* Monitoring type toggle */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <button
+            type="button"
+            onClick={() => setMonitoringType("cloud")}
+            className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+              monitoringType === "cloud"
+                ? "border-violet-500/50 bg-violet-500/10"
+                : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+            }`}
+          >
+            <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${monitoringType === "cloud" ? "text-violet-400" : "text-slate-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+            </svg>
+            <div>
+              <p className={`text-xs font-semibold ${monitoringType === "cloud" ? "text-violet-300" : "text-slate-300"}`}>Cloud</p>
+              <p className="text-xs text-slate-500 mt-0.5">Watchdog checks from our servers</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMonitoringType("agent")}
+            className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+              monitoringType === "agent"
+                ? "border-violet-500/50 bg-violet-500/10"
+                : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+            }`}
+          >
+            <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${monitoringType === "agent" ? "text-violet-400" : "text-slate-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3a2 2 0 002 2h2a2 2 0 002-2M9 3h6" />
+            </svg>
+            <div>
+              <p className={`text-xs font-semibold ${monitoringType === "agent" ? "text-violet-300" : "text-slate-300"}`}>Agent</p>
+              <p className="text-xs text-slate-500 mt-0.5">Your machine checks it (localhost, internal)</p>
+            </div>
+          </button>
+        </div>
+
         <form
           className="space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            createMutation.mutate(form);
-          }}
+          onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }}
         >
           <div className="flex gap-3">
             <input
@@ -269,30 +275,51 @@ export default function MonitorsPage() {
               value={form.intervalMinutes}
               onChange={(e) => setForm((f) => ({ ...f, intervalMinutes: Number(e.target.value) }))}
             >
-              {INTERVALS.map((i) => (
-                <option key={i.value} value={i.value}>{i.label}</option>
-              ))}
+              {INTERVALS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
             </select>
           </div>
+
           <input
             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
-            placeholder="https://example.com"
+            placeholder={monitoringType === "agent" ? "http://localhost:3000" : "https://example.com"}
             type="url"
             value={form.url}
             onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
             required
           />
+
+          {monitoringType === "agent" && (
+            <div>
+              {agents.length === 0 ? (
+                <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
+                  No agents set up yet.{" "}
+                  <Link to="/settings" className="underline hover:text-amber-300">Create one in Settings</Link> first, then run the agent runner on your machine.
+                </p>
+              ) : (
+                <select
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                  value={form.agentId}
+                  onChange={(e) => setForm((f) => ({ ...f, agentId: e.target.value }))}
+                  required
+                >
+                  <option value="">Select an agent…</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 pt-1">
             <button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || (monitoringType === "agent" && agents.length === 0)}
               className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-violet-500/20"
             >
               {createMutation.isPending ? "Adding…" : "Add monitor"}
             </button>
-            {createMutation.isError && (
-              <p className="text-red-400 text-sm">Failed to add monitor.</p>
-            )}
+            {createMutation.isError && <p className="text-red-400 text-sm">Failed to add monitor.</p>}
           </div>
         </form>
       </div>
@@ -313,11 +340,7 @@ export default function MonitorsPage() {
         <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
           <AnimatePresence initial={false}>
             {monitors.map((m) => (
-              <MonitorRow
-                key={m.id}
-                monitor={m}
-                onDelete={(id) => deleteMutation.mutate(id)}
-              />
+              <MonitorRow key={m.id} monitor={m} onDelete={(id) => deleteMutation.mutate(id)} />
             ))}
           </AnimatePresence>
         </div>

@@ -4,13 +4,16 @@ interface CreateInput {
   name: string;
   url: string;
   intervalMinutes?: number;
+  agentId?: string;
 }
 
 export const monitorService = {
   async create(userId: string, input: CreateInput) {
+    const { agentId, ...rest } = input;
     return monitorRepository.create({
-      ...input,
+      ...rest,
       user: { connect: { id: userId } },
+      ...(agentId ? { agent: { connect: { id: agentId } } } : {}),
     });
   },
   async getById(id: string, userId: string) {
