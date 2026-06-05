@@ -45,6 +45,7 @@ const updateSchema = z.object({
   url: z.string().url().optional(),
   intervalMinutes: z.number().int().min(1).max(60).optional(),
   isActive: z.boolean().optional(),
+  paused: z.boolean().optional(),
   agentId: z.string().uuid().nullable().optional(),
 });
 

@@ -142,6 +142,11 @@ export default function MonitorDetailPage() {
     },
   });
 
+  const pauseMutation = useMutation({
+    mutationFn: (paused: boolean) => api.monitors.update(id!, { paused }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["monitors"] }),
+  });
+
   const downDots = responseTimes
     .filter((r) => r.hasDown && r.avgMs == null)
     .map((r) => r.bucket);
@@ -170,9 +175,9 @@ export default function MonitorDetailPage() {
         className="flex items-start justify-between"
       >
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
             <h1 className="text-2xl font-bold text-white">{monitor.name}</h1>
-            <StatusBadge status={stats?.lastStatus ?? null} />
+            <StatusBadge status={stats?.lastStatus ?? null} paused={monitor.paused} />
             {isInMaintenance && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-medium">
                 Maintenance
@@ -188,14 +193,41 @@ export default function MonitorDetailPage() {
             {monitor.url} ↗
           </a>
         </div>
-        <button
-          onClick={() => {
-            if (confirm("Delete this monitor and all its data?")) deleteMutation.mutate();
-          }}
-          className="text-xs text-slate-600 hover:text-red-400 transition-colors mt-1"
-        >
-          Delete monitor
-        </button>
+        <div className="flex items-center gap-3 mt-1">
+          <button
+            onClick={() => pauseMutation.mutate(!monitor.paused)}
+            disabled={pauseMutation.isPending}
+            className={`text-xs font-medium transition-colors disabled:opacity-40 flex items-center gap-1.5 ${
+              monitor.paused
+                ? "text-violet-400 hover:text-violet-300"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            {monitor.paused ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                Resume
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+                Pause
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("Delete this monitor and all its data?")) deleteMutation.mutate();
+            }}
+            className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
       </motion.div>
 
       {/* Stats strip */}
