@@ -162,7 +162,7 @@ export default function MonitorDetailPage() {
   const isDown = stats?.lastStatus === "down";
 
   return (
-    <div className="p-8 max-w-5xl space-y-6">
+    <div className="p-4 sm:p-8 max-w-5xl space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}

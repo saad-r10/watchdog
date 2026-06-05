@@ -51,7 +51,12 @@ const navItems = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,8 +66,15 @@ export function Sidebar() {
     navigate("/login");
   }
 
+  function handleNavClick() {
+    onClose();
+  }
+
   return (
-    <aside className="fixed top-0 left-0 h-full w-60 bg-slate-900 border-r border-slate-800 flex flex-col z-10">
+    <aside
+      className={`fixed top-0 left-0 h-full w-60 bg-slate-900 border-r border-slate-800 flex flex-col z-30 transition-transform duration-200
+        ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+    >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-slate-800">
         <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/20">
@@ -85,6 +97,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               to={item.href}
+              onClick={handleNavClick}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                 active
                   ? "bg-violet-600/15 text-violet-400 border border-violet-500/20"

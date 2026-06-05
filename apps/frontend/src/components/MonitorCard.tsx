@@ -42,8 +42,8 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
           </div>
         </div>
 
-        <div className="flex items-end justify-between">
-          <div className="flex gap-5">
+        <div className="flex items-end justify-between gap-2 min-w-0">
+          <div className="flex gap-5 min-w-0 flex-shrink-0">
             <div>
               <p className="text-xs text-slate-500 mb-0.5">Uptime</p>
               <p className={`text-xl font-bold ${isDown ? "text-red-400" : "text-white"}`}>
@@ -57,7 +57,9 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
               </p>
             </div>
           </div>
-          <Sparkline values={sparklineData} color={isDown ? "#f87171" : "#8b5cf6"} />
+          <div className="hidden sm:block flex-shrink-0">
+            <Sparkline values={sparklineData} color={isDown ? "#f87171" : "#8b5cf6"} />
+          </div>
         </div>
       </Link>
     </motion.div>
