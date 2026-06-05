@@ -419,10 +419,13 @@ export default function AgentsPage() {
           <li>Create an agent and copy the key — shown once only.</li>
           <li>Assign monitors to the agent using the expand panel above.</li>
           <li>
-            Copy the generated <code className="text-slate-300">watchdog-agent.config.json</code> to
-            your server and run:
-            <pre className="bg-slate-800 rounded-lg p-3 text-slate-300 mt-2 overflow-x-auto">
-              npm run agent-runner -- /path/to/watchdog-agent.config.json
+            On your server, download the agent runner and run it:
+            <pre className="bg-slate-800 rounded-lg p-3 text-slate-300 mt-2 overflow-x-auto whitespace-pre-wrap break-all">
+{`# 1. Download the runner (requires Node.js 18+)
+curl -o agent-runner.js ${import.meta.env.VITE_API_URL ?? ""}/api/agents/runner
+
+# 2. Run it with your config
+node agent-runner.js watchdog-agent.config.json`}
             </pre>
           </li>
           <li>The agent polls each URL and reports results every minute. The dot turns green when it checks in.</li>
