@@ -11,6 +11,7 @@ const createSchema = z.object({
   name: z.string().min(1),
   url: z.string().url(),
   intervalMinutes: z.number().int().min(1).max(60).default(5),
+  agentId: z.string().uuid().optional(),
 });
 
 router.get("/", async (req, res, next) => {

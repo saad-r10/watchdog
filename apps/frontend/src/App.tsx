@@ -7,7 +7,6 @@ import RegisterPage from "./routes/register";
 import MonitorsPage from "./routes/monitors";
 import MonitorDetailPage from "./routes/monitor-detail";
 import SettingsPage from "./routes/settings";
-import AgentsPage from "./routes/agents";
 import StatusPagesPage from "./routes/status-pages";
 import StatusPagePublic from "./routes/status-page-public";
 import OnboardingPage from "./routes/onboarding";
@@ -37,7 +36,7 @@ export default function App() {
       <Route path="/monitors" element={<PrivateLayout><MonitorsPage /></PrivateLayout>} />
       <Route path="/monitors/:id" element={<PrivateLayout><MonitorDetailPage /></PrivateLayout>} />
       <Route path="/settings" element={<PrivateLayout><SettingsPage /></PrivateLayout>} />
-      <Route path="/agents" element={<PrivateLayout><AgentsPage /></PrivateLayout>} />
+      <Route path="/agents" element={<Navigate to="/settings" replace />} />
       <Route path="/status-pages" element={<PrivateLayout><StatusPagesPage /></PrivateLayout>} />
       <Route path="/status/:slug" element={<StatusPagePublic />} />
     </Routes>
