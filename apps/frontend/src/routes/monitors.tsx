@@ -5,6 +5,75 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
 import type { Monitor } from "@watchdog/shared-types";
 
+const BACKEND_URL =
+  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
+    ? `https://${window.location.hostname.replace("frontend", "backend")}`
+    : "http://localhost:3001";
+
+interface AgentSetupInfo {
+  monitorId: string;
+  url: string;
+  intervalMinutes: number;
+  agentName: string;
+}
+
+function AgentSetupBanner({ info, onDismiss }: { info: AgentSetupInfo; onDismiss: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const config = JSON.stringify({
+    agentKey: "wdg_<your-key-from-settings>",
+    watchdogUrl: BACKEND_URL,
+    monitors: [{ monitorId: info.monitorId, url: info.url, intervalMinutes: info.intervalMinutes }],
+  }, null, 2);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      className="mb-6 bg-violet-950 border border-violet-700 rounded-xl p-5"
+    >
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <p className="text-sm font-semibold text-violet-300">Agent monitor created — finish setup</p>
+          <p className="text-xs text-violet-500 mt-0.5">
+            Agent: <span className="text-violet-400">{info.agentName}</span> · Run the agent runner on your server to start receiving checks.
+          </p>
+        </div>
+        <button onClick={onDismiss} className="text-violet-600 hover:text-violet-300 transition-colors text-xl leading-none flex-shrink-0">×</button>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <p className="text-xs text-violet-400 font-medium mb-1.5">1. Get your agent key from <Link to="/settings" className="underline hover:text-violet-200">Settings → Agents</Link></p>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-xs text-violet-400 font-medium">2. Create watchdog-agent.config.json</p>
+            <button
+              onClick={() => { navigator.clipboard.writeText(config); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+              className="text-xs text-violet-400 hover:text-white px-2 py-0.5 rounded hover:bg-violet-800 transition-colors"
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
+          <pre className="bg-slate-950 border border-violet-800/50 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto leading-relaxed">
+            {config}
+          </pre>
+        </div>
+
+        <div>
+          <p className="text-xs text-violet-400 font-medium mb-1.5">3. Download the runner and start it</p>
+          <pre className="bg-slate-950 border border-violet-800/50 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto">
+{`curl -o agent-runner.js ${import.meta.env.VITE_API_URL ?? ""}/api/agents/runner
+node agent-runner.js watchdog-agent.config.json`}
+          </pre>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 const INTERVALS = [
   { label: "Every 1 min", value: 1 },
   { label: "Every 5 min", value: 5 },
@@ -166,6 +235,7 @@ export default function MonitorsPage() {
   const qc = useQueryClient();
   const [monitoringType, setMonitoringType] = useState<"cloud" | "agent">("cloud");
   const [form, setForm] = useState({ name: "", url: "", intervalMinutes: 5, agentId: "" });
+  const [agentSetup, setAgentSetup] = useState<AgentSetupInfo | null>(null);
 
   const { data: monitors = [], isLoading } = useQuery({
     queryKey: ["monitors"],
@@ -185,9 +255,18 @@ export default function MonitorsPage() {
         intervalMinutes: form.intervalMinutes,
         ...(monitoringType === "agent" && form.agentId ? { agentId: form.agentId } : {}),
       }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["monitors"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
+      if (monitoringType === "agent" && form.agentId) {
+        const agent = agents.find((a) => a.id === form.agentId);
+        setAgentSetup({
+          monitorId: created.id,
+          url: created.url,
+          intervalMinutes: created.intervalMinutes,
+          agentName: agent?.name ?? "your agent",
+        });
+      }
       setForm({ name: "", url: "", intervalMinutes: 5, agentId: "" });
       setMonitoringType("cloud");
     },
@@ -214,6 +293,11 @@ export default function MonitorsPage() {
             : "Manage the URLs Watchdog checks on a schedule"}
         </p>
       </div>
+
+      {/* Agent setup banner */}
+      <AnimatePresence>
+        {agentSetup && <AgentSetupBanner info={agentSetup} onDismiss={() => setAgentSetup(null)} />}
+      </AnimatePresence>
 
       {/* Add monitor form */}
       <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 mb-6">
