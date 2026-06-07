@@ -5,10 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
 import type { Monitor } from "@watchdog/shared-types";
 
-const BACKEND_URL =
-  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
-    ? `https://${window.location.hostname.replace("frontend", "backend")}`
-    : "http://localhost:3001";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface AgentSetupInfo {
   monitorId: string;
