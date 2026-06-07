@@ -4,10 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
 import type { Agent, AgentWithKey, Monitor } from "@watchdog/shared-types";
 
-const WATCHDOG_URL =
-  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
-    ? `https://${window.location.hostname.replace("frontend", "backend")}`
-    : "http://localhost:3001";
+const WATCHDOG_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function timeSince(dateStr: string | null): string {
   if (!dateStr) return "Never";

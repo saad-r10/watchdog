@@ -6,10 +6,7 @@ import type { Agent, AgentWithKey, Monitor } from "@watchdog/shared-types";
 
 // ─── Agent helpers ────────────────────────────────────────────────────────────
 
-const BACKEND_URL =
-  typeof window !== "undefined" && !window.location.hostname.includes("localhost")
-    ? `https://${window.location.hostname.replace("frontend", "backend")}`
-    : "http://localhost:3001";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 function timeSince(dateStr: string | null): string {
   if (!dateStr) return "Never";
