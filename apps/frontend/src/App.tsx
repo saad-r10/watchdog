@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./hooks/useAuth";
 import { PrivateRoute } from "./components/PrivateRoute";
 import { Layout } from "./components/Layout";
+import LandingPage from "./routes/landing";
 import DashboardPage from "./routes/dashboard";
 import LoginPage from "./routes/login";
 import RegisterPage from "./routes/register";
@@ -22,10 +24,16 @@ function PrivateLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function HomeRoute() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  return user ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+}
+
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<HomeRoute />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/onboarding" element={<PrivateRoute><OnboardingPage /></PrivateRoute>} />
