@@ -46,19 +46,19 @@ function makeChartTooltip(range: ResponseTimeRange) {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
-      <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-xs shadow-xl space-y-1">
-        <p className="text-slate-400">{formatBucket(d.bucket, range)}</p>
+      <div className="bg-card border border-border rounded-lg px-3 py-2.5 text-xs shadow-xl space-y-1">
+        <p className="text-muted-foreground">{formatBucket(d.bucket, range)}</p>
         {d.avgMs != null ? (
           <>
-            <p className="text-violet-400 font-semibold">{d.avgMs}ms avg</p>
+            <p className="text-primary font-semibold">{d.avgMs}ms avg</p>
             {d.minMs != null && d.maxMs != null && d.minMs !== d.maxMs && (
-              <p className="text-slate-500">{d.minMs}–{d.maxMs}ms range</p>
+              <p className="text-muted-foreground">{d.minMs}–{d.maxMs}ms range</p>
             )}
           </>
         ) : (
-          <p className="text-red-400 font-semibold">Down</p>
+          <p className="text-down font-semibold">Down</p>
         )}
-        {d.hasDown && d.avgMs != null && <p className="text-red-400">⚠ Downtime in this period</p>}
+        {d.hasDown && d.avgMs != null && <p className="text-down">⚠ Downtime in this period</p>}
       </div>
     );
   };
@@ -153,10 +153,10 @@ export default function MonitorDetailPage() {
 
   if (!monitor) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-400 text-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">
           Monitor not found.{" "}
-          <a href="/dashboard" className="text-violet-400 hover:underline">
+          <a href="/dashboard" className="text-primary hover:underline">
             Back to dashboard
           </a>
         </p>
@@ -176,10 +176,10 @@ export default function MonitorDetailPage() {
       >
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-white">{monitor.name}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{monitor.name}</h1>
             <StatusBadge status={stats?.lastStatus ?? null} paused={monitor.paused} />
             {isInMaintenance && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 font-medium">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-degraded/10 border border-degraded/30 text-degraded font-medium">
                 Maintenance
               </span>
             )}
@@ -188,7 +188,7 @@ export default function MonitorDetailPage() {
             href={monitor.url}
             target="_blank"
             rel="noreferrer"
-            className="text-sm text-slate-400 hover:text-violet-400 transition-colors"
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             {monitor.url} ↗
           </a>
@@ -199,8 +199,8 @@ export default function MonitorDetailPage() {
             disabled={pauseMutation.isPending}
             className={`text-xs font-medium transition-colors disabled:opacity-40 flex items-center gap-1.5 ${
               monitor.paused
-                ? "text-violet-400 hover:text-violet-300"
-                : "text-slate-500 hover:text-slate-300"
+                ? "text-primary hover:text-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {monitor.paused ? (
@@ -223,7 +223,7 @@ export default function MonitorDetailPage() {
             onClick={() => {
               if (confirm("Delete this monitor and all its data?")) deleteMutation.mutate();
             }}
-            className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+            className="text-xs text-muted-foreground/60 hover:text-down transition-colors"
           >
             Delete
           </button>
@@ -236,17 +236,17 @@ export default function MonitorDetailPage() {
           {
             label: "Uptime (7d)",
             value: stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "—",
-            color: isDown ? "text-red-400" : "text-emerald-400",
+            color: isDown ? "text-down" : "text-up",
           },
           {
             label: "Avg response",
             value: stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "—",
-            color: "text-white",
+            color: "text-foreground",
           },
           {
             label: "Checks (7d)",
             value: stats?.totalChecks ?? "—",
-            color: "text-violet-400",
+            color: "text-primary",
           },
         ].map((stat, i) => (
           <motion.div
@@ -254,9 +254,9 @@ export default function MonitorDetailPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
-            className="bg-slate-900 rounded-xl border border-slate-800 px-6 py-5"
+            className="bg-card rounded-xl border border-border px-6 py-5"
           >
-            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">{stat.label}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{stat.label}</p>
             <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
           </motion.div>
         ))}
@@ -267,19 +267,19 @@ export default function MonitorDetailPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="bg-slate-900 rounded-xl border border-slate-800 p-6"
+        className="bg-card rounded-xl border border-border p-6"
       >
         <div className="flex items-center justify-between mb-6">
-          <p className="text-xs text-slate-500 uppercase tracking-wider">Response time</p>
-          <div className="flex items-center gap-1 bg-slate-800 rounded-lg p-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Response time</p>
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             {RANGES.map((r) => (
               <button
                 key={r.value}
                 onClick={() => setRange(r.value)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                   range === r.value
-                    ? "bg-violet-600 text-white shadow"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-primary text-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {r.label}
@@ -288,7 +288,7 @@ export default function MonitorDetailPage() {
           </div>
         </div>
         {responseTimes.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-12">No data for this period yet.</p>
+          <p className="text-sm text-muted-foreground text-center py-12">No data for this period yet.</p>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={responseTimes} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
@@ -342,38 +342,38 @@ export default function MonitorDetailPage() {
       </div>
 
       {/* Maintenance windows */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800">
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-2">
-          <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-card rounded-xl border border-border">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <h3 className="text-sm font-semibold text-white">Maintenance windows</h3>
+          <h3 className="text-sm font-semibold text-foreground">Maintenance windows</h3>
         </div>
 
-        <div className="px-6 py-5 border-b border-slate-800">
+        <div className="px-6 py-5 border-b border-border">
           <form
             className="grid grid-cols-2 gap-3"
             onSubmit={(e) => { e.preventDefault(); createMaintenanceMutation.mutate(); }}
           >
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Start</label>
+              <label className="block text-xs text-muted-foreground mb-1">Start</label>
               <input
                 type="datetime-local"
                 required
                 value={mForm.startsAt}
                 onChange={(e) => setMForm((f) => ({ ...f, startsAt: e.target.value }))}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">End</label>
+              <label className="block text-xs text-muted-foreground mb-1">End</label>
               <input
                 type="datetime-local"
                 required
                 value={mForm.endsAt}
                 onChange={(e) => setMForm((f) => ({ ...f, endsAt: e.target.value }))}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
               />
             </div>
             <div className="col-span-2 flex gap-3">
@@ -382,39 +382,39 @@ export default function MonitorDetailPage() {
                 placeholder="Description (optional)"
                 value={mForm.description}
                 onChange={(e) => setMForm((f) => ({ ...f, description: e.target.value }))}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
               />
               <button
                 type="submit"
                 disabled={createMaintenanceMutation.isPending}
-                className="bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors whitespace-nowrap"
+                className="bg-primary text-foreground px-4 py-2 rounded-lg hover:bg-primary disabled:opacity-50 text-sm font-medium transition-colors whitespace-nowrap"
               >
                 {createMaintenanceMutation.isPending ? "Scheduling…" : "Schedule"}
               </button>
             </div>
             {createMaintenanceMutation.isError && (
-              <p className="col-span-2 text-red-400 text-xs">Failed — check that end is after start.</p>
+              <p className="col-span-2 text-down text-xs">Failed — check that end is after start.</p>
             )}
           </form>
         </div>
 
         {maintenanceWindows.length === 0 ? (
-          <p className="px-6 py-5 text-sm text-slate-500">No upcoming maintenance windows.</p>
+          <p className="px-6 py-5 text-sm text-muted-foreground">No upcoming maintenance windows.</p>
         ) : (
-          <div className="divide-y divide-slate-800/60">
+          <div className="divide-y divide-border">
             {maintenanceWindows.map((w) => {
               const active = new Date(w.startsAt) <= now && new Date(w.endsAt) >= now;
               return (
                 <div key={w.id} className="px-6 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
                     {active && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 flex-shrink-0">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-degraded/10 border border-degraded/30 text-degraded flex-shrink-0">
                         Active
                       </span>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm text-white truncate">{w.description ?? "Maintenance"}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">
+                      <p className="text-sm text-foreground truncate">{w.description ?? "Maintenance"}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(w.startsAt).toLocaleString()} → {new Date(w.endsAt).toLocaleString()}
                       </p>
                     </div>
@@ -422,7 +422,7 @@ export default function MonitorDetailPage() {
                   <button
                     onClick={() => deleteMaintenanceMutation.mutate(w.id)}
                     disabled={deleteMaintenanceMutation.isPending}
-                    className="ml-4 text-xs text-slate-600 hover:text-red-400 disabled:opacity-50 transition-colors flex-shrink-0"
+                    className="ml-4 text-xs text-muted-foreground/60 hover:text-down disabled:opacity-50 transition-colors flex-shrink-0"
                   >
                     Cancel
                   </button>
@@ -435,27 +435,27 @@ export default function MonitorDetailPage() {
 
       {/* Incidents */}
       {incidents.length > 0 && (
-        <div className="bg-slate-900 rounded-xl border border-slate-800">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-2">
-            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-card rounded-xl border border-border">
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <h3 className="text-sm font-semibold text-white">Incidents</h3>
+            <h3 className="text-sm font-semibold text-foreground">Incidents</h3>
           </div>
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-border">
             {incidents.map((inc) => (
               <div key={inc.id} className="px-6 py-4 flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2.5">
                   <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${inc.isResolved ? "bg-slate-600" : "bg-red-500"}`}
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${inc.isResolved ? "bg-muted" : "bg-down"}`}
                   />
-                  <span className={inc.isResolved ? "text-slate-400" : "text-red-400"}>
+                  <span className={inc.isResolved ? "text-muted-foreground" : "text-down"}>
                     {inc.isResolved ? "Downtime" : "Ongoing downtime"}
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-400">{new Date(inc.startedAt).toLocaleString()}</p>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-xs text-muted-foreground">{new Date(inc.startedAt).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">
                     {inc.isResolved
                       ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}`
                       : `Ongoing — ${formatDuration(inc.startedAt)}`}
@@ -469,17 +469,17 @@ export default function MonitorDetailPage() {
 
       {/* Metrics */}
       {checks.some((c) => c.type === "metric") && (
-        <div className="bg-slate-900 rounded-xl border border-slate-800">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-2">
-            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-card rounded-xl border border-border">
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <h3 className="text-sm font-semibold text-white">System metrics</h3>
+            <h3 className="text-sm font-semibold text-foreground">System metrics</h3>
           </div>
           {(() => {
             const metricNames = [...new Set(checks.filter((c) => c.type === "metric" && c.metricName).map((c) => c.metricName!))];
             return (
-              <div className="divide-y divide-slate-800/60">
+              <div className="divide-y divide-border">
                 {metricNames.map((name) => {
                   const latest = checks.find((c) => c.type === "metric" && c.metricName === name);
                   const history = checks.filter((c) => c.type === "metric" && c.metricName === name).slice(0, 10).reverse();
@@ -489,12 +489,12 @@ export default function MonitorDetailPage() {
                     <div key={name} className="px-6 py-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white capitalize">{name}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded font-mono ${isHigh ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
+                          <span className="text-sm font-medium text-foreground capitalize">{name}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded font-mono ${isHigh ? "bg-down/10 text-down" : "bg-up/10 text-up"}`}>
                             {latest?.metricValue != null ? `${latest.metricValue}${unit}` : "—"}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-muted-foreground">
                           {latest ? new Date(latest.checkedAt).toLocaleTimeString() : ""}
                         </span>
                       </div>
@@ -507,7 +507,7 @@ export default function MonitorDetailPage() {
                               key={i}
                               title={`${c.metricValue}${unit} at ${new Date(c.checkedAt).toLocaleTimeString()}`}
                               style={{ height: `${Math.max(pct, 4)}%` }}
-                              className={`flex-1 rounded-sm transition-colors ${bad ? "bg-red-500/60" : "bg-violet-500/60"}`}
+                              className={`flex-1 rounded-sm transition-colors ${bad ? "bg-down/60" : "bg-primary/60"}`}
                             />
                           );
                         })}
@@ -522,33 +522,33 @@ export default function MonitorDetailPage() {
       )}
 
       {/* Recent checks */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800">
-        <div className="px-6 py-4 border-b border-slate-800">
-          <h3 className="text-sm font-semibold text-white">Recent checks</h3>
+      <div className="bg-card rounded-xl border border-border">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-sm font-semibold text-foreground">Recent checks</h3>
         </div>
         {checks.length === 0 ? (
-          <p className="px-6 py-8 text-sm text-slate-500">
+          <p className="px-6 py-8 text-sm text-muted-foreground">
             No checks yet — the worker runs every minute.
           </p>
         ) : (
-          <div className="divide-y divide-slate-800/60">
+          <div className="divide-y divide-border">
             {checks.filter((c) => c.type !== "metric").map((c) => (
               <div key={c.id} className="px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span
                     className={`text-xs font-bold tracking-wide ${
-                      c.status === "up" ? "text-emerald-400" : "text-red-400"
+                      c.status === "up" ? "text-up" : "text-down"
                     }`}
                   >
                     {c.status.toUpperCase()}
                   </span>
                   {c.statusCode && (
-                    <span className="text-xs text-slate-600 font-mono">HTTP {c.statusCode}</span>
+                    <span className="text-xs text-muted-foreground/60 font-mono">HTTP {c.statusCode}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-5 text-xs text-slate-500">
+                <div className="flex items-center gap-5 text-xs text-muted-foreground">
                   {c.responseTime != null && (
-                    <span className="font-mono text-slate-400">{c.responseTime}ms</span>
+                    <span className="font-mono text-muted-foreground">{c.responseTime}ms</span>
                   )}
                   <span>{new Date(c.checkedAt).toLocaleTimeString()}</span>
                 </div>

@@ -301,6 +301,19 @@ Each missing or misconfigured header is recorded as a finding on the `Check` res
 
 ---
 
+## Frontend Design System ("Night Watch")
+
+The frontend uses **shadcn/ui** (in `src/components/ui/`) on **Tailwind v4** (config is CSS-based in `src/index.css` via `@theme inline` + `@tailwindcss/vite`; there is no meaningful `tailwind.config.js`). Build new UI from these conventions — do not reintroduce ad-hoc Tailwind one-offs or hardcoded palette colors.
+
+- **Tokens, not raw colors.** Use semantic classes (`bg-background`, `bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`). Never `slate-*`/`violet-*`/`emerald-*` literals.
+- **Palette:** warm charcoal surfaces + **amber** (`primary`) accent. Amber is for interactive elements only (CTAs, focus, active nav) — never gradient/glow decoration.
+- **Status colors carry meaning:** `up` (green), `degraded` (amber), `down` (red). Use for monitor health everywhere.
+- **Brand mark:** `<WatchdogMark>` (geometric alert guard-dog head) — the brand asset. Favicon is `public/favicon.svg`.
+- **Signature components:** `<StatusDot>` (radar-pulse live indicator), `<UptimeBars>` (90-day timeline), `<StatusBadge>`. Reuse these rather than rebuilding status visuals.
+- Dark mode is default (`<html class="dark">`).
+
+---
+
 ## CI/CD
 
 - **CI:** GitHub Actions runs lint, typecheck, and Jest tests on every PR
