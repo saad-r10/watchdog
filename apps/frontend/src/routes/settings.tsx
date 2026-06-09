@@ -34,17 +34,17 @@ function ConfigSnippet({ agentKey, monitors, placeholder }: { agentKey: string; 
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-xs text-slate-500">watchdog-agent.config.json</p>
+        <p className="text-xs text-muted-foreground">watchdog-agent.config.json</p>
         <button onClick={() => { navigator.clipboard.writeText(config); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-          className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-700 transition-colors">
+          className="text-xs text-muted-foreground hover:text-foreground px-2 py-0.5 rounded hover:bg-accent transition-colors">
           {copied ? "Copied!" : "Copy"}
         </button>
       </div>
-      <pre className="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto leading-relaxed">
+      <pre className="bg-background border border-border rounded-lg p-3 text-xs text-foreground font-mono overflow-x-auto leading-relaxed">
         {placeholder ? config.replace(agentKey, "wdg_<your-key>") : config}
       </pre>
       {placeholder && (
-        <p className="text-xs text-slate-600 mt-1.5">Replace <code className="text-slate-500">wdg_&lt;your-key&gt;</code> with the key you copied when this agent was created.</p>
+        <p className="text-xs text-muted-foreground/60 mt-1.5">Replace <code className="text-muted-foreground">wdg_&lt;your-key&gt;</code> with the key you copied when this agent was created.</p>
       )}
     </div>
   );
@@ -68,23 +68,23 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
   });
 
   return (
-    <div className="border-b border-slate-800 last:border-0">
-      <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-800/30 transition-colors" onClick={() => setExpanded((v) => !v)}>
+    <div className="border-b border-border last:border-0">
+      <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => setExpanded((v) => !v)}>
         <div className="flex items-center gap-3 min-w-0">
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${online ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" : "bg-slate-600"}`} />
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${online ? "bg-up shadow-[0_0_6px_#34d399]" : "bg-muted"}`} />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white">{agent.name}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-sm font-medium text-foreground">{agent.name}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               Last seen: {timeSince(agent.lastSeenAt)}
-              {agent.monitors.length > 0 && <span className="ml-2 text-slate-600">· {agent.monitors.length} monitor{agent.monitors.length !== 1 ? "s" : ""}</span>}
+              {agent.monitors.length > 0 && <span className="ml-2 text-muted-foreground/60">· {agent.monitors.length} monitor{agent.monitors.length !== 1 ? "s" : ""}</span>}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3 ml-4 flex-shrink-0">
-          <span className={`text-xs px-2 py-0.5 rounded-full border ${online ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" : "text-slate-500 border-slate-700 bg-slate-800"}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${online ? "text-up border-up/30 bg-up/10" : "text-muted-foreground border-border bg-muted"}`}>
             {online ? "Online" : "Offline"}
           </span>
-          <svg className={`w-4 h-4 text-slate-500 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
@@ -93,21 +93,21 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
       <AnimatePresence initial={false}>
         {expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-            <div className="px-5 pb-5 pt-1 border-t border-slate-800/60 space-y-5">
+            <div className="px-5 pb-5 pt-1 border-t border-border/60 space-y-5">
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assigned monitors</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Assigned monitors</p>
                 {agent.monitors.length === 0 ? (
-                  <p className="text-xs text-slate-600">No monitors assigned yet.</p>
+                  <p className="text-xs text-muted-foreground/60">No monitors assigned yet.</p>
                 ) : (
                   <div className="space-y-1">
                     {agent.monitors.map((m) => (
-                      <div key={m.id} className="flex items-center justify-between bg-slate-800/50 rounded-lg px-3 py-2">
+                      <div key={m.id} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-white">{m.name}</p>
-                          <p className="text-xs text-slate-500 truncate">{m.url}</p>
+                          <p className="text-xs font-medium text-foreground">{m.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.url}</p>
                         </div>
                         <button onClick={() => unassignMutation.mutate(m.id)} disabled={unassignMutation.isPending}
-                          className="text-xs text-slate-500 hover:text-red-400 ml-3 flex-shrink-0 disabled:opacity-50 transition-colors">
+                          className="text-xs text-muted-foreground hover:text-down ml-3 flex-shrink-0 disabled:opacity-50 transition-colors">
                           Unassign
                         </button>
                       </div>
@@ -116,7 +116,7 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
                 )}
                 {unassigned.length > 0 && (
                   <div className="mt-2">
-                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                    <select className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring"
                       defaultValue="" onChange={(e) => { if (e.target.value) { assignMutation.mutate(e.target.value); e.target.value = ""; } }} disabled={assignMutation.isPending}>
                       <option value="" disabled>Assign a monitor…</option>
                       {unassigned.map((m) => <option key={m.id} value={m.id}>{m.name} — {m.url}</option>)}
@@ -126,22 +126,22 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Config file</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Config file</p>
                 <ConfigSnippet agentKey="wdg_<your-key>" monitors={agent.monitors} placeholder />
               </div>
 
               <div className="flex items-center gap-2 pt-1">
                 {confirmRevoke ? (
                   <>
-                    <span className="text-xs text-slate-400">Revoke this agent? Its key will stop working.</span>
+                    <span className="text-xs text-muted-foreground">Revoke this agent? Its key will stop working.</span>
                     <button onClick={() => { onRevoke(agent.id); setConfirmRevoke(false); }}
-                      className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors font-medium">Revoke</button>
+                      className="text-xs text-down hover:text-down px-3 py-1.5 rounded-lg hover:bg-down/10 transition-colors font-medium">Revoke</button>
                     <button onClick={() => setConfirmRevoke(false)}
-                      className="text-xs text-slate-500 hover:text-slate-300 px-3 py-1.5 rounded-lg transition-colors">Cancel</button>
+                      className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg transition-colors">Cancel</button>
                   </>
                 ) : (
                   <button onClick={() => setConfirmRevoke(true)}
-                    className="text-xs text-slate-500 hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                    className="text-xs text-muted-foreground hover:text-down px-3 py-1.5 rounded-lg hover:bg-accent transition-colors">
                     Revoke agent
                   </button>
                 )}
@@ -175,33 +175,33 @@ function AgentsSection() {
   return (
     <div id="agents" className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-white">Agents</h2>
-        <p className="text-xs text-slate-500 mt-1">Run an agent on your own server to monitor localhost or internal URLs.</p>
+        <h2 className="text-lg font-semibold text-foreground">Agents</h2>
+        <p className="text-xs text-muted-foreground mt-1">Run an agent on your own server to monitor localhost or internal URLs.</p>
       </div>
 
       {/* New agent key banner */}
       <AnimatePresence>
         {newAgent && (
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="bg-emerald-950 border border-emerald-700 rounded-xl p-5">
+            className="bg-up border border-up rounded-xl p-5">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
-                <p className="text-sm font-semibold text-emerald-400">Agent created — copy your key now</p>
-                <p className="text-xs text-emerald-700 mt-0.5">This key will not be shown again.</p>
+                <p className="text-sm font-semibold text-up">Agent created — copy your key now</p>
+                <p className="text-xs text-up mt-0.5">This key will not be shown again.</p>
               </div>
-              <button onClick={() => setNewAgent(null)} className="text-emerald-700 hover:text-emerald-400 transition-colors text-xl leading-none">×</button>
+              <button onClick={() => setNewAgent(null)} className="text-up hover:text-up transition-colors text-xl leading-none">×</button>
             </div>
             <div className="flex items-center gap-2 mb-3">
-              <code className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-xs text-emerald-300 font-mono break-all">{newAgent.key}</code>
+              <code className="flex-1 bg-card border border-border rounded-lg px-4 py-2.5 text-xs text-up font-mono break-all">{newAgent.key}</code>
               <button onClick={() => { navigator.clipboard.writeText(newAgent.key); setCopiedKey(true); setTimeout(() => setCopiedKey(false), 2000); }}
-                className="flex-shrink-0 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-xs font-medium transition-colors">
+                className="flex-shrink-0 bg-up hover:bg-up text-foreground px-4 py-2.5 rounded-lg text-xs font-medium transition-colors">
                 {copiedKey ? "Copied!" : "Copy key"}
               </button>
             </div>
-            <p className="text-xs text-slate-400 mb-1">
+            <p className="text-xs text-muted-foreground mb-1">
               Download the runner and start it on your server:
             </p>
-            <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto">
+            <pre className="bg-card border border-border rounded-lg p-3 text-xs text-foreground font-mono overflow-x-auto">
 {`curl -o agent-runner.js ${import.meta.env.VITE_API_URL ?? ""}/api/agents/runner
 node agent-runner.js watchdog-agent.config.json`}
             </pre>
@@ -210,17 +210,17 @@ node agent-runner.js watchdog-agent.config.json`}
       </AnimatePresence>
 
       {/* Create form */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
+      <div className="bg-card rounded-xl border border-border p-6">
         <form className="flex gap-3" onSubmit={(e) => { e.preventDefault(); createMutation.mutate({ name }); }}>
           <input
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+            className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
             placeholder="Agent name (e.g. prod-server)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
           <button type="submit" disabled={createMutation.isPending}
-            className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-violet-500/20 whitespace-nowrap">
+            className="bg-primary text-foreground px-5 py-2.5 rounded-lg hover:bg-primary disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-primary/20 whitespace-nowrap">
             {createMutation.isPending ? "Creating…" : "New agent"}
           </button>
         </form>
@@ -228,14 +228,14 @@ node agent-runner.js watchdog-agent.config.json`}
 
       {/* Agent list */}
       {isLoading ? (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 animate-pulse space-y-2">
-          <div className="h-4 bg-slate-800 rounded w-1/3" />
-          <div className="h-3 bg-slate-800 rounded w-1/4" />
+        <div className="bg-card rounded-xl border border-border p-4 animate-pulse space-y-2">
+          <div className="h-4 bg-muted rounded w-1/3" />
+          <div className="h-3 bg-muted rounded w-1/4" />
         </div>
       ) : agents.length === 0 ? (
-        <p className="text-sm text-slate-600 py-4">No agents yet.</p>
+        <p className="text-sm text-muted-foreground/60 py-4">No agents yet.</p>
       ) : (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           {agents.map((agent) => (
             <AgentRow key={agent.id} agent={agent} allMonitors={monitors} onRevoke={(id) => deleteMutation.mutate(id)} />
           ))}
@@ -282,93 +282,93 @@ export default function SettingsPage() {
   return (
     <div className="p-4 sm:p-8 max-w-2xl space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-sm text-slate-500 mt-1">Configure alerts and manage your agents</p>
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">Configure alerts and manage your agents</p>
       </div>
 
       {/* Alert settings */}
       {isLoading ? (
-        <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 animate-pulse space-y-4">
-          <div className="h-4 bg-slate-800 rounded w-1/3" />
-          <div className="h-10 bg-slate-800 rounded" />
+        <div className="bg-card rounded-xl border border-border p-6 animate-pulse space-y-4">
+          <div className="h-4 bg-muted rounded w-1/3" />
+          <div className="h-10 bg-muted rounded" />
         </div>
       ) : (
         <motion.form initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           className="space-y-4" onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}>
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
-            <label className="block text-sm font-semibold text-white mb-1">Alert email address</label>
-            <p className="text-xs text-slate-500 mb-4">Leave blank to use your account email.</p>
+          <div className="bg-card rounded-xl border border-border p-6">
+            <label className="block text-sm font-semibold text-foreground mb-1">Alert email address</label>
+            <p className="text-xs text-muted-foreground mb-4">Leave blank to use your account email.</p>
             <input type="email"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+              className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
               placeholder="alerts@yourdomain.com" value={alertEmail} onChange={(e) => setAlertEmail(e.target.value)} />
           </div>
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 space-y-5">
-            <p className="text-sm font-semibold text-white">Notify me when…</p>
+          <div className="bg-card rounded-xl border border-border p-6 space-y-5">
+            <p className="text-sm font-semibold text-foreground">Notify me when…</p>
             <label className="flex items-start gap-4 cursor-pointer group">
               <div className="mt-0.5">
                 <div onClick={() => setAlertDowntime((v) => !v)}
-                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertDowntime ? "bg-violet-600" : "bg-slate-700"}`}>
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertDowntime ? "bg-primary" : "bg-muted"}`}>
                   <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertDowntime ? "translate-x-4" : "translate-x-0"}`} />
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-white">Site is down</p>
-                <p className="text-xs text-slate-500 mt-0.5">One email per incident, no repeat spam.</p>
+                <p className="text-sm font-medium text-foreground">Site is down</p>
+                <p className="text-xs text-muted-foreground mt-0.5">One email per incident, no repeat spam.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
               <div className="mt-0.5">
                 <div onClick={() => setAlertSslExpiry((v) => !v)}
-                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertSslExpiry ? "bg-violet-600" : "bg-slate-700"}`}>
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertSslExpiry ? "bg-primary" : "bg-muted"}`}>
                   <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertSslExpiry ? "translate-x-4" : "translate-x-0"}`} />
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-white">SSL certificate expiring soon</p>
-                <p className="text-xs text-slate-500 mt-0.5">Triggered when fewer than 14 days remain.</p>
+                <p className="text-sm font-medium text-foreground">SSL certificate expiring soon</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Triggered when fewer than 14 days remain.</p>
               </div>
             </label>
           </div>
 
-          <div className="bg-slate-900 rounded-xl border border-slate-800 p-6">
-            <label className="block text-sm font-semibold text-white mb-1">Webhook URL</label>
-            <p className="text-xs text-slate-500 mb-4">Watchdog POSTs a JSON payload on every incident — works with Slack, Discord, and any custom endpoint.</p>
+          <div className="bg-card rounded-xl border border-border p-6">
+            <label className="block text-sm font-semibold text-foreground mb-1">Webhook URL</label>
+            <p className="text-xs text-muted-foreground mb-4">Watchdog POSTs a JSON payload on every incident — works with Slack, Discord, and any custom endpoint.</p>
             <div className="flex gap-2">
               <input type="url"
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+                className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
                 placeholder="https://hooks.slack.com/services/…" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
               <button type="button" onClick={handleTestWebhook} disabled={!webhookUrl.trim() || testState === "sending"}
-                className="flex-shrink-0 bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                className="flex-shrink-0 bg-muted border border-border text-foreground hover:text-foreground hover:border-border disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
                 {testState === "sending" ? "Sending…" : testState === "ok" ? "Sent ✓" : testState === "error" ? "Failed ✗" : "Test"}
               </button>
             </div>
-            <div className="mt-3 bg-slate-800 rounded-lg px-4 py-3 text-xs text-slate-500 font-mono leading-relaxed">
+            <div className="mt-3 bg-muted rounded-lg px-4 py-3 text-xs text-muted-foreground font-mono leading-relaxed">
               {"{ \"event\": \"downtime\", \"monitorName\": \"…\", \"monitorUrl\": \"…\", \"startedAt\": \"…\" }"}
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button type="submit" disabled={mutation.isPending}
-              className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-violet-500/20">
+              className="bg-primary text-foreground px-5 py-2.5 rounded-lg hover:bg-primary disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-primary/20">
               {mutation.isPending ? "Saving…" : "Save settings"}
             </button>
             {saved && (
-              <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} className="text-sm text-emerald-400 font-medium flex items-center gap-1.5">
+              <motion.span initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} className="text-sm text-up font-medium flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 Saved
               </motion.span>
             )}
-            {mutation.isError && <p className="text-sm text-red-400">Failed to save.</p>}
+            {mutation.isError && <p className="text-sm text-down">Failed to save.</p>}
           </div>
         </motion.form>
       )}
 
       {/* Divider */}
-      <div className="border-t border-slate-800" />
+      <div className="border-t border-border" />
 
       {/* Agents section */}
       <AgentsSection />

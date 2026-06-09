@@ -12,14 +12,17 @@ function Slot({
   children,
   className,
   ...props
-}: React.HTMLAttributes<HTMLElement> & { children: React.ReactNode }) {
+}: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) {
   if (React.isValidElement(children)) {
-    const child = children as React.ReactElement<Record<string, unknown>>
-    return React.cloneElement(child, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const child = children as React.ReactElement<any>
+    const merged = {
       ...props,
       ...child.props,
-      className: cn(className, child.props.className as string | undefined),
-    })
+      className: cn(className, child.props.className),
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return React.cloneElement(child, merged as any)
   }
   return null
 }

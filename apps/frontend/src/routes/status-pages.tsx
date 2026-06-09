@@ -14,7 +14,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
-      className="text-xs text-violet-400 hover:text-violet-300 transition-colors whitespace-nowrap"
+      className="text-xs text-primary hover:text-primary transition-colors whitespace-nowrap"
     >
       {copied ? "Copied!" : "Copy link"}
     </button>
@@ -66,15 +66,15 @@ export default function StatusPagesPage() {
   return (
     <div className="p-4 sm:p-8 max-w-3xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Status Pages</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Status Pages</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Share a public URL with your customers showing live uptime for your monitors
         </p>
       </div>
 
       {/* Create form */}
-      <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 mb-6">
-        <h2 className="text-sm font-semibold text-white mb-4">Create a status page</h2>
+      <div className="bg-card rounded-xl border border-border p-6 mb-6">
+        <h2 className="text-sm font-semibold text-foreground mb-4">Create a status page</h2>
         <form
           className="space-y-3"
           onSubmit={(e) => {
@@ -83,16 +83,16 @@ export default function StatusPagesPage() {
           }}
         >
           <input
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+            className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
             placeholder="Page title (e.g. Acme Status)"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             required
           />
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500 whitespace-nowrap">{BASE_URL}/status/</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{BASE_URL}/status/</span>
             <input
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-colors"
+              className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
               placeholder="my-company"
               value={form.slug}
               onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") }))}
@@ -105,12 +105,12 @@ export default function StatusPagesPage() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-violet-500/20"
+              className="bg-primary text-foreground px-5 py-2.5 rounded-lg hover:bg-primary disabled:opacity-50 text-sm font-medium transition-colors shadow-lg shadow-primary/20"
             >
               {createMutation.isPending ? "Creating…" : "Create page"}
             </button>
             {createMutation.isError && (
-              <p className="text-red-400 text-sm">
+              <p className="text-down text-sm">
                 {(createMutation.error as any)?.response?.status === 409
                   ? "That slug is already taken."
                   : "Failed to create page."}
@@ -124,14 +124,14 @@ export default function StatusPagesPage() {
       {isLoading ? (
         <div className="space-y-2">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-slate-900 rounded-xl border border-slate-800 p-4 animate-pulse">
-              <div className="h-4 bg-slate-800 rounded w-1/3 mb-2" />
-              <div className="h-3 bg-slate-800 rounded w-1/2" />
+            <div key={i} className="bg-card rounded-xl border border-border p-4 animate-pulse">
+              <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+              <div className="h-3 bg-muted rounded w-1/2" />
             </div>
           ))}
         </div>
       ) : pages.length === 0 ? (
-        <p className="text-center text-slate-500 py-12">No status pages yet. Create one above.</p>
+        <p className="text-center text-muted-foreground py-12">No status pages yet. Create one above.</p>
       ) : (
         <div className="space-y-3">
           {pages.map((page, i) => {
@@ -145,18 +145,18 @@ export default function StatusPagesPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.04 }}
-                className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden"
+                className="bg-card rounded-xl border border-border overflow-hidden"
               >
                 {/* Header row */}
                 <div className="flex items-center justify-between px-5 py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white">{page.title}</p>
+                    <p className="text-sm font-medium text-foreground">{page.title}</p>
                     <div className="flex items-center gap-3 mt-0.5">
                       <a
                         href={publicUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-slate-500 hover:text-violet-400 transition-colors truncate"
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors truncate"
                       >
                         /status/{page.slug}
                       </a>
@@ -166,14 +166,14 @@ export default function StatusPagesPage() {
                   <div className="flex items-center gap-3 ml-4 flex-shrink-0">
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : page.id)}
-                      className="text-xs text-slate-400 hover:text-white transition-colors"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {isExpanded ? "Done" : `Edit monitors (${pageMonitorIds.length})`}
                     </button>
                     <button
                       onClick={() => deleteMutation.mutate(page.id)}
                       disabled={deleteMutation.isPending}
-                      className="text-xs text-slate-600 hover:text-red-400 disabled:opacity-50 transition-colors"
+                      className="text-xs text-muted-foreground/60 hover:text-down disabled:opacity-50 transition-colors"
                     >
                       Delete
                     </button>
@@ -188,13 +188,13 @@ export default function StatusPagesPage() {
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="border-t border-slate-800 px-5 py-4"
+                      className="border-t border-border px-5 py-4"
                     >
-                      <p className="text-xs text-slate-500 mb-3">
+                      <p className="text-xs text-muted-foreground mb-3">
                         Select which monitors appear on this page:
                       </p>
                       {monitors.length === 0 ? (
-                        <p className="text-xs text-slate-600">No monitors yet — add some first.</p>
+                        <p className="text-xs text-muted-foreground/60">No monitors yet — add some first.</p>
                       ) : (
                         <div className="space-y-2">
                           {monitors.map((m) => {
@@ -208,19 +208,19 @@ export default function StatusPagesPage() {
                                   onClick={() => toggleMonitor(page.id, pageMonitorIds, m.id)}
                                   className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${
                                     checked
-                                      ? "bg-violet-600 border-violet-600"
-                                      : "bg-slate-800 border-slate-600 group-hover:border-slate-500"
+                                      ? "bg-primary border-primary"
+                                      : "bg-muted border-border group-hover:border-muted-foreground/40"
                                   }`}
                                 >
                                   {checked && (
-                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-2.5 h-2.5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                     </svg>
                                   )}
                                 </div>
                                 <div>
-                                  <p className="text-sm text-white group-hover:text-slate-200">{m.name}</p>
-                                  <p className="text-xs text-slate-500">{m.url}</p>
+                                  <p className="text-sm text-foreground group-hover:text-foreground">{m.name}</p>
+                                  <p className="text-xs text-muted-foreground">{m.url}</p>
                                 </div>
                               </label>
                             );

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, ShieldCheck } from "lucide-react";
+import { Plus } from "lucide-react";
 import { api } from "../services/api";
 import { MonitorCard } from "../components/MonitorCard";
 import { StatusDot } from "../components/StatusDot";
