@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { DogIcon } from "@/components/DogIcon";
+import { WatchdogMark } from "@/components/WatchdogMark";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-2.5 mb-8">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <DogIcon className="w-4 h-4 text-primary-foreground" />
+              <WatchdogMark className="w-4 h-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-foreground">Watchdog</span>
           </Link>

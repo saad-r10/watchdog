@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Play, Pause } from "lucide-react";
 import { api } from "../services/api";
 import { StatusBadge } from "./StatusBadge";
 import { Sparkline } from "./Sparkline";
+import { cn } from "@/lib/utils";
 import type { Monitor } from "@watchdog/shared-types";
 
 export function MonitorCard({ monitor }: { monitor: Monitor }) {
@@ -33,18 +35,17 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
     <motion.div whileHover={{ y: -2, transition: { duration: 0.15 } }}>
       <Link
         to={`/monitors/${monitor.id}`}
-        className={`block bg-slate-900 rounded-xl border p-5 transition-colors duration-200 ${
-          isDown
-            ? "border-red-500/30 hover:border-red-500/50"
-            : "border-slate-800 hover:border-violet-500/40"
-        }`}
+        className={cn(
+          "group block bg-card rounded-xl border p-5 transition-colors duration-200",
+          isDown ? "border-down/30 hover:border-down/50" : "border-border hover:border-primary/40"
+        )}
       >
         <div className="flex items-start justify-between mb-4">
           <div className="min-w-0 flex-1">
-            <p className={`font-semibold text-sm truncate ${monitor.paused ? "text-slate-400" : "text-white"}`}>
+            <p className={cn("font-semibold text-sm truncate", monitor.paused ? "text-muted-foreground" : "text-foreground")}>
               {monitor.name}
             </p>
-            <p className="text-xs text-slate-500 truncate mt-0.5">{monitor.url}</p>
+            <p className="text-xs text-muted-foreground truncate mt-0.5 font-mono">{monitor.url}</p>
           </div>
           <div className="ml-3 flex-shrink-0 flex items-center gap-2">
             <button
@@ -54,17 +55,9 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
               }}
               disabled={pauseMutation.isPending}
               title={monitor.paused ? "Resume monitoring" : "Pause monitoring"}
-              className="text-slate-600 hover:text-slate-300 transition-colors disabled:opacity-40"
+              className="text-muted-foreground/50 hover:text-foreground transition-colors disabled:opacity-40 opacity-0 group-hover:opacity-100 focus:opacity-100"
             >
-              {monitor.paused ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                </svg>
-              )}
+              {monitor.paused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
             </button>
             <StatusBadge status={stats?.lastStatus ?? null} paused={monitor.paused} />
           </div>
@@ -73,20 +66,20 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
         <div className="flex items-end justify-between gap-2 min-w-0">
           <div className="flex gap-5 min-w-0 flex-shrink-0">
             <div>
-              <p className="text-xs text-slate-500 mb-0.5">Uptime</p>
-              <p className={`text-xl font-bold ${isDown ? "text-red-400" : "text-white"}`}>
+              <p className="text-xs text-muted-foreground mb-0.5">Uptime</p>
+              <p className={cn("text-xl font-bold tabular-nums", isDown ? "text-down" : "text-foreground")}>
                 {stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "—"}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-0.5">Avg response</p>
-              <p className="text-xl font-bold text-white">
+              <p className="text-xs text-muted-foreground mb-0.5">Avg response</p>
+              <p className="text-xl font-bold text-foreground tabular-nums">
                 {stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "—"}
               </p>
             </div>
           </div>
           <div className="hidden sm:block flex-shrink-0">
-            <Sparkline values={sparklineData} color={isDown ? "#f87171" : "#8b5cf6"} />
+            <Sparkline values={sparklineData} color={isDown ? "#F85149" : "#F5A623"} />
           </div>
         </div>
       </Link>

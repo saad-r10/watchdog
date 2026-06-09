@@ -1,18 +1,11 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { NotificationBell } from "./NotificationBell";
+import { WatchdogMark } from "./WatchdogMark";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Activity,
-  Globe,
-  Settings,
-  LogOut,
-} from "lucide-react";
-import { DogIcon } from "./DogIcon";
+import { LayoutDashboard, Activity, Globe, Settings, LogOut } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -44,11 +37,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 h-14 border-b border-sidebar-border">
+      <div className="flex items-center gap-2.5 px-5 h-14 border-b border-sidebar-border">
         <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-          <DogIcon className="w-4 h-4 text-primary-foreground" />
+          <WatchdogMark className="w-4 h-4 text-primary-foreground" />
         </div>
-        <span className="font-bold text-sidebar-foreground text-sm tracking-wide flex-1">
+        <span className="font-semibold text-sidebar-foreground text-sm tracking-tight flex-1">
           Watchdog
         </span>
         <NotificationBell />
@@ -67,40 +60,46 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               to={item.href}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                "group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
                 active
-                  ? "bg-primary/10 text-primary"
-                  : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                  ? "bg-sidebar-accent text-sidebar-foreground"
+                  : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
               )}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-primary" />
+              )}
+              <Icon
+                className={cn(
+                  "w-4 h-4 flex-shrink-0 transition-colors",
+                  active ? "text-primary" : "text-sidebar-foreground/45 group-hover:text-sidebar-foreground/70"
+                )}
+              />
               {item.label}
             </Link>
           );
         })}
       </nav>
 
-      <Separator className="bg-sidebar-border" />
-
       {/* User */}
-      <div className="px-4 py-4 space-y-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className="px-3 py-3 border-t border-sidebar-border">
+        <div className="flex items-center gap-2.5 px-2 py-1.5 min-w-0">
           <Avatar className="w-7 h-7 flex-shrink-0">
-            <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
+            <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
               {user?.email?.[0]?.toUpperCase() ?? "?"}
             </AvatarFallback>
           </Avatar>
-          <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
+          <p className="text-xs text-sidebar-foreground/60 truncate flex-1">{user?.email}</p>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleLogout}
+            aria-label="Sign out"
+            className="text-sidebar-foreground/40 hover:text-sidebar-foreground flex-shrink-0"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogout}
-          className="w-full justify-start gap-2 text-sidebar-foreground/50 hover:text-sidebar-foreground text-xs h-7 px-2"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          Sign out
-        </Button>
       </div>
     </aside>
   );

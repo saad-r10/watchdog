@@ -5,7 +5,7 @@ import { NotificationBell } from "./NotificationBell";
 import { Button } from "@/components/ui/button";
 import { api } from "../services/api";
 import { Menu, AlertTriangle } from "lucide-react";
-import { DogIcon } from "./DogIcon";
+import { WatchdogMark } from "./WatchdogMark";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -49,7 +49,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-2 flex-1">
             <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-              <DogIcon className="w-3.5 h-3.5 text-primary-foreground" />
+              <WatchdogMark className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
             <span className="font-bold text-foreground text-sm">Watchdog</span>
           </div>
