@@ -44,7 +44,7 @@ export default function App() {
       <Route path="/monitors" element={<PrivateLayout><MonitorsPage /></PrivateLayout>} />
       <Route path="/monitors/:id" element={<PrivateLayout><MonitorDetailPage /></PrivateLayout>} />
       <Route path="/settings" element={<PrivateLayout><SettingsPage /></PrivateLayout>} />
-      <Route path="/agents" element={<Navigate to="/settings" replace />} />
+      <Route path="/agents" element={<Navigate to="/monitors" replace />} />
       <Route path="/status-pages" element={<PrivateLayout><StatusPagesPage /></PrivateLayout>} />
       <Route path="/status/:slug" element={<StatusPagePublic />} />
     </Routes>
