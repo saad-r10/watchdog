@@ -60,3 +60,62 @@ describe("GET /api/monitors/:id/incidents", () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 });
+
+describe("GET /api/monitors/:id/response-times — timing breakdown", () => {
+  beforeAll(async () => {
+    await prisma.check.create({
+      data: {
+        monitorId,
+        type: "uptime",
+        status: "up",
+        statusCode: 200,
+        responseTime: 100,
+        dnsMs: 10,
+        tcpMs: 20,
+        tlsMs: 30,
+        ttfbMs: 30,
+        downloadMs: 10,
+        sizeBytes: 4096,
+      },
+    });
+    // Pre-feature check: no phase data (old agents / legacy rows)
+    await prisma.check.create({
+      data: {
+        monitorId,
+        type: "uptime",
+        status: "up",
+        statusCode: 200,
+        responseTime: 80,
+        checkedAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // separate hourly bucket
+      },
+    });
+  });
+
+  it("returns per-phase averages for buckets with breakdown data", async () => {
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/response-times?range=24h`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+
+    const withPhases = res.body.data.find((b: { avgTtfbMs: number | null }) => b.avgTtfbMs !== null);
+    expect(withPhases).toBeDefined();
+    expect(withPhases.avgDnsMs).toBe(10);
+    expect(withPhases.avgTcpMs).toBe(20);
+    expect(withPhases.avgTlsMs).toBe(30);
+    expect(withPhases.avgTtfbMs).toBe(30);
+    expect(withPhases.avgDownloadMs).toBe(10);
+    expect(withPhases.avgSizeBytes).toBe(4096);
+  });
+
+  it("returns null phase averages for buckets without breakdown data", async () => {
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/response-times?range=24h`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+
+    const legacy = res.body.data.find((b: { avgMs: number | null }) => b.avgMs === 80);
+    expect(legacy).toBeDefined();
+    expect(legacy.avgTtfbMs).toBeNull();
+    expect(legacy.avgSizeBytes).toBeNull();
+  });
+});

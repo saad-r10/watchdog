@@ -68,6 +68,12 @@ export const agentService = {
       status: string;
       statusCode?: number;
       responseTime?: number;
+      dnsMs?: number;
+      tcpMs?: number;
+      tlsMs?: number;
+      ttfbMs?: number;
+      downloadMs?: number;
+      sizeBytes?: number;
       sslDaysLeft?: number;
       headers?: { present: string[]; missing: string[] };
       metricName?: string;
@@ -95,6 +101,12 @@ export const agentService = {
           status: r.status,
           statusCode: r.statusCode,
           responseTime: r.responseTime,
+          dnsMs: r.dnsMs,
+          tcpMs: r.tcpMs,
+          tlsMs: r.tlsMs,
+          ttfbMs: r.ttfbMs,
+          downloadMs: r.downloadMs,
+          sizeBytes: r.sizeBytes,
           sslDaysLeft: r.sslDaysLeft,
           headers: r.headers
             ? {

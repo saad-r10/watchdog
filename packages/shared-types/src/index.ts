@@ -35,6 +35,12 @@ export interface Check {
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
+  dnsMs?: number | null;
+  tcpMs?: number | null;
+  tlsMs?: number | null;
+  ttfbMs?: number | null;
+  downloadMs?: number | null;
+  sizeBytes?: number | null;
   sslDaysLeft?: number | null;
   headers?: Record<string, unknown> | null;
   metricName?: string | null;
@@ -125,6 +131,12 @@ export const AgentCheckResultSchema = z.object({
       status: z.string(),
       statusCode: z.number().int().optional(),
       responseTime: z.number().int().optional(),
+      dnsMs: z.number().int().nonnegative().optional(),
+      tcpMs: z.number().int().nonnegative().optional(),
+      tlsMs: z.number().int().nonnegative().optional(),
+      ttfbMs: z.number().int().nonnegative().optional(),
+      downloadMs: z.number().int().nonnegative().optional(),
+      sizeBytes: z.number().int().nonnegative().optional(),
       sslDaysLeft: z.number().int().optional(),
       headers: z
         .object({
@@ -167,6 +179,12 @@ export interface ResponseTimeBucket {
   avgMs: number | null;
   minMs: number | null;
   maxMs: number | null;
+  avgDnsMs: number | null;
+  avgTcpMs: number | null;
+  avgTlsMs: number | null;
+  avgTtfbMs: number | null;
+  avgDownloadMs: number | null;
+  avgSizeBytes: number | null;
   hasDown: boolean;
 }
 

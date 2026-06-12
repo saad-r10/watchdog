@@ -2,6 +2,7 @@ import axios from "axios";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { timedRequest } from "../lib/timed-request";
 
 type SystemMetric = "memory" | "cpu" | "load";
 
@@ -26,19 +27,33 @@ interface CheckResult {
   status: CheckStatus;
   statusCode?: number;
   responseTime?: number;
+  dnsMs?: number;
+  tcpMs?: number;
+  tlsMs?: number;
+  ttfbMs?: number;
+  downloadMs?: number;
+  sizeBytes?: number;
   metricName?: string;
   metricValue?: number;
 }
 
-async function checkUrl(url: string): Promise<{ status: CheckStatus; statusCode: number; responseTime: number }> {
-  const start = Date.now();
-  try {
-    const res = await axios.get(url, { timeout: 10_000, validateStatus: () => true });
-    const responseTime = Date.now() - start;
-    return { status: res.status < 400 ? "up" : "down", statusCode: res.status, responseTime };
-  } catch {
-    return { status: "down", statusCode: 0, responseTime: Date.now() - start };
-  }
+type UptimeResult = Omit<CheckResult, "monitorId" | "type" | "metricName" | "metricValue"> & {
+  statusCode: number;
+};
+
+async function checkUrl(url: string): Promise<UptimeResult> {
+  const { ok, statusCode, timings } = await timedRequest(url, { timeoutMs: 10_000 });
+  return {
+    status: ok && statusCode !== null && statusCode < 400 ? "up" : "down",
+    statusCode: statusCode ?? 0,
+    responseTime: timings.totalMs,
+    ...(timings.dnsMs !== null && { dnsMs: timings.dnsMs }),
+    ...(timings.tcpMs !== null && { tcpMs: timings.tcpMs }),
+    ...(timings.tlsMs !== null && { tlsMs: timings.tlsMs }),
+    ...(timings.ttfbMs !== null && { ttfbMs: timings.ttfbMs }),
+    ...(timings.downloadMs !== null && { downloadMs: timings.downloadMs }),
+    ...(timings.sizeBytes !== null && { sizeBytes: timings.sizeBytes }),
+  };
 }
 
 function collectMetric(metric: SystemMetric): { value: number; status: CheckStatus } {

@@ -36,6 +36,13 @@
   --color-down: hsl(var(--down));
   --color-down-foreground: hsl(var(--down-foreground));
 
+  /* Chart series — timing phases on the response-time breakdown */
+  --color-chart-dns: hsl(var(--chart-dns));
+  --color-chart-tcp: hsl(var(--chart-tcp));
+  --color-chart-tls: hsl(var(--chart-tls));
+  --color-chart-ttfb: hsl(var(--chart-ttfb));
+  --color-chart-download: hsl(var(--chart-download));
+
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-primary: hsl(var(--sidebar-primary));
@@ -83,6 +90,13 @@
     --down: 2 76% 60%;
     --down-foreground: 0 0% 100%;
 
+    /* Chart phases: warm-gray ramp, amber on TTFB (the dominant phase) */
+    --chart-dns: 35 8% 78%;
+    --chart-tcp: 35 8% 66%;
+    --chart-tls: 35 8% 54%;
+    --chart-ttfb: 37 91% 55%;
+    --chart-download: 35 10% 40%;
+
     --sidebar: 40 14% 97%;
     --sidebar-foreground: 30 10% 12%;
     --sidebar-primary: 37 91% 55%;
@@ -123,6 +137,13 @@
     --degraded-foreground: 36 40% 8%;
     --down: 2 91% 64%;            /* #F85149 outage red */
     --down-foreground: 0 0% 100%;
+
+    /* Chart phases: warm-gray ramp, amber on TTFB (the dominant phase) */
+    --chart-dns: 38 9% 30%;
+    --chart-tcp: 38 9% 42%;
+    --chart-tls: 38 9% 54%;
+    --chart-ttfb: 37 91% 55%;
+    --chart-download: 38 14% 70%;
 
     --sidebar: 38 9% 7%;          /* slightly distinct from bg */
     --sidebar-foreground: 40 20% 98%;

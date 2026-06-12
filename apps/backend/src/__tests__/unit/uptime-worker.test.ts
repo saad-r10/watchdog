@@ -1,11 +1,11 @@
-import axios from "axios";
+import { timedRequest, type TimedResponse } from "../../lib/timed-request";
 import { checkRepository } from "../../repositories/check.repository";
 import { incidentRepository } from "../../repositories/incident.repository";
 import { maintenanceRepository } from "../../repositories/maintenance.repository";
 import { alertService } from "../../services/alert.service";
 import { monitorRepository } from "../../repositories/monitor.repository";
 
-jest.mock("axios");
+jest.mock("../../lib/timed-request");
 jest.mock("node-cron", () => ({ schedule: jest.fn() }));
 jest.mock("../../repositories/check.repository");
 jest.mock("../../repositories/incident.repository");
@@ -13,12 +13,29 @@ jest.mock("../../repositories/maintenance.repository");
 jest.mock("../../repositories/monitor.repository");
 jest.mock("../../services/alert.service");
 
-const mockAxios = axios as jest.Mocked<typeof axios>;
+const mockTimedRequest = timedRequest as jest.MockedFunction<typeof timedRequest>;
 const mockCheckRepo = checkRepository as jest.Mocked<typeof checkRepository>;
 const mockIncidentRepo = incidentRepository as jest.Mocked<typeof incidentRepository>;
 const mockMaintenanceRepo = maintenanceRepository as jest.Mocked<typeof maintenanceRepository>;
 const mockAlertService = alertService as jest.Mocked<typeof alertService>;
 const mockMonitorRepo = monitorRepository as jest.Mocked<typeof monitorRepository>;
+
+function makeResponse(overrides: Partial<TimedResponse> = {}): TimedResponse {
+  return {
+    ok: true,
+    statusCode: 200,
+    timings: {
+      dnsMs: 5,
+      tcpMs: 12,
+      tlsMs: 30,
+      ttfbMs: 42,
+      downloadMs: 8,
+      totalMs: 97,
+      sizeBytes: 1234,
+    },
+    ...overrides,
+  };
+}
 
 const monitor = {
   id: "mon-1",
@@ -51,27 +68,21 @@ beforeEach(() => {
   mockAlertService.notifyDowntime.mockResolvedValue(undefined);
 });
 
+async function runCronTick() {
+  const cron = await import("node-cron");
+  const { startUptimeWorker } = await import("../../workers/uptime.worker");
+  startUptimeWorker();
+  const cronCallback = (cron.schedule as jest.Mock).mock.calls.at(-1)[1];
+  await cronCallback();
+}
+
 describe("uptime worker — downtime detection", () => {
   it("creates a down check when site returns 500", async () => {
-    mockAxios.get.mockResolvedValue({ status: 500 });
+    mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 500 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
-
-    const { startUptimeWorker } = await import("../../workers/uptime.worker");
-    // Drive checkUptime by calling the worker's internal through mocked monitor list
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
-    // Since startUptimeWorker schedules with node-cron (mocked), we need to
-    // invoke checkUptime directly by importing and calling a one-shot helper.
-    // Re-import is necessary because jest.mock is module-level.
-    // We test the logic by verifying repository calls after triggering a cron tick.
-
-    // Trigger the worker which calls cron.schedule — node-cron is mocked,
-    // so we grab the callback and call it manually.
-    const cron = await import("node-cron");
-    startUptimeWorker();
-    const scheduleCall = (cron.schedule as jest.Mock).mock.calls[0];
-    const cronCallback = scheduleCall[1];
-    await cronCallback();
+    await runCronTick();
 
     expect(mockCheckRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ status: "down" })
@@ -81,15 +92,11 @@ describe("uptime worker — downtime detection", () => {
   });
 
   it("creates an up check and resolves open incident on recovery", async () => {
-    mockAxios.get.mockResolvedValue({ status: 200 });
+    mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 200 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(incident);
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
-    const cron = await import("node-cron");
-    const { startUptimeWorker } = await import("../../workers/uptime.worker");
-    startUptimeWorker();
-    const cronCallback = (cron.schedule as jest.Mock).mock.calls.at(-1)[1];
-    await cronCallback();
+    await runCronTick();
 
     expect(mockCheckRepo.create).toHaveBeenCalledWith(
       expect.objectContaining({ status: "up" })
@@ -99,34 +106,64 @@ describe("uptime worker — downtime detection", () => {
   });
 
   it("does not create a new incident if one is already open", async () => {
-    mockAxios.get.mockResolvedValue({ status: 503 });
+    mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 503 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(incident);
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
-    const cron = await import("node-cron");
-    const { startUptimeWorker } = await import("../../workers/uptime.worker");
-    startUptimeWorker();
-    const cronCallback = (cron.schedule as jest.Mock).mock.calls.at(-1)[1];
-    await cronCallback();
+    await runCronTick();
 
     expect(mockIncidentRepo.create).not.toHaveBeenCalled();
     expect(mockAlertService.notifyDowntime).not.toHaveBeenCalled();
   });
 
-  it("marks site down when axios throws (network error)", async () => {
-    mockAxios.get.mockRejectedValue(new Error("ECONNREFUSED"));
+  it("marks site down on network error (no response received)", async () => {
+    mockTimedRequest.mockResolvedValue(
+      makeResponse({
+        ok: false,
+        statusCode: null,
+        timings: {
+          dnsMs: null,
+          tcpMs: null,
+          tlsMs: null,
+          ttfbMs: null,
+          downloadMs: null,
+          totalMs: 31,
+          sizeBytes: null,
+        },
+      })
+    );
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
-    const cron = await import("node-cron");
-    const { startUptimeWorker } = await import("../../workers/uptime.worker");
-    startUptimeWorker();
-    const cronCallback = (cron.schedule as jest.Mock).mock.calls.at(-1)[1];
-    await cronCallback();
+    await runCronTick();
 
     expect(mockCheckRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "down" })
+      expect.objectContaining({ status: "down", statusCode: null })
     );
     expect(mockIncidentRepo.create).toHaveBeenCalled();
+  });
+});
+
+describe("uptime worker — timing breakdown persistence", () => {
+  it("persists phase timings and payload size on the check", async () => {
+    mockTimedRequest.mockResolvedValue(makeResponse());
+    mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
+    mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
+
+    await runCronTick();
+
+    expect(mockCheckRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "up",
+        statusCode: 200,
+        responseTime: 97,
+        dnsMs: 5,
+        tcpMs: 12,
+        tlsMs: 30,
+        ttfbMs: 42,
+        downloadMs: 8,
+        sizeBytes: 1234,
+      })
+    );
   });
 });

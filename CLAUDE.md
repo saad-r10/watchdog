@@ -138,7 +138,8 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/monitors | jq
 curl -X POST http://localhost:3001/api/agents/checkin \
   -H "X-Agent-Key: wdg_<AGENT_ID>.testsecret123" \
   -H "Content-Type: application/json" \
-  -d '{"results":[{"monitorId":"<MONITOR_4_ID>","type":"uptime","status":"up","statusCode":200,"responseTime":142}]}'
+  -d '{"results":[{"monitorId":"<MONITOR_4_ID>","type":"uptime","status":"up","statusCode":200,"responseTime":142,"dnsMs":4,"tcpMs":18,"tlsMs":41,"ttfbMs":65,"downloadMs":14,"sizeBytes":20480}]}'
+# (timing breakdown fields are optional — older agents may omit them)
 
 # 4. Public status page (no auth)
 curl http://localhost:3001/api/status/demo-status | jq
@@ -224,7 +225,7 @@ Three recurring workers defined in `apps/backend/src/workers/`:
 
 | Worker | Schedule | Purpose |
 |--------|----------|---------|
-| `uptimeWorker` | Every minute | HTTP ping, record response time & status |
+| `uptimeWorker` | Every minute | HTTP check via `lib/timed-request.ts` — records status plus a timing breakdown (DNS / TCP / TLS / TTFB / download, in ms) and payload size in bytes |
 | `sslWorker` | Every hour | Check SSL cert expiry days remaining |
 | `headerWorker` | Every 6 hours | Analyse security headers |
 
@@ -284,7 +285,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | `User` | Registered user |
 | `Agent` | API-key-authenticated agent that reports check results from user infrastructure |
 | `Monitor` | A URL to watch (belongs to User, optionally assigned to an Agent) |
-| `Check` | Single uptime/ssl/header result |
+| `Check` | Single uptime/ssl/header result — uptime checks carry optional phase timings (`dnsMs`, `tcpMs`, `tlsMs`, `ttfbMs`, `downloadMs`) and `sizeBytes` |
 | `Incident` | Downtime or SSL-expiry event |
 | `Alert` | Sent alert record (with cooldown tracking) |
 | `StatusPage` | A public-facing status page with a unique slug (belongs to User) |
