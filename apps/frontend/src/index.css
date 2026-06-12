@@ -195,4 +195,35 @@
   .animate-watch-breathe {
     animation: watch-breathe 2.4s ease-in-out infinite;
   }
+  /* Landing hero wall — seamless vertical marquee; content is rendered twice,
+     so -50% lands exactly on the duplicate regardless of card heights */
+  @keyframes wall-up {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+  @keyframes wall-down {
+    from { transform: translateY(-50%); }
+    to { transform: translateY(0); }
+  }
+  .animate-wall-up {
+    animation: wall-up var(--wall-duration, 60s) linear infinite;
+  }
+  .animate-wall-down {
+    animation: wall-down var(--wall-duration, 60s) linear infinite;
+  }
+  /* Landing ticker — horizontal marquee, same duplicated-content technique */
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .animate-ticker {
+    animation: ticker 40s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-wall-up,
+    .animate-wall-down,
+    .animate-ticker {
+      animation: none;
+    }
+  }
 }
