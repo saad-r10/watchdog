@@ -1,1 +1,1 @@
-doc-check passed: UI reorganization only (moved agents section Settings→Monitors); no API/worker/model/env changes
+doc-check passed: landing page restyle only (frontend visuals/components); no API/worker/model/env changes
