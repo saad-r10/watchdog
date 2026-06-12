@@ -2,20 +2,11 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ReferenceDot,
-} from "recharts";
 import { api } from "../services/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { SslCard } from "../components/SslCard";
 import { HeadersCard } from "../components/HeadersCard";
+import { ResponseTimeChart, formatBytes } from "../components/ResponseTimeChart";
 import type { ResponseTimeRange } from "@watchdog/shared-types";
 
 function formatDuration(start: string, end?: string | null) {
@@ -32,37 +23,6 @@ const RANGES: { label: string; value: ResponseTimeRange }[] = [
   { label: "7d", value: "7d" },
   { label: "30d", value: "30d" },
 ];
-
-function formatBucket(iso: string, range: ResponseTimeRange) {
-  const d = new Date(iso);
-  if (range === "24h") return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  if (range === "7d") return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-
-function makeChartTooltip(range: ResponseTimeRange) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return function ChartTooltip({ active, payload }: any) {
-    if (!active || !payload?.length) return null;
-    const d = payload[0].payload;
-    return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2.5 text-xs shadow-xl space-y-1">
-        <p className="text-muted-foreground">{formatBucket(d.bucket, range)}</p>
-        {d.avgMs != null ? (
-          <>
-            <p className="text-primary font-semibold">{d.avgMs}ms avg</p>
-            {d.minMs != null && d.maxMs != null && d.minMs !== d.maxMs && (
-              <p className="text-muted-foreground">{d.minMs}–{d.maxMs}ms range</p>
-            )}
-          </>
-        ) : (
-          <p className="text-down font-semibold">Down</p>
-        )}
-        {d.hasDown && d.avgMs != null && <p className="text-down">⚠ Downtime in this period</p>}
-      </div>
-    );
-  };
-}
 
 export default function MonitorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -146,10 +106,6 @@ export default function MonitorDetailPage() {
     mutationFn: (paused: boolean) => api.monitors.update(id!, { paused }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["monitors"] }),
   });
-
-  const downDots = responseTimes
-    .filter((r) => r.hasDown && r.avgMs == null)
-    .map((r) => r.bucket);
 
   if (!monitor) {
     return (
@@ -287,52 +243,7 @@ export default function MonitorDetailPage() {
             ))}
           </div>
         </div>
-        {responseTimes.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">No data for this period yet.</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={responseTimes} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis
-                dataKey="bucket"
-                stroke="#334155"
-                tick={{ fill: "#475569", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                interval="preserveStartEnd"
-                tickFormatter={(v) => formatBucket(v, range)}
-              />
-              <YAxis
-                stroke="#334155"
-                tick={{ fill: "#475569", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                unit="ms"
-                width={52}
-              />
-              <Tooltip content={makeChartTooltip(range)} />
-              <Line
-                type="monotone"
-                dataKey="avgMs"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: "#8b5cf6", strokeWidth: 0 }}
-                connectNulls={false}
-              />
-              {downDots.map((bucket) => (
-                <ReferenceDot
-                  key={bucket}
-                  x={bucket}
-                  y={0}
-                  r={4}
-                  fill="#f87171"
-                  stroke="none"
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
+        <ResponseTimeChart data={responseTimes} range={range} />
       </motion.div>
 
       {/* SSL + Headers */}
@@ -547,6 +458,9 @@ export default function MonitorDetailPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-5 text-xs text-muted-foreground">
+                  {c.sizeBytes != null && (
+                    <span className="font-mono text-muted-foreground/60">{formatBytes(c.sizeBytes)}</span>
+                  )}
                   {c.responseTime != null && (
                     <span className="font-mono text-muted-foreground">{c.responseTime}ms</span>
                   )}

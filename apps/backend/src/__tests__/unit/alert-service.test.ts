@@ -59,6 +59,7 @@ describe("alertService.notifyDowntime", () => {
     expect(mockAlertRepo.create).toHaveBeenCalledWith({
       userId: "user-1",
       incidentId: "inc-1",
+      type: "downtime",
     });
   });
 

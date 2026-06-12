@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import axios from "axios";
+import { timedRequest } from "../lib/timed-request";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
@@ -14,25 +14,22 @@ async function checkUptime(monitor: Monitor) {
     if (elapsed < monitor.intervalMinutes * 60_000) return;
   }
 
-  const start = Date.now();
-  let status: "up" | "down" = "down";
-  let statusCode: number | null = null;
+  const result = await timedRequest(monitor.url, { timeoutMs: 10_000 });
+  const { statusCode, timings } = result;
+  const status: "up" | "down" = result.ok && statusCode !== null && statusCode < 400 ? "up" : "down";
 
-  try {
-    const res = await axios.get(monitor.url, { timeout: 10_000, validateStatus: () => true });
-    statusCode = res.status;
-    status = res.status < 400 ? "up" : "down";
-  } catch {
-    status = "down";
-  }
-
-  const responseTime = Date.now() - start;
   await checkRepository.create({
     monitor: { connect: { id: monitor.id } },
     type: "uptime",
     status,
     statusCode,
-    responseTime,
+    responseTime: timings.totalMs,
+    dnsMs: timings.dnsMs,
+    tcpMs: timings.tcpMs,
+    tlsMs: timings.tlsMs,
+    ttfbMs: timings.ttfbMs,
+    downloadMs: timings.downloadMs,
+    sizeBytes: timings.sizeBytes,
   });
 
   const openIncident = await incidentRepository.findOpenByMonitor(monitor.id);

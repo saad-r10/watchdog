@@ -72,16 +72,33 @@ async function main() {
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
 
+  // Plausible phase split for a given total response time
+  function makePhases(responseTime: number) {
+    const dnsMs = Math.floor(Math.random() * 19) + 2; // 2–20ms
+    const tcpMs = Math.floor(Math.random() * 36) + 5; // 5–40ms
+    const tlsMs = Math.floor(Math.random() * 51) + 10; // 10–60ms
+    const remainder = Math.max(responseTime - dnsMs - tcpMs - tlsMs, 10);
+    const ttfbMs = Math.round(remainder * 0.6);
+    const downloadMs = remainder - ttfbMs;
+    const sizeBytes = Math.floor(Math.random() * 195_000) + 5_000; // 5–200KB
+    return { dnsMs, tcpMs, tlsMs, ttfbMs, downloadMs, sizeBytes };
+  }
+
   function makeUptimeChecks(monitorId: string, count: number) {
     const interval = (now - thirtyDaysAgo) / count;
-    const checks = Array.from({ length: count }, (_, i) => ({
-      monitorId,
-      type: "uptime" as const,
-      status: "up",
-      statusCode: 200,
-      responseTime: Math.floor(Math.random() * 321) + 80,
-      checkedAt: new Date(thirtyDaysAgo + i * interval),
-    }));
+    const checks = Array.from({ length: count }, (_, i) => {
+      const responseTime = Math.floor(Math.random() * 321) + 80;
+      return {
+        monitorId,
+        type: "uptime" as const,
+        status: "up",
+        statusCode: 200,
+        responseTime,
+        // The oldest quarter stays phase-less to exercise the pre-feature fallback path
+        ...(i >= count / 4 ? makePhases(responseTime) : {}),
+        checkedAt: new Date(thirtyDaysAgo + i * interval),
+      };
+    });
     const downIndices = new Set<number>();
     while (downIndices.size < 8) {
       downIndices.add(Math.floor(Math.random() * count));

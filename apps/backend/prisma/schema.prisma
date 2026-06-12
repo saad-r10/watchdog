@@ -67,6 +67,12 @@ model Check {
   status       String
   statusCode   Int?
   responseTime Int?
+  dnsMs        Int?
+  tcpMs        Int?
+  tlsMs        Int?
+  ttfbMs       Int?
+  downloadMs   Int?
+  sizeBytes    Int?
   sslDaysLeft  Int?
   headers      Json?
   metricName   String?

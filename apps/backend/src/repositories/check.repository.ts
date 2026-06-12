@@ -95,26 +95,58 @@ export const checkRepository = {
   async findResponseTimes(
     monitorId: string,
     range: "24h" | "7d" | "30d"
-  ): Promise<Array<{ bucket: string; avgMs: number | null; minMs: number | null; maxMs: number | null; hasDown: boolean }>> {
+  ): Promise<
+    Array<{
+      bucket: string;
+      avgMs: number | null;
+      minMs: number | null;
+      maxMs: number | null;
+      avgDnsMs: number | null;
+      avgTcpMs: number | null;
+      avgTlsMs: number | null;
+      avgTtfbMs: number | null;
+      avgDownloadMs: number | null;
+      avgSizeBytes: number | null;
+      hasDown: boolean;
+    }>
+  > {
     const truncMap = { "24h": "hour", "7d": "hour", "30d": "day" } as const;
     const intervalMap = { "24h": "24 hours", "7d": "7 days", "30d": "30 days" } as const;
     const trunc = truncMap[range];
     const interval = intervalMap[range];
 
     const rows = await prisma.$queryRaw<
-      Array<{ bucket: string; avg_ms: number | null; min_ms: number | null; max_ms: number | null; has_down: boolean }>
+      Array<{
+        bucket: string;
+        avg_ms: number | null;
+        min_ms: number | null;
+        max_ms: number | null;
+        avg_dns_ms: number | null;
+        avg_tcp_ms: number | null;
+        avg_tls_ms: number | null;
+        avg_ttfb_ms: number | null;
+        avg_download_ms: number | null;
+        avg_size_bytes: number | null;
+        has_down: boolean;
+      }>
     >`
       SELECT
         DATE_TRUNC(${trunc}, "checkedAt") AS bucket,
         ROUND(AVG("responseTime"))::int    AS avg_ms,
         MIN("responseTime")                AS min_ms,
         MAX("responseTime")                AS max_ms,
+        ROUND(AVG("dnsMs"))::int           AS avg_dns_ms,
+        ROUND(AVG("tcpMs"))::int           AS avg_tcp_ms,
+        ROUND(AVG("tlsMs"))::int           AS avg_tls_ms,
+        ROUND(AVG("ttfbMs"))::int          AS avg_ttfb_ms,
+        ROUND(AVG("downloadMs"))::int      AS avg_download_ms,
+        ROUND(AVG("sizeBytes"))::int       AS avg_size_bytes,
         BOOL_OR(status = 'down')           AS has_down
       FROM "Check"
       WHERE "monitorId" = ${monitorId}
         AND type = 'uptime'
-        AND "checkedAt" >= NOW() - INTERVAL ${interval}
-      GROUP BY DATE_TRUNC(${trunc}, "checkedAt")
+        AND "checkedAt" >= NOW() - ${interval}::interval
+      GROUP BY 1
       ORDER BY bucket ASC
     `;
 
@@ -123,6 +155,12 @@ export const checkRepository = {
       avgMs: r.avg_ms,
       minMs: r.min_ms,
       maxMs: r.max_ms,
+      avgDnsMs: r.avg_dns_ms,
+      avgTcpMs: r.avg_tcp_ms,
+      avgTlsMs: r.avg_tls_ms,
+      avgTtfbMs: r.avg_ttfb_ms,
+      avgDownloadMs: r.avg_download_ms,
+      avgSizeBytes: r.avg_size_bytes,
       hasDown: r.has_down,
     }));
   },
