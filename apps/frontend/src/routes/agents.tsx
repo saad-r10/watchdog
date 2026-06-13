@@ -22,7 +22,12 @@ function isOnline(lastSeenAt: string | null): boolean {
   return Date.now() - new Date(lastSeenAt).getTime() < 2 * 60_000;
 }
 
-function buildSetupCommand(agentKey: string, watchdogUrl: string) {
+type SetupMode = "service" | "foreground";
+
+function buildSetupCommand(mode: SetupMode, agentKey: string, watchdogUrl: string) {
+  if (mode === "service") {
+    return `curl -fsSL ${watchdogUrl}/api/agents/install.sh | sh -s -- --key ${agentKey}`;
+  }
   return [
     `curl -fsSL ${watchdogUrl}/api/agents/runner -o watchdog-agent.js`,
     `node watchdog-agent.js --key ${agentKey} --url ${watchdogUrl}`,
@@ -31,7 +36,8 @@ function buildSetupCommand(agentKey: string, watchdogUrl: string) {
 
 function SetupCommand({ agentKey, placeholder }: { agentKey: string; placeholder?: boolean }) {
   const [copied, setCopied] = useState(false);
-  const command = buildSetupCommand(agentKey, WATCHDOG_URL);
+  const [mode, setMode] = useState<SetupMode>("service");
+  const command = buildSetupCommand(mode, agentKey, WATCHDOG_URL);
 
   function handleCopy() {
     navigator.clipboard.writeText(command);
@@ -42,7 +48,24 @@ function SetupCommand({ agentKey, placeholder }: { agentKey: string; placeholder
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-xs text-slate-500">Run on your server (requires Node.js 18+)</p>
+        <div className="flex items-center gap-1">
+          {([
+            ["service", "Install as a service"],
+            ["foreground", "Run in foreground"],
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setMode(id)}
+              className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                mode === id
+                  ? "text-white border-slate-500 bg-slate-700"
+                  : "text-slate-500 border-transparent hover:text-slate-300"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <button
           onClick={handleCopy}
           className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-700 transition-colors"
@@ -53,6 +76,11 @@ function SetupCommand({ agentKey, placeholder }: { agentKey: string; placeholder
       <pre className="bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto leading-relaxed">
         {command}
       </pre>
+      <p className="text-xs text-slate-600 mt-1.5">
+        {mode === "service"
+          ? "Installs to ~/.watchdog-agent and starts on boot (macOS launchd / Linux systemd). Requires Node.js 18+."
+          : "Runs until you close the terminal — handy for watching logs. Requires Node.js 18+."}
+      </p>
       {placeholder && (
         <p className="text-xs text-slate-600 mt-1.5">Replace <code className="text-slate-500">wdg_&lt;your-key&gt;</code> with the key you copied when this agent was created.</p>
       )}
@@ -414,7 +442,7 @@ export default function AgentsPage() {
         <h2 className="text-sm font-semibold text-white mb-4">How it works</h2>
         <ol className="space-y-3 text-xs text-slate-400 list-decimal list-inside">
           <li>Create an agent above — you get a ready-to-paste command with the key baked in (shown once only).</li>
-          <li>Paste the command into a terminal on your server (requires Node.js 18+). The dot turns green when it connects.</li>
+          <li>Paste the command into a terminal on your server (requires Node.js 18+). The dot turns green when it connects. "Install as a service" survives reboots; remove it anytime by re-running the installer with <code className="text-slate-500">--uninstall</code>.</li>
           <li>Assign monitors using the expand panel above — the agent picks up changes within a minute, no restart needed.</li>
           <li>Monitoring something private (localhost, an internal network)? Create a monitor with the internal URL and assign it to this agent — Watchdog's cloud checker leaves agent-assigned monitors to the agent.</li>
         </ol>

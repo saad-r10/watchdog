@@ -155,6 +155,18 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 The agent runner is a standalone script that polls URLs on your machine and reports results to Watchdog on a schedule — no manual curl commands needed.
 
+### Install as a service (recommended for real servers)
+
+`apps/backend/scripts/install-agent.sh` (served at `GET /api/agents/install.sh`) installs the runner to `~/.watchdog-agent` and registers it as a service that starts on boot and restarts on crash — macOS launchd LaunchAgent, Linux systemd unit (user unit + `enable-linger`, system unit when root), nohup fallback elsewhere. No sudo in the happy path; the agent key lands in mode-600 files only. On key rejection it uninstalls itself to avoid a restart loop.
+
+```bash
+curl -fsSL <watchdogUrl>/api/agents/install.sh | sh -s -- --key wdg_xxx
+# remove everything:
+curl -fsSL <watchdogUrl>/api/agents/install.sh | sh -s -- --uninstall
+```
+
+Logs: `~/.watchdog-agent/agent.log`.
+
 ### Remote-config mode (default — key only, no config file)
 
 The runner pulls its monitor list from `GET /api/agents/config` (authed via `X-Agent-Key`) and re-fetches every 60s, so assigning/unassigning monitors in the UI propagates to a running agent without restarts. The Agents page shows a ready-to-paste command:
@@ -262,6 +274,7 @@ Agents run on user infrastructure and push check results to Watchdog via `POST /
 | `POST /api/agents` | JWT | Create agent (returns one-time key) |
 | `DELETE /api/agents/:id` | JWT | Revoke agent |
 | `GET /api/agents/runner` | None | Download the standalone agent runner bundle |
+| `GET /api/agents/install.sh` | None | One-line installer script (server URL templated from request host / `X-Forwarded-Proto`) |
 | `GET /api/agents/config` | `X-Agent-Key` | Pull assigned monitors (`monitorId`, `url`, `intervalMinutes`); updates `lastSeenAt` |
 | `POST /api/agents/checkin` | `X-Agent-Key` | Submit check results, update `lastSeenAt` |
 

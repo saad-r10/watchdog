@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import fs from "fs/promises";
 import path from "path";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
@@ -50,6 +51,22 @@ router.delete("/:id", authenticate, async (req, res, next) => {
 router.get("/runner", (_req, res) => {
   const bundlePath = path.join(__dirname, "../../dist/agent-runner.bundle.js");
   res.download(bundlePath, "agent-runner.js");
+});
+
+// One-line installer script with this server's URL templated in.
+// Resolves under both ts-node (src/routes) and compiled (dist/routes) layouts.
+router.get("/install.sh", async (req, res, next) => {
+  try {
+    const scriptPath = path.join(__dirname, "../../scripts/install-agent.sh");
+    const script = await fs.readFile(scriptPath, "utf-8");
+    const forwardedProto = (req.headers["x-forwarded-proto"] as string | undefined)
+      ?.split(",")[0]
+      ?.trim();
+    const baseUrl = `${forwardedProto ?? req.protocol}://${req.get("host")}`;
+    res.type("text/x-shellscript").send(script.replace(/__WATCHDOG_URL__/g, baseUrl));
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Agent-facing endpoints (use agent key, not JWT)
