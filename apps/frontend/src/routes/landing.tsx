@@ -97,7 +97,7 @@ export default function LandingPage() {
             </Link>
             <Link
               to="/login"
-              className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary underline-offset-4 hover:underline transition-colors whitespace-nowrap"
+              className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary underline-offset-4 hover:underline transition-colors whitespace-nowrap inline-flex items-center min-h-11"
             >
               Sign in →
             </Link>
@@ -124,8 +124,8 @@ export default function LandingPage() {
           {features.map((f) => (
             <div key={f.title} className="bg-background p-6 sm:p-8 flex flex-col gap-4">
               <div>
-                <h3 className="text-sm font-semibold mb-1.5">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.copy}</p>
+                <h3 className="font-semibold mb-1.5">{f.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{f.copy}</p>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {f.chips.map((c) => (
@@ -149,7 +149,7 @@ export default function LandingPage() {
             <div key={s.n} className="p-6 sm:p-8">
               <div className="font-mono text-xs text-primary mb-4">{s.n}</div>
               <h3 className="font-semibold mb-2">{s.t}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{s.d}</p>
+              <p className="text-muted-foreground leading-relaxed">{s.d}</p>
             </div>
           ))}
         </div>

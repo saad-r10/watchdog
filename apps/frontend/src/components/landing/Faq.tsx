@@ -36,7 +36,7 @@ export function Faq() {
               +
             </span>
           </summary>
-          <p className="pb-5 text-sm text-muted-foreground leading-relaxed max-w-2xl">{f.a}</p>
+          <p className="pb-5 text-muted-foreground leading-relaxed max-w-2xl">{f.a}</p>
         </details>
       ))}
     </div>
