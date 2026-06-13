@@ -155,6 +155,25 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 The agent runner is a standalone script that polls URLs on your machine and reports results to Watchdog on a schedule — no manual curl commands needed.
 
+### Remote-config mode (default — key only, no config file)
+
+The runner pulls its monitor list from `GET /api/agents/config` (authed via `X-Agent-Key`) and re-fetches every 60s, so assigning/unassigning monitors in the UI propagates to a running agent without restarts. The Agents page shows a ready-to-paste command:
+
+```bash
+curl -fsSL <watchdogUrl>/api/agents/runner -o watchdog-agent.js
+node watchdog-agent.js --key wdg_xxx --url <watchdogUrl>
+# or via env vars: WATCHDOG_AGENT_KEY / WATCHDOG_URL
+```
+
+A config fetch also updates the agent's `lastSeenAt`, so the agent shows Online as soon as it connects — before any monitors are assigned.
+
+```bash
+# from the repo, same thing:
+cd apps/backend && npm run agent-runner -- --key wdg_xxx --url http://localhost:3001
+```
+
+### Config-file mode (legacy fallback)
+
 ```bash
 # 1. Copy the example config
 cp watchdog-agent.config.example.json watchdog-agent.config.json
@@ -242,6 +261,8 @@ Agents run on user infrastructure and push check results to Watchdog via `POST /
 | `GET /api/agents` | JWT | List user's agents |
 | `POST /api/agents` | JWT | Create agent (returns one-time key) |
 | `DELETE /api/agents/:id` | JWT | Revoke agent |
+| `GET /api/agents/runner` | None | Download the standalone agent runner bundle |
+| `GET /api/agents/config` | `X-Agent-Key` | Pull assigned monitors (`monitorId`, `url`, `intervalMinutes`); updates `lastSeenAt` |
 | `POST /api/agents/checkin` | `X-Agent-Key` | Submit check results, update `lastSeenAt` |
 
 Key format: `wdg_<agentId>.<secret>` — the agent ID is embedded so the key can be verified in O(1) (find by ID, then bcrypt compare). The raw key is shown once on creation; only its bcrypt hash (`keyHash`) is stored.

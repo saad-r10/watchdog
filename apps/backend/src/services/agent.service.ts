@@ -49,6 +49,18 @@ export const agentService = {
     await agentRepository.delete(id);
   },
 
+  async getConfig(agentId: string) {
+    // A config fetch counts as a heartbeat — the agent is connected even if
+    // no monitors are assigned yet.
+    await agentRepository.updateLastSeen(agentId);
+    const monitors = await monitorRepository.findByAgent(agentId);
+    return monitors.map((m) => ({
+      monitorId: m.id,
+      url: m.url,
+      intervalMinutes: m.intervalMinutes,
+    }));
+  },
+
   async verifyKey(key: string): Promise<string | null> {
     const agentId = parseAgentId(key);
     if (!agentId) return null;

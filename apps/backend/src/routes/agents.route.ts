@@ -3,6 +3,7 @@ import { z } from "zod";
 import path from "path";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
+import { authenticateAgent } from "../middleware/agent-auth";
 import { agentService } from "../services/agent.service";
 import { AgentCheckResultSchema } from "@watchdog/shared-types";
 
@@ -51,20 +52,19 @@ router.get("/runner", (_req, res) => {
   res.download(bundlePath, "agent-runner.js");
 });
 
-// Agent checkin endpoint (uses agent key, not JWT)
-router.post("/checkin", validate(AgentCheckResultSchema), async (req, res, next) => {
+// Agent-facing endpoints (use agent key, not JWT)
+router.get("/config", authenticateAgent, async (req, res, next) => {
   try {
-    const key = req.headers["x-agent-key"];
-    if (!key || typeof key !== "string") {
-      return res.status(401).json({ error: "Missing X-Agent-Key header" });
-    }
+    const monitors = await agentService.getConfig(req.agentId);
+    res.json({ success: true, data: { monitors } });
+  } catch (err) {
+    next(err);
+  }
+});
 
-    const agentId = await agentService.verifyKey(key);
-    if (!agentId) {
-      return res.status(401).json({ error: "Invalid agent key" });
-    }
-
-    await agentService.recordCheckin(agentId, req.body.results);
+router.post("/checkin", authenticateAgent, validate(AgentCheckResultSchema), async (req, res, next) => {
+  try {
+    await agentService.recordCheckin(req.agentId, req.body.results);
     res.json({ success: true });
   } catch (err) {
     next(err);
