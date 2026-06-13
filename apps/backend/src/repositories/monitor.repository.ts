@@ -14,6 +14,12 @@ export const monitorRepository = {
   async findAllActive(): Promise<Monitor[]> {
     return prisma.monitor.findMany({ where: { isActive: true, paused: false, agentId: null } });
   },
+  async findByAgent(agentId: string): Promise<Monitor[]> {
+    return prisma.monitor.findMany({
+      where: { agentId, isActive: true, paused: false },
+      orderBy: { createdAt: "asc" },
+    });
+  },
   async update(id: string, data: Prisma.MonitorUpdateInput): Promise<Monitor> {
     return prisma.monitor.update({ where: { id }, data });
   },
