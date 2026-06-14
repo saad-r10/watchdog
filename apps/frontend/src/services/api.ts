@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, CertTransparencyCheckResult, DnsCheckResult, ExposureCheckResult, BlocklistCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput, AppNotification } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, CertTransparencyCheckResult, DnsCheckResult, ExposureCheckResult, BlocklistCheckResult, ContentChangeStatus, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput, AppNotification } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -67,6 +67,10 @@ export const api = {
       http.get<{ success: boolean; data: ExposureCheckResult | null }>(`/api/monitors/${id}/exposure`).then((r) => r.data.data),
     blocklist: (id: string) =>
       http.get<{ success: boolean; data: BlocklistCheckResult | null }>(`/api/monitors/${id}/blocklist`).then((r) => r.data.data),
+    contentChange: (id: string) =>
+      http.get<{ success: boolean; data: ContentChangeStatus }>(`/api/monitors/${id}/content-change`).then((r) => r.data.data),
+    snoozeContentChange: (id: string, hours: number) =>
+      http.post<{ success: boolean; data: Monitor }>(`/api/monitors/${id}/snooze-content-change`, { hours }).then((r) => r.data.data),
     responseTimes: (id: string, range: ResponseTimeRange) =>
       http.get<{ success: boolean; data: ResponseTimeBucket[] }>(`/api/monitors/${id}/response-times`, { params: { range } }).then((r) => r.data.data),
     maintenance: {

@@ -120,6 +120,29 @@ router.get("/blocklist", async (req, res, next) => {
   }
 });
 
+router.get("/content-change", async (req, res, next) => {
+  try {
+    const id = monitorId(req as any);
+    const monitor = await monitorService.getById(id, req.user.id);
+    const [latest, lastChange] = await Promise.all([
+      checkRepository.getLatest(id),
+      incidentRepository.findLatestByType(id, "content_changed"),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        enabled: monitor.contentChangeEnabled,
+        snoozedUntil: monitor.contentChangeSnoozeUntil,
+        lastHash: latest?.contentHash ?? null,
+        lastCheckedAt: latest?.checkedAt ?? null,
+        lastChangedAt: lastChange?.startedAt ?? null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/certs", async (req, res, next) => {
   try {
     const id = monitorId(req as any);

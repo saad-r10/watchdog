@@ -28,7 +28,7 @@ export const monitorService = {
   async listByUser(userId: string) {
     return monitorRepository.findByUser(userId);
   },
-  async update(id: string, userId: string, input: { name?: string; url?: string; intervalMinutes?: number; isActive?: boolean; paused?: boolean; agentId?: string | null }) {
+  async update(id: string, userId: string, input: { name?: string; url?: string; intervalMinutes?: number; isActive?: boolean; paused?: boolean; agentId?: string | null; contentChangeEnabled?: boolean }) {
     await monitorService.getById(id, userId);
     const { agentId, ...rest } = input;
     const data: Record<string, unknown> = { ...rest };
@@ -40,5 +40,11 @@ export const monitorService = {
   async delete(id: string, userId: string) {
     await monitorService.getById(id, userId);
     await monitorRepository.delete(id);
+  },
+  async snoozeContentChange(id: string, userId: string, hours: number) {
+    await monitorService.getById(id, userId);
+    return monitorRepository.update(id, {
+      contentChangeSnoozeUntil: new Date(Date.now() + hours * 3_600_000),
+    });
   },
 };

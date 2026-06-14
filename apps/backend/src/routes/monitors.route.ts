@@ -3,6 +3,7 @@ import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import { monitorService } from "../services/monitor.service";
+import { SnoozeContentChangeSchema } from "@watchdog/shared-types";
 
 const router = Router();
 router.use(authenticate);
@@ -48,11 +49,21 @@ const updateSchema = z.object({
   isActive: z.boolean().optional(),
   paused: z.boolean().optional(),
   agentId: z.string().uuid().nullable().optional(),
+  contentChangeEnabled: z.boolean().optional(),
 });
 
 router.patch("/:id", validate(updateSchema), async (req, res, next) => {
   try {
     const monitor = await monitorService.update(req.params.id, req.user.id, req.body);
+    res.json({ success: true, data: monitor });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/snooze-content-change", validate(SnoozeContentChangeSchema), async (req, res, next) => {
+  try {
+    const monitor = await monitorService.snoozeContentChange(req.params.id, req.user.id, req.body.hours);
     res.json({ success: true, data: monitor });
   } catch (err) {
     next(err);

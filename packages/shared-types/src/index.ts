@@ -23,8 +23,14 @@ export const UpdateMonitorSchema = z.object({
   isActive: z.boolean().optional(),
   paused: z.boolean().optional(),
   agentId: z.string().uuid().nullable().optional(),
+  contentChangeEnabled: z.boolean().optional(),
 });
 export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
+
+export const SnoozeContentChangeSchema = z.object({
+  hours: z.number().int().min(1).max(168),
+});
+export type SnoozeContentChangeInput = z.infer<typeof SnoozeContentChangeSchema>;
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 
@@ -47,6 +53,7 @@ export interface Check {
   dnsFindings?: DnsFindings | null;
   exposureFindings?: ExposureFindings | null;
   blocklistFindings?: BlocklistFindings | null;
+  contentHash?: string | null;
   metricName?: string | null;
   metricValue?: number | null;
   checkedAt: string;
@@ -198,12 +205,21 @@ export interface BlocklistCheckResult {
   checkedAt: string | null;
 }
 
+export interface ContentChangeStatus {
+  enabled: boolean;
+  snoozedUntil: string | null;
+  lastHash: string | null;
+  lastCheckedAt: string | null;
+  lastChangedAt: string | null;
+}
+
 export interface AlertSettings {
   alertEmail: string | null;
   alertDowntime: boolean;
   alertSslExpiry: boolean;
   alertCertTransparency: boolean;
   alertBlocklist: boolean;
+  alertContentChange: boolean;
   webhookUrl: string | null;
 }
 
@@ -218,7 +234,7 @@ export interface MonitorStats {
 export interface Incident {
   id: string;
   monitorId: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed";
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
@@ -287,6 +303,8 @@ export interface Monitor {
   intervalMinutes: number;
   isActive: boolean;
   paused: boolean;
+  contentChangeEnabled: boolean;
+  contentChangeSnoozeUntil: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -355,7 +373,7 @@ export interface DashboardIncident {
   monitorId: string;
   monitorName: string;
   monitorUrl: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed";
   startedAt: string;
   resolvedAt: string | null;
   isResolved: boolean;
@@ -367,7 +385,7 @@ export interface AppNotification {
   sentAt: string;
   incidentId: string;
   alertType: "downtime" | "recovery";
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed";
   isResolved: boolean;
   resolvedAt: string | null;
   startedAt: string;

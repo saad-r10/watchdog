@@ -25,14 +25,21 @@ export interface TimedResponse {
   /** Final status code, or null on network error / timeout / redirect overflow. */
   statusCode: number | null;
   timings: PhaseTimings;
+  /** Final hop's response body, captured only when `captureBody` is set; otherwise null. */
+  body: Buffer | null;
 }
 
 interface TimedRequestOptions {
   timeoutMs?: number;
   maxRedirects?: number;
+  /** When true, buffer the final hop's body (capped at MAX_CAPTURED_BODY_BYTES) for content hashing. */
+  captureBody?: boolean;
 }
 
 const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
+
+/** Cap on how much of the response body is buffered when `captureBody` is set. */
+const MAX_CAPTURED_BODY_BYTES = 2 * 1024 * 1024;
 
 /**
  * GET a URL while measuring per-phase timings via socket events.
@@ -41,7 +48,7 @@ const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
  */
 export async function timedRequest(
   url: string,
-  { timeoutMs = 10_000, maxRedirects = 5 }: TimedRequestOptions = {}
+  { timeoutMs = 10_000, maxRedirects = 5, captureBody = false }: TimedRequestOptions = {}
 ): Promise<TimedResponse> {
   const t0 = Date.now();
   const timings: PhaseTimings = {
@@ -62,12 +69,12 @@ export async function timedRequest(
     let settled = false;
     let activeReq: http.ClientRequest | null = null;
 
-    const settle = (ok: boolean, statusCode: number | null) => {
+    const settle = (ok: boolean, statusCode: number | null, body: Buffer | null = null) => {
       if (settled) return;
       settled = true;
       clearTimeout(deadline);
       timings.totalMs = Date.now() - t0;
-      resolve({ ok, statusCode, timings });
+      resolve({ ok, statusCode, timings, body });
     };
 
     // One overall deadline spanning all redirect hops, like axios's `timeout`.
@@ -100,7 +107,10 @@ export async function timedRequest(
           agent: false, // fresh connection per hop: DNS/TCP/TLS phases are always real
           headers: {
             Accept: "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate", // axios parity; body is discarded, never decompressed
+            // axios parity; body is discarded, never decompressed — except when capturing for
+            // content hashing, where compression must be disabled so unchanged content hashes stable
+            // (gzip embeds a per-response mtime).
+            "Accept-Encoding": captureBody ? "identity" : "gzip, deflate",
             "User-Agent": "watchdog/1.0",
           },
         },
@@ -131,13 +141,15 @@ export async function timedRequest(
           }
 
           let bytes = 0;
+          const chunks: Buffer[] = [];
           res.on("data", (chunk: Buffer) => {
             bytes += chunk.length;
+            if (captureBody && bytes <= MAX_CAPTURED_BODY_BYTES) chunks.push(chunk);
           });
           res.on("end", () => {
             addPhase("downloadMs", Date.now() - tResponse);
             timings.sizeBytes = bytes;
-            settle(true, statusCode);
+            settle(true, statusCode, captureBody ? Buffer.concat(chunks) : null);
           });
           res.on("error", () => settle(false, statusCode));
         }

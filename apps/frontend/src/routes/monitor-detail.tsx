@@ -10,6 +10,7 @@ import { CertTransparencyCard } from "../components/CertTransparencyCard";
 import { DnsCard } from "../components/DnsCard";
 import { ExposureCard } from "../components/ExposureCard";
 import { BlocklistCard } from "../components/BlocklistCard";
+import { ContentChangeCard } from "../components/ContentChangeCard";
 import { ResponseTimeChart, formatBytes } from "../components/ResponseTimeChart";
 import type { ResponseTimeRange } from "@watchdog/shared-types";
 
@@ -27,6 +28,7 @@ const INCIDENT_LABELS: Record<string, { ongoing: string; resolved: string }> = {
   ssl_expiry: { ongoing: "SSL certificate expiring", resolved: "SSL certificate expiry" },
   header_missing: { ongoing: "Missing security header", resolved: "Missing security header" },
   unexpected_cert: { ongoing: "New certificate detected", resolved: "New certificate detected" },
+  content_changed: { ongoing: "Content change detected", resolved: "Content change detected" },
 };
 
 const RANGES: { label: string; value: ResponseTimeRange }[] = [
@@ -257,7 +259,7 @@ export default function MonitorDetailPage() {
         <ResponseTimeChart data={responseTimes} range={range} />
       </motion.div>
 
-      {/* SSL + Headers + DNS + Exposure + Blocklist */}
+      {/* SSL + Headers + DNS + Exposure + Blocklist + Content Change */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SslCard monitorId={monitor.id} />
         <HeadersCard monitorId={monitor.id} />
@@ -265,6 +267,7 @@ export default function MonitorDetailPage() {
         <DnsCard monitorId={monitor.id} />
         <ExposureCard monitorId={monitor.id} />
         <BlocklistCard monitorId={monitor.id} />
+        <ContentChangeCard monitorId={monitor.id} />
       </div>
 
       {/* Maintenance windows */}

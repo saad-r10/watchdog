@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { timedRequest } from "../lib/timed-request";
+import { hashContent } from "../lib/content-hash";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
@@ -14,9 +15,10 @@ async function checkUptime(monitor: Monitor) {
     if (elapsed < monitor.intervalMinutes * 60_000) return;
   }
 
-  const result = await timedRequest(monitor.url, { timeoutMs: 10_000 });
+  const result = await timedRequest(monitor.url, { timeoutMs: 10_000, captureBody: monitor.contentChangeEnabled });
   const { statusCode, timings } = result;
   const status: "up" | "down" = result.ok && statusCode !== null && statusCode < 400 ? "up" : "down";
+  const contentHash = monitor.contentChangeEnabled && result.ok && result.body ? hashContent(result.body) : null;
 
   await checkRepository.create({
     monitor: { connect: { id: monitor.id } },
@@ -30,6 +32,7 @@ async function checkUptime(monitor: Monitor) {
     ttfbMs: timings.ttfbMs,
     downloadMs: timings.downloadMs,
     sizeBytes: timings.sizeBytes,
+    contentHash,
   });
 
   const openIncident = await incidentRepository.findOpenByMonitor(monitor.id);
@@ -46,6 +49,18 @@ async function checkUptime(monitor: Monitor) {
   } else if (status === "up" && openIncident) {
     const resolved = await incidentRepository.resolve(openIncident.id);
     alertService.notifyRecovery(monitor, resolved).catch(console.error);
+  }
+
+  const previousHash = lastCheck?.contentHash ?? null;
+  const isSnoozed = !!monitor.contentChangeSnoozeUntil && monitor.contentChangeSnoozeUntil > new Date();
+  if (contentHash && previousHash && previousHash !== contentHash && !isSnoozed) {
+    const incident = await incidentRepository.create({
+      monitor: { connect: { id: monitor.id } },
+      type: "content_changed",
+      isResolved: true,
+      resolvedAt: new Date(),
+    });
+    alertService.notifyContentChanged(monitor, incident).catch(console.error);
   }
 }
 
