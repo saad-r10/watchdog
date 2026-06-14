@@ -31,7 +31,7 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency";
+  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
@@ -44,6 +44,7 @@ export interface Check {
   sslDaysLeft?: number | null;
   headers?: Record<string, unknown> | null;
   ctNewCerts?: CertTransparencyEntry[] | null;
+  dnsFindings?: DnsFindings | null;
   metricName?: string | null;
   metricValue?: number | null;
   checkedAt: string;
@@ -102,6 +103,45 @@ export interface CertTransparencyCheckResult {
   newCerts: CertTransparencyEntry[] | null;
   totalCertificates: number;
   recentCertificates: CertTransparencyCertificate[];
+}
+
+export interface SpfFinding {
+  present: boolean;
+  record: string | null;
+  issue: string | null;
+}
+
+export interface DmarcFinding {
+  present: boolean;
+  record: string | null;
+  policy: string | null;
+  issue: string | null;
+}
+
+export interface DkimFinding {
+  present: boolean;
+  selectors: string[];
+  issue: string | null;
+}
+
+export interface DanglingCnameFinding {
+  present: boolean;
+  target: string | null;
+  dangling: boolean;
+  issue: string | null;
+}
+
+export interface DnsFindings {
+  spf: SpfFinding;
+  dmarc: DmarcFinding;
+  dkim: DkimFinding;
+  danglingCname: DanglingCnameFinding;
+}
+
+export interface DnsCheckResult {
+  status: "pass" | "fail" | "error" | null;
+  dnsFindings: DnsFindings | null;
+  checkedAt: string | null;
 }
 
 export interface AlertSettings {
