@@ -68,11 +68,24 @@ export interface SslCheckResult {
   checkedAt: string | null;
 }
 
+export interface CookieFinding {
+  name: string;
+  missingSecure: boolean;
+  missingHttpOnly: boolean;
+  missingSameSite: boolean;
+}
+
+export interface MixedContentFinding {
+  url: string;
+}
+
 export interface HeadersCheckResult {
   status: "pass" | "fail" | "error" | null;
   headers: {
     present: Record<string, string>;
     missing: string[];
+    cookies: CookieFinding[];
+    mixedContent: MixedContentFinding[];
   } | null;
   checkedAt: string | null;
 }
