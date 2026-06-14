@@ -78,6 +78,42 @@ describe("GET /api/monitors/:id/headers", () => {
   });
 });
 
+describe("GET /api/monitors/:id/exposure", () => {
+  it("returns null before any exposure checks", async () => {
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/exposure`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeNull();
+  });
+
+  it("returns exposure check data after a check is stored", async () => {
+    await prisma.check.create({
+      data: {
+        monitorId,
+        type: "exposure",
+        status: "fail",
+        exposureFindings: {
+          securityTxt: { present: false, issue: "No /.well-known/security.txt found (RFC 9116)" },
+          exposedPaths: [
+            { path: "/.env", exposed: true, statusCode: 200 },
+            { path: "/.git/config", exposed: false, statusCode: 404 },
+          ],
+        },
+      },
+    });
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/exposure`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("fail");
+    expect(res.body.data.exposureFindings.exposedPaths).toEqual(
+      expect.arrayContaining([{ path: "/.env", exposed: true, statusCode: 200 }])
+    );
+    expect(res.body.data.exposureFindings.securityTxt.present).toBe(false);
+  });
+});
+
 describe("GET /api/monitors/:id/certs", () => {
   it("returns empty/null state before any CT checks", async () => {
     const res = await request(app)

@@ -50,7 +50,7 @@ export const checkRepository = {
       orderBy: { checkedAt: "desc" },
     });
   },
-  async findLatestByType(monitorId: string, type: "ssl" | "headers" | "cert_transparency" | "dns"): Promise<Check | null> {
+  async findLatestByType(monitorId: string, type: "ssl" | "headers" | "cert_transparency" | "dns" | "exposure"): Promise<Check | null> {
     return prisma.check.findFirst({
       where: { monitorId, type },
       orderBy: { checkedAt: "desc" },

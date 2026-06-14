@@ -79,6 +79,7 @@ model Check {
   headers      Json?
   ctNewCerts   Json?
   dnsFindings  Json?
+  exposureFindings Json?
   metricName   String?
   metricValue  Float?
   checkedAt    DateTime @default(now())
@@ -188,6 +189,7 @@ enum CheckType {
   metric
   cert_transparency
   dns
+  exposure
 }
 
 enum IncidentType {

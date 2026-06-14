@@ -31,7 +31,7 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns";
+  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
@@ -45,6 +45,7 @@ export interface Check {
   headers?: Record<string, unknown> | null;
   ctNewCerts?: CertTransparencyEntry[] | null;
   dnsFindings?: DnsFindings | null;
+  exposureFindings?: ExposureFindings | null;
   metricName?: string | null;
   metricValue?: number | null;
   checkedAt: string;
@@ -141,6 +142,28 @@ export interface DnsFindings {
 export interface DnsCheckResult {
   status: "pass" | "fail" | "error" | null;
   dnsFindings: DnsFindings | null;
+  checkedAt: string | null;
+}
+
+export interface SecurityTxtFinding {
+  present: boolean;
+  issue: string | null;
+}
+
+export interface ExposedPathFinding {
+  path: string;
+  exposed: boolean;
+  statusCode: number | null;
+}
+
+export interface ExposureFindings {
+  securityTxt: SecurityTxtFinding;
+  exposedPaths: ExposedPathFinding[];
+}
+
+export interface ExposureCheckResult {
+  status: "pass" | "fail" | "error" | null;
+  exposureFindings: ExposureFindings | null;
   checkedAt: string | null;
 }
 
