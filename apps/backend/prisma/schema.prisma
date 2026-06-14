@@ -17,6 +17,7 @@ model User {
   alertDowntime    Boolean  @default(true)
   alertSslExpiry   Boolean  @default(true)
   alertCertTransparency Boolean @default(true)
+  alertBlocklist   Boolean  @default(true)
   webhookUrl       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -80,6 +81,7 @@ model Check {
   ctNewCerts   Json?
   dnsFindings  Json?
   exposureFindings Json?
+  blocklistFindings Json?
   metricName   String?
   metricValue  Float?
   checkedAt    DateTime @default(now())
@@ -190,6 +192,7 @@ enum CheckType {
   cert_transparency
   dns
   exposure
+  blocklist
 }
 
 enum IncidentType {
@@ -197,4 +200,5 @@ enum IncidentType {
   ssl_expiry
   header_missing
   unexpected_cert
+  domain_blocklisted
 }
