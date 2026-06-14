@@ -78,6 +78,7 @@ model Check {
   sslDaysLeft  Int?
   headers      Json?
   ctNewCerts   Json?
+  dnsFindings  Json?
   metricName   String?
   metricValue  Float?
   checkedAt    DateTime @default(now())
@@ -186,6 +187,7 @@ enum CheckType {
   headers
   metric
   cert_transparency
+  dns
 }
 
 enum IncidentType {
