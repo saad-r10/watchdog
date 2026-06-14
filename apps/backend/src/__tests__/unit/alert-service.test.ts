@@ -132,3 +132,57 @@ describe("alertService.notifySslExpiry", () => {
     expect(mockSendEmail).not.toHaveBeenCalled();
   });
 });
+
+describe("alertService.notifyUnexpectedCert", () => {
+  const ctIncident = { ...incident, type: "unexpected_cert" as const, isResolved: true, resolvedAt: new Date() };
+  const newCerts = [
+    {
+      id: 999,
+      issuer_name: "C=US, O=Let's Encrypt, CN=R3",
+      common_name: "evil.example.com",
+      name_value: "evil.example.com",
+      not_before: "2026-06-01T00:00:00",
+      not_after: "2026-09-01T00:00:00",
+    },
+  ];
+
+  it("sends a new-certificate email when no prior alert and alertCertTransparency is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertCertTransparency: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyUnexpectedCert(monitor, ctIncident, newCerts);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("New certificate detected") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1" });
+  });
+
+  it("skips when alertCertTransparency is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertCertTransparency: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyUnexpectedCert(monitor, ctIncident, newCerts);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifyUnexpectedCert(monitor, ctIncident, newCerts);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});

@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import type { CrtShEntry } from "../lib/crtsh";
 
 let resend: Resend | null = null;
 
@@ -116,6 +117,50 @@ export function passwordResetHtml(resetUrl: string): string {
         </a>
         <p style="margin:16px 0 0;color:#6b7280;font-size:13px">
           This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function ctAlertHtml(monitorName: string, url: string, newCerts: CrtShEntry[]): string {
+  const items = newCerts
+    .slice(0, 10)
+    .map(
+      (c) => `
+        <li style="margin-bottom:8px">
+          <strong>${escapeHtml(c.common_name)}</strong><br/>
+          <span style="color:#6b7280;font-size:13px">Issuer: ${escapeHtml(c.issuer_name)}</span><br/>
+          <span style="color:#6b7280;font-size:13px">Valid: ${escapeHtml(c.not_before)} → ${escapeHtml(c.not_after)}</span>
+        </li>`
+    )
+    .join("");
+
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">🔏 New Certificate Detected — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          ${newCerts.length} new certificate${newCerts.length === 1 ? "" : "s"} appeared in Certificate
+          Transparency logs for <strong>${escapeHtml(url)}</strong>:
+        </p>
+        <ul style="margin:0 0 12px;padding-left:20px;color:#374151;font-size:14px">${items}</ul>
+        <p style="margin:0;color:#6b7280;font-size:14px">
+          If you don't recognize these certificates, this could indicate a compromised DNS provider,
+          a phishing subdomain, or unauthorized cert issuance — investigate promptly.
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">

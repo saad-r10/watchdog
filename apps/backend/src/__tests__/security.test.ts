@@ -77,3 +77,65 @@ describe("GET /api/monitors/:id/headers", () => {
     expect(missing).toContain("content-security-policy");
   });
 });
+
+describe("GET /api/monitors/:id/certs", () => {
+  it("returns empty/null state before any CT checks", async () => {
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/certs`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBeNull();
+    expect(res.body.data.newCerts).toBeNull();
+    expect(res.body.data.totalCertificates).toBe(0);
+    expect(res.body.data.recentCertificates).toEqual([]);
+  });
+
+  it("returns CT check data and tracked certificates after a baseline run", async () => {
+    await prisma.monitorCertificate.create({
+      data: {
+        monitorId,
+        crtShId: "123456",
+        commonName: "example.com",
+        issuerName: "C=US, O=Let's Encrypt, CN=R3",
+        nameValue: "example.com",
+        notBefore: new Date("2026-01-01"),
+        notAfter: new Date("2026-04-01"),
+      },
+    });
+    await prisma.check.create({
+      data: { monitorId, type: "cert_transparency", status: "baseline" },
+    });
+
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/certs`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("baseline");
+    expect(res.body.data.totalCertificates).toBe(1);
+    expect(res.body.data.recentCertificates[0].commonName).toBe("example.com");
+  });
+
+  it("surfaces newCerts when a new certificate is detected", async () => {
+    const newCerts = [
+      {
+        id: 999,
+        issuer_name: "C=US, O=Let's Encrypt, CN=R3",
+        common_name: "evil.example.com",
+        name_value: "evil.example.com",
+        not_before: "2026-06-01T00:00:00",
+        not_after: "2026-09-01T00:00:00",
+      },
+    ];
+    await prisma.check.create({
+      data: { monitorId, type: "cert_transparency", status: "new_cert", ctNewCerts: newCerts },
+    });
+
+    const res = await request(app)
+      .get(`/api/monitors/${monitorId}/certs`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("new_cert");
+    expect(res.body.data.newCerts).toHaveLength(1);
+    expect(res.body.data.newCerts[0].common_name).toBe("evil.example.com");
+  });
+});

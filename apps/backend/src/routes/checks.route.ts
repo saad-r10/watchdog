@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { monitorService } from "../services/monitor.service";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
+import { monitorCertificateRepository } from "../repositories/monitor-certificate.repository";
 
 const router = Router({ mergeParams: true });
 router.use(authenticate);
@@ -81,6 +82,30 @@ router.get("/headers", async (req, res, next) => {
     await monitorService.getById(id, req.user.id);
     const check = await checkRepository.findLatestByType(id, "headers");
     res.json({ success: true, data: check ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/certs", async (req, res, next) => {
+  try {
+    const id = monitorId(req as any);
+    await monitorService.getById(id, req.user.id);
+    const [latest, allCerts, recentCerts] = await Promise.all([
+      checkRepository.findLatestByType(id, "cert_transparency"),
+      monitorCertificateRepository.findByMonitor(id),
+      monitorCertificateRepository.findRecentByMonitor(id, 10),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        status: latest?.status ?? null,
+        checkedAt: latest?.checkedAt ?? null,
+        newCerts: latest?.ctNewCerts ?? null,
+        totalCertificates: allCerts.length,
+        recentCertificates: recentCerts,
+      },
+    });
   } catch (err) {
     next(err);
   }

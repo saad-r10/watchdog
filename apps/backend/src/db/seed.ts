@@ -47,6 +47,7 @@ async function main() {
       alertEmail: "demo@watchdog.dev",
       alertDowntime: true,
       alertSslExpiry: true,
+      alertCertTransparency: true,
       webhookUrl: "http://localhost:3002/webhook",
     },
     create: {
@@ -56,6 +57,7 @@ async function main() {
       alertEmail: "demo@watchdog.dev",
       alertDowntime: true,
       alertSslExpiry: true,
+      alertCertTransparency: true,
       webhookUrl: "http://localhost:3002/webhook",
     },
   });

@@ -1,7 +1,8 @@
 import { prisma } from "../db";
 import { alertRepository } from "../repositories/alert.repository";
-import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml } from "./email.service";
+import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml } from "./email.service";
 import { sendWebhook } from "./webhook.service";
+import type { CrtShEntry } from "../lib/crtsh";
 import type { Monitor, Incident } from "@prisma/client";
 
 export const alertService = {
@@ -97,6 +98,37 @@ export const alertService = {
             monitorUrl: monitor.url,
             incidentId: incident.id,
             message: `SSL certificate expires in ${daysLeft} days`,
+          })
+        : Promise.resolve(),
+    ]);
+
+    await alertRepository.create({ userId: monitor.userId, incidentId: incident.id });
+  },
+
+  async notifyUnexpectedCert(monitor: Monitor, incident: Incident, newCerts: CrtShEntry[]): Promise<void> {
+    const alreadySent = await alertRepository.hasAlertForIncident(incident.id);
+    if (alreadySent) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: monitor.userId },
+      select: { email: true, alertEmail: true, alertCertTransparency: true, webhookUrl: true },
+    });
+    if (!user?.alertCertTransparency) return;
+
+    await Promise.allSettled([
+      sendEmail({
+        to: user.alertEmail ?? user.email,
+        subject: `🔏 New certificate detected: ${monitor.name}`,
+        html: ctAlertHtml(monitor.name, monitor.url, newCerts),
+      }),
+      user.webhookUrl
+        ? sendWebhook(user.webhookUrl, {
+            event: "unexpected_cert",
+            monitorId: monitor.id,
+            monitorName: monitor.name,
+            monitorUrl: monitor.url,
+            incidentId: incident.id,
+            message: `${newCerts.length} new certificate${newCerts.length === 1 ? "" : "s"} detected for ${monitor.url}`,
           })
         : Promise.resolve(),
     ]);

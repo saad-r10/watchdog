@@ -6,6 +6,7 @@ import { api } from "../services/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { SslCard } from "../components/SslCard";
 import { HeadersCard } from "../components/HeadersCard";
+import { CertTransparencyCard } from "../components/CertTransparencyCard";
 import { ResponseTimeChart, formatBytes } from "../components/ResponseTimeChart";
 import type { ResponseTimeRange } from "@watchdog/shared-types";
 
@@ -17,6 +18,13 @@ function formatDuration(start: string, end?: string | null) {
   if (hrs < 24) return `${hrs}h ${mins % 60}m`;
   return `${Math.floor(hrs / 24)}d ${hrs % 24}h`;
 }
+
+const INCIDENT_LABELS: Record<string, { ongoing: string; resolved: string }> = {
+  downtime: { ongoing: "Ongoing downtime", resolved: "Downtime" },
+  ssl_expiry: { ongoing: "SSL certificate expiring", resolved: "SSL certificate expiry" },
+  header_missing: { ongoing: "Missing security header", resolved: "Missing security header" },
+  unexpected_cert: { ongoing: "New certificate detected", resolved: "New certificate detected" },
+};
 
 const RANGES: { label: string; value: ResponseTimeRange }[] = [
   { label: "24h", value: "24h" },
@@ -247,9 +255,10 @@ export default function MonitorDetailPage() {
       </motion.div>
 
       {/* SSL + Headers */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SslCard monitorId={monitor.id} />
         <HeadersCard monitorId={monitor.id} />
+        <CertTransparencyCard monitorId={monitor.id} />
       </div>
 
       {/* Maintenance windows */}
@@ -354,26 +363,31 @@ export default function MonitorDetailPage() {
             <h3 className="text-sm font-semibold text-foreground">Incidents</h3>
           </div>
           <div className="divide-y divide-border">
-            {incidents.map((inc) => (
-              <div key={inc.id} className="px-6 py-4 flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${inc.isResolved ? "bg-muted" : "bg-down"}`}
-                  />
-                  <span className={inc.isResolved ? "text-muted-foreground" : "text-down"}>
-                    {inc.isResolved ? "Downtime" : "Ongoing downtime"}
-                  </span>
+            {incidents.map((inc) => {
+              const labels = INCIDENT_LABELS[inc.type] ?? { ongoing: "Ongoing incident", resolved: "Incident" };
+              return (
+                <div key={inc.id} className="px-6 py-4 flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${inc.isResolved ? "bg-muted" : "bg-down"}`}
+                    />
+                    <span className={inc.isResolved ? "text-muted-foreground" : "text-down"}>
+                      {inc.isResolved ? labels.resolved : labels.ongoing}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">{new Date(inc.startedAt).toLocaleString()}</p>
+                    {(inc.type === "downtime" || inc.type === "ssl_expiry") && (
+                      <p className="text-xs text-muted-foreground/60 mt-0.5">
+                        {inc.isResolved
+                          ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}`
+                          : `Ongoing — ${formatDuration(inc.startedAt)}`}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">{new Date(inc.startedAt).toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    {inc.isResolved
-                      ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}`
-                      : `Ongoing — ${formatDuration(inc.startedAt)}`}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
