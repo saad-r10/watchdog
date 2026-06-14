@@ -3,6 +3,7 @@ import { hashContent } from "../../lib/content-hash";
 import { checkRepository } from "../../repositories/check.repository";
 import { incidentRepository } from "../../repositories/incident.repository";
 import { maintenanceRepository } from "../../repositories/maintenance.repository";
+import { monitorAgentRepository } from "../../repositories/monitor-agent.repository";
 import { alertService } from "../../services/alert.service";
 import { monitorRepository } from "../../repositories/monitor.repository";
 
@@ -11,6 +12,7 @@ jest.mock("node-cron", () => ({ schedule: jest.fn() }));
 jest.mock("../../repositories/check.repository");
 jest.mock("../../repositories/incident.repository");
 jest.mock("../../repositories/maintenance.repository");
+jest.mock("../../repositories/monitor-agent.repository");
 jest.mock("../../repositories/monitor.repository");
 jest.mock("../../services/alert.service");
 
@@ -18,8 +20,22 @@ const mockTimedRequest = timedRequest as jest.MockedFunction<typeof timedRequest
 const mockCheckRepo = checkRepository as jest.Mocked<typeof checkRepository>;
 const mockIncidentRepo = incidentRepository as jest.Mocked<typeof incidentRepository>;
 const mockMaintenanceRepo = maintenanceRepository as jest.Mocked<typeof maintenanceRepository>;
+const mockMonitorAgentRepo = monitorAgentRepository as jest.Mocked<typeof monitorAgentRepository>;
 const mockAlertService = alertService as jest.Mocked<typeof alertService>;
 const mockMonitorRepo = monitorRepository as jest.Mocked<typeof monitorRepository>;
+
+function latestUptimeRow(status: "up" | "down", overrides: Partial<{ statusCode: number | null; responseTime: number | null; checkedAt: Date }> = {}) {
+  return [
+    {
+      agentId: null,
+      status,
+      statusCode: status === "up" ? 200 : 500,
+      responseTime: 100,
+      checkedAt: new Date(),
+      ...overrides,
+    },
+  ];
+}
 
 function makeResponse(overrides: Partial<TimedResponse> = {}): TimedResponse {
   return {
@@ -44,12 +60,12 @@ const monitor = {
   userId: "user-1",
   name: "Test",
   url: "https://example.com",
-  agentId: null,
   intervalMinutes: 1,
   isActive: true,
   paused: false,
   contentChangeEnabled: false,
   contentChangeSnoozeUntil: null,
+  regionDownThreshold: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -69,7 +85,10 @@ beforeEach(() => {
   mockIncidentRepo.create.mockResolvedValue(incident);
   mockIncidentRepo.resolve.mockResolvedValue({ ...incident, isResolved: true });
   mockMaintenanceRepo.isActive.mockResolvedValue(false);
+  mockMonitorAgentRepo.findAgentIdsByMonitor.mockResolvedValue([]);
+  mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("up"));
   mockAlertService.notifyDowntime.mockResolvedValue(undefined);
+  mockAlertService.notifyRecovery.mockResolvedValue(undefined);
 });
 
 async function runCronTick() {
@@ -84,6 +103,7 @@ describe("uptime worker — downtime detection", () => {
   it("creates a down check when site returns 500", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 500 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
+    mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("down"));
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
     await runCronTick();
@@ -112,6 +132,7 @@ describe("uptime worker — downtime detection", () => {
   it("does not create a new incident if one is already open", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 503 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(incident);
+    mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("down"));
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
     await runCronTick();
@@ -137,6 +158,7 @@ describe("uptime worker — downtime detection", () => {
       })
     );
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
+    mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("down", { statusCode: null }));
     mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
 
     await runCronTick();

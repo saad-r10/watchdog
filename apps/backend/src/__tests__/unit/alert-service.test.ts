@@ -18,12 +18,12 @@ const monitor = {
   userId: "user-1",
   name: "My Site",
   url: "https://example.com",
-  agentId: null,
   intervalMinutes: 5,
   isActive: true,
   paused: false,
   contentChangeEnabled: false,
   contentChangeSnoozeUntil: null,
+  regionDownThreshold: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

@@ -50,6 +50,19 @@ export const checkRepository = {
       orderBy: { checkedAt: "desc" },
     });
   },
+  async getLatestUptimePerSource(
+    monitorId: string
+  ): Promise<Array<{ agentId: string | null; status: string; statusCode: number | null; responseTime: number | null; checkedAt: Date }>> {
+    return prisma.$queryRaw<
+      Array<{ agentId: string | null; status: string; statusCode: number | null; responseTime: number | null; checkedAt: Date }>
+    >`
+      SELECT DISTINCT ON ("agentId") "agentId", status, "statusCode", "responseTime", "checkedAt"
+      FROM "Check"
+      WHERE "monitorId" = ${monitorId}
+        AND type = 'uptime'
+      ORDER BY "agentId", "checkedAt" DESC
+    `;
+  },
   async findLatestByType(monitorId: string, type: "ssl" | "headers" | "cert_transparency" | "dns" | "exposure" | "blocklist"): Promise<Check | null> {
     return prisma.check.findFirst({
       where: { monitorId, type },

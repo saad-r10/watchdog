@@ -181,10 +181,14 @@ async function main() {
   const agentKeyHash = await bcrypt.hash(agentKey, 10);
   agent = await prisma.agent.update({
     where: { id: agent.id },
-    data: { keyHash: agentKeyHash, lastSeenAt: new Date(Date.now() - 30_000) },
+    data: { keyHash: agentKeyHash, lastSeenAt: new Date(Date.now() - 30_000), region: "us-east" },
   });
 
-  await prisma.monitor.update({ where: { id: m4.id }, data: { agentId: agent.id } });
+  await prisma.monitorAgent.upsert({
+    where: { monitorId_agentId: { monitorId: m4.id, agentId: agent.id } },
+    create: { monitorId: m4.id, agentId: agent.id },
+    update: {},
+  });
 
   const statusPage = await prisma.statusPage.upsert({
     where: { slug: "demo-status" },

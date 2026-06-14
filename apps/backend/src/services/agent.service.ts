@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { agentRepository } from "../repositories/agent.repository";
 import { checkRepository } from "../repositories/check.repository";
 import { monitorRepository } from "../repositories/monitor.repository";
+import { monitorAgentRepository } from "../repositories/monitor-agent.repository";
+import { monitorStatusService } from "./monitor-status.service";
 
 function generateKey(agentId: string): string {
   const secret = crypto.randomBytes(24).toString("hex");
@@ -16,15 +18,20 @@ function parseAgentId(key: string): string | null {
 
 export const agentService = {
   async list(userId: string) {
-    return agentRepository.findByUser(userId);
+    const agents = await agentRepository.findByUser(userId);
+    return agents.map(({ monitorAgents, ...agent }) => ({
+      ...agent,
+      monitors: monitorAgents.map((ma) => ma.monitor),
+    }));
   },
 
-  async create(userId: string, name: string) {
-    // Create with placeholder keyHash first to get the ID
+  async create(userId: string, name: string, region?: string | null) {
+    // Create with a unique placeholder keyHash first to get the ID (keyHash has a unique constraint)
     const placeholder = await agentRepository.create({
       userId,
       name,
-      keyHash: "pending",
+      keyHash: `pending-${crypto.randomUUID()}`,
+      region,
     });
 
     const key = generateKey(placeholder.id);
@@ -37,6 +44,16 @@ export const agentService = {
     });
 
     return { agent, key };
+  },
+
+  async update(id: string, userId: string, data: { name?: string; region?: string | null }) {
+    const agent = await agentRepository.findById(id);
+    if (!agent || agent.userId !== userId) {
+      const err = new Error("Agent not found") as any;
+      err.status = 404;
+      throw err;
+    }
+    return agentRepository.update(id, data);
   },
 
   async delete(id: string, userId: string) {
@@ -98,9 +115,9 @@ export const agentService = {
     const monitorIds = [...new Set(results.map((r) => r.monitorId))];
     await Promise.allSettled(
       monitorIds.map(async (monitorId) => {
-        const monitor = await monitorRepository.findById(monitorId);
-        if (monitor && monitor.agentId === null) {
-          await monitorRepository.update(monitorId, { agent: { connect: { id: agentId } } });
+        const assigned = await monitorAgentRepository.exists(monitorId, agentId);
+        if (!assigned) {
+          await monitorAgentRepository.assign(monitorId, agentId);
         }
       })
     );
@@ -109,6 +126,7 @@ export const agentService = {
       results.map((r) =>
         checkRepository.create({
           monitor: { connect: { id: r.monitorId } },
+          agent: { connect: { id: agentId } },
           type: r.type,
           status: r.status,
           statusCode: r.statusCode,
@@ -130,6 +148,17 @@ export const agentService = {
           metricValue: r.metricValue,
         })
       )
+    );
+
+    // Re-evaluate aggregate status for any monitors with a fresh uptime result
+    const uptimeMonitorIds = [...new Set(results.filter((r) => r.type === "uptime").map((r) => r.monitorId))];
+    await Promise.allSettled(
+      uptimeMonitorIds.map(async (monitorId) => {
+        const monitor = await monitorRepository.findById(monitorId);
+        if (monitor) {
+          await monitorStatusService.evaluateUptimeStatus(monitor);
+        }
+      })
     );
   },
 };

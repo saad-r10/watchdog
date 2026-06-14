@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, CertTransparencyCheckResult, DnsCheckResult, ExposureCheckResult, BlocklistCheckResult, ContentChangeStatus, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput, AppNotification } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, CertTransparencyCheckResult, DnsCheckResult, ExposureCheckResult, BlocklistCheckResult, ContentChangeStatus, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, MonitorRegionStatus, DashboardData, UpdateMonitorInput, UpdateAgentInput, AppNotification } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -73,6 +73,12 @@ export const api = {
       http.post<{ success: boolean; data: Monitor }>(`/api/monitors/${id}/snooze-content-change`, { hours }).then((r) => r.data.data),
     responseTimes: (id: string, range: ResponseTimeRange) =>
       http.get<{ success: boolean; data: ResponseTimeBucket[] }>(`/api/monitors/${id}/response-times`, { params: { range } }).then((r) => r.data.data),
+    regions: (id: string) =>
+      http.get<{ success: boolean; data: MonitorRegionStatus[] }>(`/api/monitors/${id}/regions`).then((r) => r.data.data),
+    assignAgent: (monitorId: string, agentId: string) =>
+      http.post<{ success: boolean; data: Monitor }>(`/api/monitors/${monitorId}/agents/${agentId}`).then((r) => r.data.data),
+    unassignAgent: (monitorId: string, agentId: string) =>
+      http.delete<{ success: boolean; data: Monitor }>(`/api/monitors/${monitorId}/agents/${agentId}`).then((r) => r.data.data),
     maintenance: {
       list: (id: string) =>
         http.get<{ success: boolean; data: MaintenanceWindow[] }>(`/api/monitors/${id}/maintenance`).then((r) => r.data.data),
@@ -93,8 +99,10 @@ export const api = {
   agents: {
     list: () =>
       http.get<{ success: boolean; data: Agent[] }>("/api/agents").then((r) => r.data.data),
-    create: (data: { name: string }) =>
+    create: (data: { name: string; region?: string }) =>
       http.post<{ success: boolean; data: AgentWithKey }>("/api/agents", data).then((r) => r.data.data),
+    update: (id: string, data: UpdateAgentInput) =>
+      http.patch<{ success: boolean; data: Agent }>(`/api/agents/${id}`, data).then((r) => r.data.data),
     delete: (id: string) => http.delete(`/api/agents/${id}`),
   },
   dashboard: {

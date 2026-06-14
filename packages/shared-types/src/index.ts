@@ -22,8 +22,8 @@ export const UpdateMonitorSchema = z.object({
   intervalMinutes: z.number().int().min(1).max(60).optional(),
   isActive: z.boolean().optional(),
   paused: z.boolean().optional(),
-  agentId: z.string().uuid().nullable().optional(),
   contentChangeEnabled: z.boolean().optional(),
+  regionDownThreshold: z.number().int().min(1).max(10).optional(),
 });
 export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
 
@@ -48,6 +48,7 @@ export interface Check {
   downloadMs?: number | null;
   sizeBytes?: number | null;
   sslDaysLeft?: number | null;
+  agentId?: string | null;
   headers?: Record<string, unknown> | null;
   ctNewCerts?: CertTransparencyEntry[] | null;
   dnsFindings?: DnsFindings | null;
@@ -242,9 +243,17 @@ export interface Incident {
 
 export const CreateAgentSchema = z.object({
   name: z.string().min(1),
+  region: z.string().max(64).optional(),
 });
 
 export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
+
+export const UpdateAgentSchema = z.object({
+  name: z.string().min(1).optional(),
+  region: z.string().max(64).nullable().optional(),
+});
+
+export type UpdateAgentInput = z.infer<typeof UpdateAgentSchema>;
 
 export interface AgentMonitor {
   id: string;
@@ -256,6 +265,7 @@ export interface Agent {
   id: string;
   userId: string;
   name: string;
+  region: string | null;
   lastSeenAt: string | null;
   createdAt: string;
   monitors: AgentMonitor[];
@@ -294,10 +304,16 @@ export const AgentCheckResultSchema = z.object({
 
 export type AgentCheckResult = z.infer<typeof AgentCheckResultSchema>;
 
+export interface MonitorAgentInfo {
+  id: string;
+  name: string;
+  region: string | null;
+  lastSeenAt: string | null;
+}
+
 export interface Monitor {
   id: string;
   userId: string;
-  agentId: string | null;
   name: string;
   url: string;
   intervalMinutes: number;
@@ -305,8 +321,20 @@ export interface Monitor {
   paused: boolean;
   contentChangeEnabled: boolean;
   contentChangeSnoozeUntil: string | null;
+  regionDownThreshold: number;
+  agents: MonitorAgentInfo[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MonitorRegionStatus {
+  agentId: string | null;
+  label: string;
+  region: string | null;
+  status: "up" | "down" | null;
+  statusCode: number | null;
+  responseTime: number | null;
+  checkedAt: string | null;
 }
 
 export interface MaintenanceWindow {
