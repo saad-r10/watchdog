@@ -1,4 +1,5 @@
 import { timedRequest, type TimedResponse } from "../../lib/timed-request";
+import { hashContent } from "../../lib/content-hash";
 import { checkRepository } from "../../repositories/check.repository";
 import { incidentRepository } from "../../repositories/incident.repository";
 import { maintenanceRepository } from "../../repositories/maintenance.repository";
@@ -24,6 +25,7 @@ function makeResponse(overrides: Partial<TimedResponse> = {}): TimedResponse {
   return {
     ok: true,
     statusCode: 200,
+    body: null,
     timings: {
       dnsMs: 5,
       tcpMs: 12,
@@ -46,6 +48,8 @@ const monitor = {
   intervalMinutes: 1,
   isActive: true,
   paused: false,
+  contentChangeEnabled: false,
+  contentChangeSnoozeUntil: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -165,5 +169,54 @@ describe("uptime worker — timing breakdown persistence", () => {
         sizeBytes: 1234,
       })
     );
+  });
+});
+
+describe("uptime worker — content-change detection", () => {
+  const contentMonitor = { ...monitor, contentChangeEnabled: true };
+
+  it("hashes the body and records contentHash when enabled", async () => {
+    mockTimedRequest.mockResolvedValue(makeResponse({ body: Buffer.from("<html>hello</html>") }));
+    mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
+    mockMonitorRepo.findAllActive.mockResolvedValue([contentMonitor]);
+    mockCheckRepo.getLatest.mockResolvedValue(null);
+
+    await runCronTick();
+
+    expect(mockCheckRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ contentHash: hashContent(Buffer.from("<html>hello</html>")) })
+    );
+    expect(mockIncidentRepo.create).not.toHaveBeenCalledWith(expect.objectContaining({ type: "content_changed" }));
+  });
+
+  it("creates a resolved content_changed incident and alerts when the hash changes", async () => {
+    const newHash = hashContent(Buffer.from("<html>hacked</html>"));
+    const contentIncident = { ...incident, type: "content_changed" as const, isResolved: true, resolvedAt: new Date() };
+    mockTimedRequest.mockResolvedValue(makeResponse({ body: Buffer.from("<html>hacked</html>") }));
+    mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
+    mockMonitorRepo.findAllActive.mockResolvedValue([contentMonitor]);
+    mockCheckRepo.getLatest.mockResolvedValue({ contentHash: hashContent(Buffer.from("<html>hello</html>")), checkedAt: new Date(0) } as any);
+    mockIncidentRepo.create.mockResolvedValue(contentIncident);
+    mockAlertService.notifyContentChanged = jest.fn().mockResolvedValue(undefined);
+
+    await runCronTick();
+
+    expect(mockCheckRepo.create).toHaveBeenCalledWith(expect.objectContaining({ contentHash: newHash }));
+    expect(mockIncidentRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "content_changed", isResolved: true })
+    );
+    expect(mockAlertService.notifyContentChanged).toHaveBeenCalledWith(contentMonitor, contentIncident);
+  });
+
+  it("does not create an incident when snoozed", async () => {
+    const snoozedMonitor = { ...contentMonitor, contentChangeSnoozeUntil: new Date(Date.now() + 3_600_000) };
+    mockTimedRequest.mockResolvedValue(makeResponse({ body: Buffer.from("<html>hacked</html>") }));
+    mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
+    mockMonitorRepo.findAllActive.mockResolvedValue([snoozedMonitor]);
+    mockCheckRepo.getLatest.mockResolvedValue({ contentHash: hashContent(Buffer.from("<html>hello</html>")), checkedAt: new Date(0) } as any);
+
+    await runCronTick();
+
+    expect(mockIncidentRepo.create).not.toHaveBeenCalledWith(expect.objectContaining({ type: "content_changed" }));
   });
 });

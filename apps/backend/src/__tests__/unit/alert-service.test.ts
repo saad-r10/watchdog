@@ -22,6 +22,8 @@ const monitor = {
   intervalMinutes: 5,
   isActive: true,
   paused: false,
+  contentChangeEnabled: false,
+  contentChangeSnoozeUntil: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -232,6 +234,50 @@ describe("alertService.notifyDomainBlocklisted", () => {
     mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
 
     await alertService.notifyDomainBlocklisted(monitor, blocklistIncident, findings);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("alertService.notifyContentChanged", () => {
+  const contentChangeIncident = { ...incident, type: "content_changed" as const, isResolved: true, resolvedAt: new Date() };
+
+  it("sends a content-change email when no prior alert and alertContentChange is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertContentChange: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyContentChanged(monitor, contentChangeIncident);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("Content changed") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1" });
+  });
+
+  it("skips when alertContentChange is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertContentChange: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyContentChanged(monitor, contentChangeIncident);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifyContentChanged(monitor, contentChangeIncident);
 
     expect(mockSendEmail).not.toHaveBeenCalled();
     expect(mockAlertRepo.create).not.toHaveBeenCalled();

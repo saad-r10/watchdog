@@ -1,6 +1,6 @@
 import { prisma } from "../db";
 import { alertRepository } from "../repositories/alert.repository";
-import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml, blocklistAlertHtml } from "./email.service";
+import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml, blocklistAlertHtml, contentChangeAlertHtml } from "./email.service";
 import { sendWebhook } from "./webhook.service";
 import type { CrtShEntry } from "../lib/crtsh";
 import type { BlocklistFindings } from "../lib/blocklist-utils";
@@ -163,6 +163,37 @@ export const alertService = {
             monitorUrl: monitor.url,
             incidentId: incident.id,
             message: `${findings.hostname} appears on blocklist source(s): ${sources.join(", ")}`,
+          })
+        : Promise.resolve(),
+    ]);
+
+    await alertRepository.create({ userId: monitor.userId, incidentId: incident.id });
+  },
+
+  async notifyContentChanged(monitor: Monitor, incident: Incident): Promise<void> {
+    const alreadySent = await alertRepository.hasAlertForIncident(incident.id);
+    if (alreadySent) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: monitor.userId },
+      select: { email: true, alertEmail: true, alertContentChange: true, webhookUrl: true },
+    });
+    if (!user?.alertContentChange) return;
+
+    await Promise.allSettled([
+      sendEmail({
+        to: user.alertEmail ?? user.email,
+        subject: `✏️ Content changed: ${monitor.name}`,
+        html: contentChangeAlertHtml(monitor.name, monitor.url, incident.startedAt),
+      }),
+      user.webhookUrl
+        ? sendWebhook(user.webhookUrl, {
+            event: "content_changed",
+            monitorId: monitor.id,
+            monitorName: monitor.name,
+            monitorUrl: monitor.url,
+            incidentId: incident.id,
+            message: `Page content changed unexpectedly for ${monitor.url}`,
           })
         : Promise.resolve(),
     ]);

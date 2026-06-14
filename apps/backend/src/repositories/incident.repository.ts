@@ -1,5 +1,5 @@
 import { prisma } from "../db";
-import type { Incident, Prisma } from "@prisma/client";
+import type { Incident, IncidentType, Prisma } from "@prisma/client";
 
 export const incidentRepository = {
   async create(data: Prisma.IncidentCreateInput): Promise<Incident> {
@@ -27,6 +27,12 @@ export const incidentRepository = {
     return prisma.incident.update({
       where: { id },
       data: { isResolved: true, resolvedAt: new Date() },
+    });
+  },
+  async findLatestByType(monitorId: string, type: IncidentType): Promise<Incident | null> {
+    return prisma.incident.findFirst({
+      where: { monitorId, type },
+      orderBy: { startedAt: "desc" },
     });
   },
   async findByMonitor(monitorId: string, limit = 20): Promise<Incident[]> {

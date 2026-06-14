@@ -206,6 +206,31 @@ export function blocklistAlertHtml(monitorName: string, url: string, findings: B
   `;
 }
 
+export function contentChangeAlertHtml(monitorName: string, url: string, changedAt: Date): string {
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">✏️ Content Changed — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          The page content at <strong>${escapeHtml(url)}</strong> changed unexpectedly.
+        </p>
+        <p style="margin:0 0 12px;color:#6b7280;font-size:14px">
+          Detected: ${changedAt.toLocaleString()}
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:14px">
+          If this was an intentional update, you can snooze content-change alerts for this
+          monitor from its detail page. If not, investigate for possible defacement.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
 export function sslAlertHtml(monitorName: string, url: string, daysLeft: number): string {
   const urgent = daysLeft <= 3;
   const colour = urgent ? "#ef4444" : "#f59e0b";
