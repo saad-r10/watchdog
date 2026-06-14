@@ -16,6 +16,7 @@ model User {
   alertEmail       String?
   alertDowntime    Boolean  @default(true)
   alertSslExpiry   Boolean  @default(true)
+  alertCertTransparency Boolean @default(true)
   webhookUrl       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -58,6 +59,7 @@ model Monitor {
   incidents           Incident[]
   statusPages         StatusPageMonitor[]
   maintenanceWindows  MaintenanceWindow[]
+  certificates        MonitorCertificate[]
 }
 
 model Check {
@@ -75,6 +77,7 @@ model Check {
   sizeBytes    Int?
   sslDaysLeft  Int?
   headers      Json?
+  ctNewCerts   Json?
   metricName   String?
   metricValue  Float?
   checkedAt    DateTime @default(now())
@@ -139,6 +142,22 @@ model MaintenanceWindow {
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 }
 
+model MonitorCertificate {
+  id          String   @id @default(uuid())
+  monitorId   String
+  crtShId     String
+  commonName  String
+  issuerName  String
+  nameValue   String
+  notBefore   DateTime
+  notAfter    DateTime
+  firstSeenAt DateTime @default(now())
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@unique([monitorId, crtShId])
+}
+
 model EmailVerificationToken {
   id        String    @id @default(uuid())
   userId    String
@@ -166,10 +185,12 @@ enum CheckType {
   ssl
   headers
   metric
+  cert_transparency
 }
 
 enum IncidentType {
   downtime
   ssl_expiry
   header_missing
+  unexpected_cert
 }

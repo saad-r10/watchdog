@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [alertEmail, setAlertEmail] = useState("");
   const [alertDowntime, setAlertDowntime] = useState(true);
   const [alertSslExpiry, setAlertSslExpiry] = useState(true);
+  const [alertCertTransparency, setAlertCertTransparency] = useState(true);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [saved, setSaved] = useState(false);
   const [testState, setTestState] = useState<"idle" | "sending" | "ok" | "error">("idle");
@@ -21,6 +22,7 @@ export default function SettingsPage() {
       setAlertEmail(data.alertEmail ?? "");
       setAlertDowntime(data.alertDowntime);
       setAlertSslExpiry(data.alertSslExpiry);
+      setAlertCertTransparency(data.alertCertTransparency);
       setWebhookUrl(data.webhookUrl ?? "");
     }
   }, [data]);
@@ -33,7 +35,7 @@ export default function SettingsPage() {
   }
 
   const mutation = useMutation({
-    mutationFn: () => api.settings.update({ alertEmail: alertEmail.trim() || null, alertDowntime, alertSslExpiry, webhookUrl: webhookUrl.trim() || null }),
+    mutationFn: () => api.settings.update({ alertEmail: alertEmail.trim() || null, alertDowntime, alertSslExpiry, alertCertTransparency, webhookUrl: webhookUrl.trim() || null }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["settings"] }); setSaved(true); setTimeout(() => setSaved(false), 3000); },
   });
 
@@ -86,6 +88,18 @@ export default function SettingsPage() {
               <div>
                 <p className="text-sm font-medium text-foreground">SSL certificate expiring soon</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Triggered when fewer than 14 days remain.</p>
+              </div>
+            </label>
+            <label className="flex items-start gap-4 cursor-pointer group">
+              <div className="mt-0.5">
+                <div onClick={() => setAlertCertTransparency((v) => !v)}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertCertTransparency ? "bg-primary" : "bg-muted"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertCertTransparency ? "translate-x-4" : "translate-x-0"}`} />
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">New certificate detected</p>
+                <p className="text-xs text-muted-foreground mt-0.5">A Certificate Transparency log shows a new cert for your domain — possible compromise or shadow IT.</p>
               </div>
             </label>
           </div>

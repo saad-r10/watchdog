@@ -31,7 +31,7 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers" | "metric";
+  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
@@ -43,6 +43,7 @@ export interface Check {
   sizeBytes?: number | null;
   sslDaysLeft?: number | null;
   headers?: Record<string, unknown> | null;
+  ctNewCerts?: CertTransparencyEntry[] | null;
   metricName?: string | null;
   metricValue?: number | null;
   checkedAt: string;
@@ -74,10 +75,40 @@ export interface HeadersCheckResult {
   checkedAt: string | null;
 }
 
+export interface CertTransparencyEntry {
+  id: number;
+  issuer_name: string;
+  common_name: string;
+  name_value: string;
+  not_before: string;
+  not_after: string;
+}
+
+export interface CertTransparencyCertificate {
+  id: string;
+  monitorId: string;
+  crtShId: string;
+  commonName: string;
+  issuerName: string;
+  nameValue: string;
+  notBefore: string;
+  notAfter: string;
+  firstSeenAt: string;
+}
+
+export interface CertTransparencyCheckResult {
+  status: "ok" | "new_cert" | "baseline" | "error" | null;
+  checkedAt: string | null;
+  newCerts: CertTransparencyEntry[] | null;
+  totalCertificates: number;
+  recentCertificates: CertTransparencyCertificate[];
+}
+
 export interface AlertSettings {
   alertEmail: string | null;
   alertDowntime: boolean;
   alertSslExpiry: boolean;
+  alertCertTransparency: boolean;
   webhookUrl: string | null;
 }
 
@@ -92,7 +123,7 @@ export interface MonitorStats {
 export interface Incident {
   id: string;
   monitorId: string;
-  type: "downtime" | "ssl_expiry" | "header_missing";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert";
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
@@ -229,7 +260,7 @@ export interface DashboardIncident {
   monitorId: string;
   monitorName: string;
   monitorUrl: string;
-  type: "downtime" | "ssl_expiry" | "header_missing";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert";
   startedAt: string;
   resolvedAt: string | null;
   isResolved: boolean;
@@ -241,7 +272,7 @@ export interface AppNotification {
   sentAt: string;
   incidentId: string;
   alertType: "downtime" | "recovery";
-  type: "downtime" | "ssl_expiry" | "header_missing";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert";
   isResolved: boolean;
   resolvedAt: string | null;
   startedAt: string;
