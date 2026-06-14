@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, CertTransparencyCheckResult, DnsCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput, AppNotification } from "@watchdog/shared-types";
+import type { Monitor, Check, Incident, MonitorStats, SslCheckResult, HeadersCheckResult, CertTransparencyCheckResult, DnsCheckResult, ExposureCheckResult, AlertSettings, Agent, AgentWithKey, StatusPage, PublicStatusPage, ResponseTimeBucket, ResponseTimeRange, MaintenanceWindow, DashboardData, UpdateMonitorInput, AppNotification } from "@watchdog/shared-types";
 import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
@@ -63,6 +63,8 @@ export const api = {
       http.get<{ success: boolean; data: CertTransparencyCheckResult }>(`/api/monitors/${id}/certs`).then((r) => r.data.data),
     dns: (id: string) =>
       http.get<{ success: boolean; data: DnsCheckResult | null }>(`/api/monitors/${id}/dns`).then((r) => r.data.data),
+    exposure: (id: string) =>
+      http.get<{ success: boolean; data: ExposureCheckResult | null }>(`/api/monitors/${id}/exposure`).then((r) => r.data.data),
     responseTimes: (id: string, range: ResponseTimeRange) =>
       http.get<{ success: boolean; data: ResponseTimeBucket[] }>(`/api/monitors/${id}/response-times`, { params: { range } }).then((r) => r.data.data),
     maintenance: {

@@ -8,6 +8,7 @@ import { SslCard } from "../components/SslCard";
 import { HeadersCard } from "../components/HeadersCard";
 import { CertTransparencyCard } from "../components/CertTransparencyCard";
 import { DnsCard } from "../components/DnsCard";
+import { ExposureCard } from "../components/ExposureCard";
 import { ResponseTimeChart, formatBytes } from "../components/ResponseTimeChart";
 import type { ResponseTimeRange } from "@watchdog/shared-types";
 
@@ -255,12 +256,13 @@ export default function MonitorDetailPage() {
         <ResponseTimeChart data={responseTimes} range={range} />
       </motion.div>
 
-      {/* SSL + Headers + DNS */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* SSL + Headers + DNS + Exposure */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <SslCard monitorId={monitor.id} />
         <HeadersCard monitorId={monitor.id} />
         <CertTransparencyCard monitorId={monitor.id} />
         <DnsCard monitorId={monitor.id} />
+        <ExposureCard monitorId={monitor.id} />
       </div>
 
       {/* Maintenance windows */}
