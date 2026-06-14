@@ -24,6 +24,9 @@ export function HeadersCard({ monitorId }: Props) {
 
   const present = data?.headers?.present ?? {};
   const missing = data?.headers?.missing ?? [];
+  const cookies = data?.headers?.cookies ?? [];
+  const mixedContent = data?.headers?.mixedContent ?? [];
+  const cookieIssues = cookies.filter((c) => c.missingSecure || c.missingHttpOnly || c.missingSameSite);
   const passCount = Object.keys(present).length;
   const totalCount = SECURITY_HEADERS.length;
   const score = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
@@ -83,6 +86,64 @@ export function HeadersCard({ monitorId }: Props) {
         <p className="text-xs text-down/80 mt-4 leading-relaxed">
           {missing.length} missing header{missing.length > 1 ? "s" : ""} — may be vulnerable to clickjacking or XSS.
         </p>
+      )}
+
+      {data && (
+        <div className="mt-4 pt-4 border-t border-border space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cookies</h4>
+          {cookies.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No cookies set</p>
+          ) : (
+            cookies.map((c) => {
+              const issues = [
+                c.missingSecure && "Secure",
+                c.missingHttpOnly && "HttpOnly",
+                c.missingSameSite && "SameSite",
+              ].filter(Boolean) as string[];
+              return (
+                <div key={c.name} className="flex items-center justify-between py-1">
+                  <span className="text-xs font-mono text-foreground">{c.name}</span>
+                  {issues.length === 0 ? (
+                    <span className="text-xs text-up font-semibold">✓</span>
+                  ) : (
+                    <span className="text-xs text-down font-medium">missing {issues.join(", ")}</span>
+                  )}
+                </div>
+              );
+            })
+          )}
+          {cookieIssues.length > 0 && (
+            <p className="text-xs text-down/80 leading-relaxed">
+              {cookieIssues.length} cookie{cookieIssues.length > 1 ? "s" : ""} missing security attributes — may be
+              vulnerable to theft or CSRF.
+            </p>
+          )}
+        </div>
+      )}
+
+      {data && (
+        <div className="mt-4 pt-4 border-t border-border space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mixed Content</h4>
+          {mixedContent.length === 0 ? (
+            <div className="flex items-center justify-between py-1">
+              <span className="text-xs font-mono text-foreground">HTTP resources on HTTPS page</span>
+              <span className="text-xs text-up font-semibold">✓</span>
+            </div>
+          ) : (
+            <>
+              {mixedContent.map((m) => (
+                <div key={m.url} className="flex items-center justify-between py-1 gap-2">
+                  <span className="text-xs font-mono text-foreground truncate">{m.url}</span>
+                  <span className="text-xs text-down font-medium shrink-0">mixed content</span>
+                </div>
+              ))}
+              <p className="text-xs text-down/80 leading-relaxed">
+                {mixedContent.length} insecure resource{mixedContent.length > 1 ? "s" : ""} loaded over HTTP —
+                may trigger browser warnings or be tampered with.
+              </p>
+            </>
+          )}
+        </div>
       )}
 
       {data?.checkedAt && (

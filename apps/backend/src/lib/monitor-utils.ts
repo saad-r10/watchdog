@@ -32,3 +32,45 @@ export function analyseHeaders(responseHeaders: Record<string, string | undefine
 
   return { present, missing, status: missing.length === 0 ? ("pass" as const) : ("fail" as const) };
 }
+
+export interface CookieFinding {
+  name: string;
+  missingSecure: boolean;
+  missingHttpOnly: boolean;
+  missingSameSite: boolean;
+}
+
+export function analyseCookies(setCookieHeaders: string[] | undefined, isHttps: boolean): CookieFinding[] {
+  if (!setCookieHeaders) return [];
+
+  return setCookieHeaders.map((cookie) => {
+    const attrs = cookie.split(";").map((p) => p.trim().toLowerCase());
+    const name = cookie.split(";")[0].split("=")[0].trim();
+    return {
+      name,
+      missingSecure: isHttps && !attrs.includes("secure"),
+      missingHttpOnly: !attrs.includes("httponly"),
+      missingSameSite: !attrs.some((a) => a.startsWith("samesite")),
+    };
+  });
+}
+
+export interface MixedContentFinding {
+  url: string;
+}
+
+// Lightweight regex scan rather than full DOM parsing — negative lookbehind avoids
+// false positives on attributes like data-src / ng-src.
+const MIXED_CONTENT_REGEX = /(?<![\w-])(?:src|href)\s*=\s*["']http:\/\/[^"'\s>]+["']/gi;
+
+export function analyseMixedContent(html: string | undefined, pageUrl: string): MixedContentFinding[] {
+  if (!html || !pageUrl.toLowerCase().startsWith("https://")) return [];
+
+  const found = new Set<string>();
+  for (const match of html.matchAll(MIXED_CONTENT_REGEX)) {
+    const url = match[0].replace(/^[^"']*["']/, "").replace(/["']$/, "");
+    found.add(url);
+  }
+
+  return [...found].map((url) => ({ url }));
+}

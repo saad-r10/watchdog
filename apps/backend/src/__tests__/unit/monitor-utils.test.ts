@@ -1,4 +1,11 @@
-import { getSslStatus, getUptimeStatus, analyseHeaders, SSL_EXPIRY_WARN_DAYS } from "../../lib/monitor-utils";
+import {
+  getSslStatus,
+  getUptimeStatus,
+  analyseHeaders,
+  analyseCookies,
+  analyseMixedContent,
+  SSL_EXPIRY_WARN_DAYS,
+} from "../../lib/monitor-utils";
 
 describe("getSslStatus", () => {
   it("returns valid when days > warn threshold", () => {
@@ -71,5 +78,77 @@ describe("analyseHeaders", () => {
     expect(result.status).toBe("fail");
     expect(result.missing).toHaveLength(6);
     expect(Object.keys(result.present)).toHaveLength(0);
+  });
+});
+
+describe("analyseCookies", () => {
+  it("returns an empty array when no Set-Cookie headers are present", () => {
+    expect(analyseCookies(undefined, true)).toEqual([]);
+  });
+
+  it("flags all attributes as missing for a bare cookie on an https page", () => {
+    const result = analyseCookies(["sessionId=abc123; Path=/"], true);
+    expect(result).toEqual([
+      { name: "sessionId", missingSecure: true, missingHttpOnly: true, missingSameSite: true },
+    ]);
+  });
+
+  it("flags nothing for a cookie with Secure, HttpOnly, and SameSite set", () => {
+    const result = analyseCookies(["sessionId=abc123; Path=/; HttpOnly; Secure; SameSite=Strict"], true);
+    expect(result).toEqual([
+      { name: "sessionId", missingSecure: false, missingHttpOnly: false, missingSameSite: false },
+    ]);
+  });
+
+  it("does not flag missingSecure on a plain http page", () => {
+    const result = analyseCookies(["sessionId=abc123; Path=/; HttpOnly; SameSite=Lax"], false);
+    expect(result[0].missingSecure).toBe(false);
+    expect(result[0].missingHttpOnly).toBe(false);
+    expect(result[0].missingSameSite).toBe(false);
+  });
+
+  it("analyses multiple cookies independently", () => {
+    const result = analyseCookies(
+      ["a=1; HttpOnly; Secure; SameSite=Strict", "b=2; Path=/"],
+      true
+    );
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ name: "a", missingSecure: false, missingHttpOnly: false, missingSameSite: false });
+    expect(result[1]).toEqual({ name: "b", missingSecure: true, missingHttpOnly: true, missingSameSite: true });
+  });
+});
+
+describe("analyseMixedContent", () => {
+  it("flags an http:// resource referenced from an https page", () => {
+    const html = '<html><body><img src="http://example.com/x.png"></body></html>';
+    const result = analyseMixedContent(html, "https://example.com");
+    expect(result).toEqual([{ url: "http://example.com/x.png" }]);
+  });
+
+  it("returns an empty array when all resources are https or relative", () => {
+    const html = '<html><body><img src="https://example.com/x.png"><link href="/style.css"></body></html>';
+    expect(analyseMixedContent(html, "https://example.com")).toEqual([]);
+  });
+
+  it("does not flag http:// resources on a plain http page", () => {
+    const html = '<html><body><img src="http://example.com/x.png"></body></html>';
+    expect(analyseMixedContent(html, "http://example.com")).toEqual([]);
+  });
+
+  it("ignores data-src and similar attributes", () => {
+    const html = '<html><body><img data-src="http://example.com/x.png" loading="lazy"></body></html>';
+    expect(analyseMixedContent(html, "https://example.com")).toEqual([]);
+  });
+
+  it("deduplicates repeated mixed-content URLs", () => {
+    const html = `
+      <img src="http://example.com/x.png">
+      <img src="http://example.com/x.png">
+    `;
+    expect(analyseMixedContent(html, "https://example.com")).toEqual([{ url: "http://example.com/x.png" }]);
+  });
+
+  it("returns an empty array when html is undefined", () => {
+    expect(analyseMixedContent(undefined, "https://example.com")).toEqual([]);
   });
 });

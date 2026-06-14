@@ -258,7 +258,7 @@ Six recurring workers defined in `apps/backend/src/workers/`:
 |--------|----------|---------|
 | `uptimeWorker` | Every minute | HTTP check via `lib/timed-request.ts` — records status plus a timing breakdown (DNS / TCP / TLS / TTFB / download, in ms) and payload size in bytes |
 | `sslWorker` | Every hour | Check SSL cert expiry days remaining |
-| `headerWorker` | Every 6 hours | Analyse security headers |
+| `headerWorker` | Every 6 hours | Analyse security headers, `Set-Cookie` attributes (`Secure`/`HttpOnly`/`SameSite`), and scan the HTML body for mixed content (`http://` resources on an `https://` page) |
 | `ctWorker` | Every 4 hours | Poll crt.sh (`lib/crtsh.ts`) for each monitor's hostname, diff against the stored `MonitorCertificate` baseline, and flag unrecognized certs |
 | `dnsWorker` | Every 6 hours | DNS hygiene via `lib/dns-utils.ts` — SPF/DMARC presence and policy strength, best-effort DKIM selector lookup, and dangling CNAME (subdomain takeover) detection |
 | `exposureWorker` | Every 6 hours | Exposure checks via `lib/exposure-utils.ts` — `/.well-known/security.txt` (RFC 9116) presence and a short list of commonly-exposed paths (`/.env`, `/.git/config`, etc.), with a baseline probe to avoid false positives from SPA catch-alls |
@@ -322,7 +322,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | `User` | Registered user |
 | `Agent` | API-key-authenticated agent that reports check results from user infrastructure |
 | `Monitor` | A URL to watch (belongs to User, optionally assigned to an Agent) |
-| `Check` | Single uptime/ssl/header/cert_transparency/dns/exposure result — uptime checks carry optional phase timings (`dnsMs`, `tcpMs`, `tlsMs`, `ttfbMs`, `downloadMs`) and `sizeBytes`; cert_transparency checks carry `ctNewCerts` (JSON list of newly-seen certs); dns checks carry `dnsFindings` (JSON: SPF/DMARC/DKIM/dangling-CNAME results); exposure checks carry `exposureFindings` (JSON: security.txt presence and exposed-path results) |
+| `Check` | Single uptime/ssl/header/cert_transparency/dns/exposure result — uptime checks carry optional phase timings (`dnsMs`, `tcpMs`, `tlsMs`, `ttfbMs`, `downloadMs`) and `sizeBytes`; header checks carry `headers` (JSON: present/missing security headers, `cookies` Set-Cookie attribute findings, and `mixedContent` HTTP-on-HTTPS findings); cert_transparency checks carry `ctNewCerts` (JSON list of newly-seen certs); dns checks carry `dnsFindings` (JSON: SPF/DMARC/DKIM/dangling-CNAME results); exposure checks carry `exposureFindings` (JSON: security.txt presence and exposed-path results) |
 | `Incident` | Downtime, SSL-expiry, header, or unexpected-certificate event |
 | `Alert` | Sent alert record (with cooldown tracking) |
 | `StatusPage` | A public-facing status page with a unique slug (belongs to User) |
