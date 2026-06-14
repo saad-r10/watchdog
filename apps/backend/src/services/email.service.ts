@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import type { CrtShEntry } from "../lib/crtsh";
+import type { BlocklistFindings } from "../lib/blocklist-utils";
 
 let resend: Resend | null = null;
 
@@ -161,6 +162,41 @@ export function ctAlertHtml(monitorName: string, url: string, newCerts: CrtShEnt
         <p style="margin:0;color:#6b7280;font-size:14px">
           If you don't recognize these certificates, this could indicate a compromised DNS provider,
           a phishing subdomain, or unauthorized cert issuance — investigate promptly.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+export function blocklistAlertHtml(monitorName: string, url: string, findings: BlocklistFindings): string {
+  const listed = findings.sources.filter((s) => s.listed);
+  const items = listed
+    .map(
+      (s) => `
+        <li style="margin-bottom:8px">
+          <strong>${escapeHtml(s.source === "urlhaus" ? "URLhaus" : "Spamhaus DBL")}</strong><br/>
+          <span style="color:#6b7280;font-size:13px">${escapeHtml(s.detail ?? "Listed")}</span>
+        </li>`
+    )
+    .join("");
+
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#ef4444;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">🚫 Domain Blocklisted — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #fca5a5;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          <strong>${escapeHtml(findings.hostname)}</strong> (${escapeHtml(url)}) now appears on the
+          following threat-intel blocklist${listed.length === 1 ? "" : "s"}:
+        </p>
+        <ul style="margin:0 0 12px;padding-left:20px;color:#374151;font-size:14px">${items}</ul>
+        <p style="margin:0;color:#6b7280;font-size:14px">
+          This often indicates the site has been compromised, is serving malware, or has been
+          used for phishing. Investigate promptly and request delisting once resolved.
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">

@@ -186,3 +186,54 @@ describe("alertService.notifyUnexpectedCert", () => {
     expect(mockAlertRepo.create).not.toHaveBeenCalled();
   });
 });
+
+describe("alertService.notifyDomainBlocklisted", () => {
+  const blocklistIncident = { ...incident, type: "domain_blocklisted" as const };
+  const findings = {
+    hostname: "example.com",
+    sources: [
+      { source: "urlhaus" as const, listed: true, detail: "Hostname appears in the URLhaus malware/phishing host blocklist" },
+      { source: "spamhaus_dbl" as const, listed: false, detail: null },
+    ],
+  };
+
+  it("sends a domain-blocklisted email when no prior alert and alertBlocklist is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertBlocklist: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyDomainBlocklisted(monitor, blocklistIncident, findings);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("Domain blocklisted") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1" });
+  });
+
+  it("skips when alertBlocklist is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertBlocklist: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyDomainBlocklisted(monitor, blocklistIncident, findings);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifyDomainBlocklisted(monitor, blocklistIncident, findings);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});

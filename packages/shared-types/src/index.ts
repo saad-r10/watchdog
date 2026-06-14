@@ -31,7 +31,7 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure";
+  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure" | "blocklist";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
@@ -46,6 +46,7 @@ export interface Check {
   ctNewCerts?: CertTransparencyEntry[] | null;
   dnsFindings?: DnsFindings | null;
   exposureFindings?: ExposureFindings | null;
+  blocklistFindings?: BlocklistFindings | null;
   metricName?: string | null;
   metricValue?: number | null;
   checkedAt: string;
@@ -180,11 +181,29 @@ export interface ExposureCheckResult {
   checkedAt: string | null;
 }
 
+export interface BlocklistSourceFinding {
+  source: "urlhaus" | "spamhaus_dbl";
+  listed: boolean;
+  detail: string | null;
+}
+
+export interface BlocklistFindings {
+  hostname: string;
+  sources: BlocklistSourceFinding[];
+}
+
+export interface BlocklistCheckResult {
+  status: "clean" | "listed" | "error" | null;
+  blocklistFindings: BlocklistFindings | null;
+  checkedAt: string | null;
+}
+
 export interface AlertSettings {
   alertEmail: string | null;
   alertDowntime: boolean;
   alertSslExpiry: boolean;
   alertCertTransparency: boolean;
+  alertBlocklist: boolean;
   webhookUrl: string | null;
 }
 
@@ -199,7 +218,7 @@ export interface MonitorStats {
 export interface Incident {
   id: string;
   monitorId: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted";
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
@@ -336,7 +355,7 @@ export interface DashboardIncident {
   monitorId: string;
   monitorName: string;
   monitorUrl: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted";
   startedAt: string;
   resolvedAt: string | null;
   isResolved: boolean;
@@ -348,7 +367,7 @@ export interface AppNotification {
   sentAt: string;
   incidentId: string;
   alertType: "downtime" | "recovery";
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted";
   isResolved: boolean;
   resolvedAt: string | null;
   startedAt: string;

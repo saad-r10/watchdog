@@ -109,6 +109,17 @@ router.get("/exposure", async (req, res, next) => {
   }
 });
 
+router.get("/blocklist", async (req, res, next) => {
+  try {
+    const id = monitorId(req as any);
+    await monitorService.getById(id, req.user.id);
+    const check = await checkRepository.findLatestByType(id, "blocklist");
+    res.json({ success: true, data: check ?? null });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/certs", async (req, res, next) => {
   try {
     const id = monitorId(req as any);
