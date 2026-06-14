@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import { authenticateAgent } from "../middleware/agent-auth";
 import { agentService } from "../services/agent.service";
-import { AgentCheckResultSchema } from "@watchdog/shared-types";
+import { AgentCheckResultSchema, CreateAgentSchema, UpdateAgentSchema } from "@watchdog/shared-types";
 
 const router = Router();
 
@@ -22,21 +21,27 @@ router.get("/", authenticate, async (req, res, next) => {
   }
 });
 
-router.post(
-  "/",
-  authenticate,
-  validate(z.object({ name: z.string().min(1) })),
-  async (req, res, next) => {
-    try {
-      const { agent, key } = await agentService.create(req.user.id, req.body.name);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { keyHash, ...safeAgent } = agent;
-      res.status(201).json({ success: true, data: { ...safeAgent, key } });
-    } catch (err) {
-      next(err);
-    }
+router.post("/", authenticate, validate(CreateAgentSchema), async (req, res, next) => {
+  try {
+    const { agent, key } = await agentService.create(req.user.id, req.body.name, req.body.region);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { keyHash, ...safeAgent } = agent;
+    res.status(201).json({ success: true, data: { ...safeAgent, key } });
+  } catch (err) {
+    next(err);
   }
-);
+});
+
+router.patch("/:id", authenticate, validate(UpdateAgentSchema), async (req, res, next) => {
+  try {
+    const agent = await agentService.update(req.params.id, req.user.id, req.body);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { keyHash, ...safeAgent } = agent;
+    res.json({ success: true, data: safeAgent });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.delete("/:id", authenticate, async (req, res, next) => {
   try {

@@ -48,14 +48,41 @@ const updateSchema = z.object({
   intervalMinutes: z.number().int().min(1).max(60).optional(),
   isActive: z.boolean().optional(),
   paused: z.boolean().optional(),
-  agentId: z.string().uuid().nullable().optional(),
   contentChangeEnabled: z.boolean().optional(),
+  regionDownThreshold: z.number().int().min(1).max(10).optional(),
 });
 
 router.patch("/:id", validate(updateSchema), async (req, res, next) => {
   try {
     const monitor = await monitorService.update(req.params.id, req.user.id, req.body);
     res.json({ success: true, data: monitor });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/agents/:agentId", async (req, res, next) => {
+  try {
+    const monitor = await monitorService.assignAgent(req.params.id, req.user.id, req.params.agentId);
+    res.json({ success: true, data: monitor });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/:id/agents/:agentId", async (req, res, next) => {
+  try {
+    const monitor = await monitorService.unassignAgent(req.params.id, req.user.id, req.params.agentId);
+    res.json({ success: true, data: monitor });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:id/regions", async (req, res, next) => {
+  try {
+    const regions = await monitorService.getRegionStatus(req.params.id, req.user.id);
+    res.json({ success: true, data: regions });
   } catch (err) {
     next(err);
   }

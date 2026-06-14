@@ -6,8 +6,8 @@ export const agentRepository = {
       where: { userId },
       orderBy: { createdAt: "desc" },
       include: {
-        monitors: {
-          select: { id: true, name: true, url: true },
+        monitorAgents: {
+          include: { monitor: { select: { id: true, name: true, url: true } } },
         },
       },
     });
@@ -17,8 +17,12 @@ export const agentRepository = {
     return prisma.agent.findUnique({ where: { id } });
   },
 
-  async create(data: { userId: string; name: string; keyHash: string }) {
+  async create(data: { userId: string; name: string; keyHash: string; region?: string | null }) {
     return prisma.agent.create({ data });
+  },
+
+  async update(id: string, data: { name?: string; region?: string | null }) {
+    return prisma.agent.update({ where: { id }, data });
   },
 
   async delete(id: string) {

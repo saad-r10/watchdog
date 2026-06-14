@@ -37,13 +37,17 @@ beforeAll(async () => {
   pausedMonitorId = await createMonitor("Paused Internal", "http://10.0.0.6:4000");
 
   await request(app)
-    .patch(`/api/monitors/${assignedMonitorId}`)
+    .post(`/api/monitors/${assignedMonitorId}/agents/${agentId}`)
     .set("Authorization", `Bearer ${token}`)
-    .send({ agentId });
+    .send();
+  await request(app)
+    .post(`/api/monitors/${pausedMonitorId}/agents/${agentId}`)
+    .set("Authorization", `Bearer ${token}`)
+    .send();
   await request(app)
     .patch(`/api/monitors/${pausedMonitorId}`)
     .set("Authorization", `Bearer ${token}`)
-    .send({ agentId, paused: true });
+    .send({ paused: true });
 });
 
 afterAll(async () => {

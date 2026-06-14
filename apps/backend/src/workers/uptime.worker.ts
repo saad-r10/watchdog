@@ -4,8 +4,8 @@ import { hashContent } from "../lib/content-hash";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { checkRepository } from "../repositories/check.repository";
 import { incidentRepository } from "../repositories/incident.repository";
-import { maintenanceRepository } from "../repositories/maintenance.repository";
 import { alertService } from "../services/alert.service";
+import { monitorStatusService } from "../services/monitor-status.service";
 import type { Monitor } from "@prisma/client";
 
 async function checkUptime(monitor: Monitor) {
@@ -35,21 +35,7 @@ async function checkUptime(monitor: Monitor) {
     contentHash,
   });
 
-  const openIncident = await incidentRepository.findOpenByMonitor(monitor.id);
-
-  if (status === "down" && !openIncident) {
-    const incident = await incidentRepository.create({
-      monitor: { connect: { id: monitor.id } },
-      type: "downtime",
-    });
-    const inMaintenance = await maintenanceRepository.isActive(monitor.id);
-    if (!inMaintenance) {
-      alertService.notifyDowntime(monitor, incident).catch(console.error);
-    }
-  } else if (status === "up" && openIncident) {
-    const resolved = await incidentRepository.resolve(openIncident.id);
-    alertService.notifyRecovery(monitor, resolved).catch(console.error);
-  }
+  await monitorStatusService.evaluateUptimeStatus(monitor);
 
   const previousHash = lastCheck?.contentHash ?? null;
   const isSnoozed = !!monitor.contentChangeSnoozeUntil && monitor.contentChangeSnoozeUntil > new Date();

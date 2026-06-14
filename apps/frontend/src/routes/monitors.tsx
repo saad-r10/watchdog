@@ -55,16 +55,21 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
   const qc = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [region, setRegion] = useState(agent.region ?? "");
   const online = isOnline(agent.lastSeenAt);
   const assignedIds = new Set(agent.monitors.map((m) => m.id));
   const unassigned = allMonitors.filter((m) => !assignedIds.has(m.id));
 
   const assignMutation = useMutation({
-    mutationFn: (monitorId: string) => api.monitors.update(monitorId, { agentId: agent.id }),
+    mutationFn: (monitorId: string) => api.monitors.assignAgent(monitorId, agent.id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["agents"] }); qc.invalidateQueries({ queryKey: ["monitors"] }); },
   });
   const unassignMutation = useMutation({
-    mutationFn: (monitorId: string) => api.monitors.update(monitorId, { agentId: null }),
+    mutationFn: (monitorId: string) => api.monitors.unassignAgent(monitorId, agent.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["agents"] }); qc.invalidateQueries({ queryKey: ["monitors"] }); },
+  });
+  const updateRegionMutation = useMutation({
+    mutationFn: (region: string) => api.agents.update(agent.id, { region: region || null }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["agents"] }); qc.invalidateQueries({ queryKey: ["monitors"] }); },
   });
 
@@ -77,6 +82,7 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
             <p className="text-sm font-medium text-foreground">{agent.name}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Last seen: {timeSince(agent.lastSeenAt)}
+              {agent.region && <span className="ml-2 text-muted-foreground/60">· {agent.region}</span>}
               {agent.monitors.length > 0 && <span className="ml-2 text-muted-foreground/60">· {agent.monitors.length} monitor{agent.monitors.length !== 1 ? "s" : ""}</span>}
             </p>
           </div>
@@ -95,6 +101,17 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
         {expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
             <div className="px-5 pb-5 pt-1 border-t border-border/60 space-y-5">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Region</p>
+                <input
+                  className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                  placeholder="e.g. us-east, eu-west"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  onBlur={() => { if (region !== (agent.region ?? "")) updateRegionMutation.mutate(region); }}
+                />
+              </div>
+
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Assigned monitors</p>
                 {agent.monitors.length === 0 ? (
@@ -411,9 +428,11 @@ function MonitorRow({ monitor, onDelete }: { monitor: Monitor; onDelete: (id: st
               {isPaused && (
                 <span className="text-xs text-muted-foreground px-1.5 py-0.5 rounded bg-muted border border-border">Paused</span>
               )}
-              {monitor.agentId && (
-                <span className="text-xs text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">Agent</span>
-              )}
+              {monitor.agents.map((a) => (
+                <span key={a.id} className="text-xs text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
+                  {a.region ?? a.name}
+                </span>
+              ))}
               <span className="text-xs text-muted-foreground/60">{intervalLabel(monitor.intervalMinutes)}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{monitor.url}</p>

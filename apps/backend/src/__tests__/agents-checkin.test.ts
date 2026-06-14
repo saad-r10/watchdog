@@ -5,6 +5,7 @@ import { prisma } from "../db";
 const TEST_EMAIL = "test-agent-checkin@watchdog.test";
 let token: string;
 let monitorId: string;
+let agentId: string;
 let agentKey: string;
 
 beforeAll(async () => {
@@ -24,6 +25,7 @@ beforeAll(async () => {
     .post("/api/agents")
     .set("Authorization", `Bearer ${token}`)
     .send({ name: "Test Agent" });
+  agentId = agent.body.data.id;
   agentKey = agent.body.data.key;
 });
 
@@ -67,6 +69,12 @@ describe("POST /api/agents/checkin — timing breakdown", () => {
     expect(check!.ttfbMs).toBe(65);
     expect(check!.downloadMs).toBe(14);
     expect(check!.sizeBytes).toBe(20480);
+    expect(check!.agentId).toBe(agentId);
+
+    const assignment = await prisma.monitorAgent.findUnique({
+      where: { monitorId_agentId: { monitorId, agentId } },
+    });
+    expect(assignment).not.toBeNull();
   });
 
   it("still accepts old-style payloads without timing fields (backward compat)", async () => {
