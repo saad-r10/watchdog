@@ -1,10 +1,11 @@
 import { prisma } from "../db";
 import { alertRepository } from "../repositories/alert.repository";
-import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml, blocklistAlertHtml, contentChangeAlertHtml } from "./email.service";
+import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml, blocklistAlertHtml, contentChangeAlertHtml, syntheticFailureAlertHtml, syntheticRecoveryAlertHtml } from "./email.service";
 import { sendWebhook } from "./webhook.service";
 import type { CrtShEntry } from "../lib/crtsh";
 import type { BlocklistFindings } from "../lib/blocklist-utils";
 import type { Monitor, Incident } from "@prisma/client";
+import type { SyntheticCheckResult } from "@watchdog/shared-types";
 
 export const alertService = {
   async notifyDowntime(monitor: Monitor, incident: Incident): Promise<void> {
@@ -199,5 +200,73 @@ export const alertService = {
     ]);
 
     await alertRepository.create({ userId: monitor.userId, incidentId: incident.id });
+  },
+
+  async notifySyntheticFailure(monitor: Monitor, incident: Incident, result: SyntheticCheckResult): Promise<void> {
+    const alreadySent = await alertRepository.hasAlertForIncident(incident.id);
+    if (alreadySent) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: monitor.userId },
+      select: { email: true, alertEmail: true, alertSyntheticFailure: true, webhookUrl: true },
+    });
+    if (!user?.alertSyntheticFailure) return;
+
+    await Promise.allSettled([
+      sendEmail({
+        to: user.alertEmail ?? user.email,
+        subject: `🔴 Transaction failed: ${monitor.name}`,
+        html: syntheticFailureAlertHtml(monitor.name, monitor.url, incident.startedAt, result),
+      }),
+      user.webhookUrl
+        ? sendWebhook(user.webhookUrl, {
+            event: "synthetic_failure",
+            monitorId: monitor.id,
+            monitorName: monitor.name,
+            monitorUrl: monitor.url,
+            incidentId: incident.id,
+            startedAt: incident.startedAt.toISOString(),
+          })
+        : Promise.resolve(),
+    ]);
+
+    await alertRepository.create({ userId: monitor.userId, incidentId: incident.id, type: "downtime" });
+  },
+
+  async notifySyntheticRecovery(monitor: Monitor, incident: Incident): Promise<void> {
+    const alreadySent = await alertRepository.hasAlertForIncident(incident.id, "recovery");
+    if (alreadySent) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: monitor.userId },
+      select: { email: true, alertEmail: true, alertSyntheticFailure: true, webhookUrl: true },
+    });
+    if (!user?.alertSyntheticFailure) return;
+
+    const resolvedAt = incident.resolvedAt ?? new Date();
+    const durationMinutes = incident.resolvedAt
+      ? Math.round((incident.resolvedAt.getTime() - incident.startedAt.getTime()) / 60_000)
+      : null;
+
+    await Promise.allSettled([
+      sendEmail({
+        to: user.alertEmail ?? user.email,
+        subject: `✅ Transaction recovered: ${monitor.name}`,
+        html: syntheticRecoveryAlertHtml(monitor.name, monitor.url, resolvedAt, durationMinutes),
+      }),
+      user.webhookUrl
+        ? sendWebhook(user.webhookUrl, {
+            event: "synthetic_recovery",
+            monitorId: monitor.id,
+            monitorName: monitor.name,
+            monitorUrl: monitor.url,
+            incidentId: incident.id,
+            resolvedAt: resolvedAt.toISOString(),
+            durationMinutes,
+          })
+        : Promise.resolve(),
+    ]);
+
+    await alertRepository.create({ userId: monitor.userId, incidentId: incident.id, type: "recovery" });
   },
 };

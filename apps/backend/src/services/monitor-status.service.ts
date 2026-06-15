@@ -4,6 +4,7 @@ import { maintenanceRepository } from "../repositories/maintenance.repository";
 import { monitorAgentRepository } from "../repositories/monitor-agent.repository";
 import { alertService } from "./alert.service";
 import type { Monitor } from "@prisma/client";
+import type { SyntheticCheckResult } from "@watchdog/shared-types";
 
 const CLOUD_SOURCE = "__cloud__";
 
@@ -39,6 +40,29 @@ export const monitorStatusService = {
     } else if (downCount < threshold && openIncident) {
       const resolved = await incidentRepository.resolve(openIncident.id);
       await alertService.notifyRecovery(monitor, resolved).catch(console.error);
+    }
+  },
+
+  /**
+   * Opens or resolves the `synthetic_failure` incident for a synthetic monitor
+   * based on the result of its most recent scripted check. Single-source —
+   * synthetic checks always run from Watchdog's own infrastructure.
+   */
+  async evaluateSyntheticStatus(monitor: Monitor, result: SyntheticCheckResult): Promise<void> {
+    const openIncident = await incidentRepository.findOpenSyntheticIncident(monitor.id);
+
+    if (!result.success && !openIncident) {
+      const incident = await incidentRepository.create({
+        monitor: { connect: { id: monitor.id } },
+        type: "synthetic_failure",
+      });
+      const inMaintenance = await maintenanceRepository.isActive(monitor.id);
+      if (!inMaintenance) {
+        await alertService.notifySyntheticFailure(monitor, incident, result).catch(console.error);
+      }
+    } else if (result.success && openIncident) {
+      const resolved = await incidentRepository.resolve(openIncident.id);
+      await alertService.notifySyntheticRecovery(monitor, resolved).catch(console.error);
     }
   },
 };

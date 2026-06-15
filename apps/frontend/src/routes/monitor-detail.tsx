@@ -30,6 +30,7 @@ const INCIDENT_LABELS: Record<string, { ongoing: string; resolved: string }> = {
   header_missing: { ongoing: "Missing security header", resolved: "Missing security header" },
   unexpected_cert: { ongoing: "New certificate detected", resolved: "New certificate detected" },
   content_changed: { ongoing: "Content change detected", resolved: "Content change detected" },
+  synthetic_failure: { ongoing: "Transaction failing", resolved: "Transaction failure" },
 };
 
 const RANGES: { label: string; value: ResponseTimeRange }[] = [
@@ -459,6 +460,43 @@ export default function MonitorDetailPage() {
         </div>
       )}
 
+      {/* Transaction steps */}
+      {monitor.type === "synthetic" && checks.some((c) => c.type === "synthetic") && (() => {
+        const latest = checks.find((c) => c.type === "synthetic");
+        const result = latest?.syntheticResult;
+        if (!result) return null;
+        return (
+          <div className="bg-card rounded-xl border border-border">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <h3 className="text-sm font-semibold text-foreground">Transaction steps</h3>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {result.success ? "Passed" : "Failed"} in {result.totalDurationMs}ms · {new Date(latest!.checkedAt).toLocaleString()}
+              </span>
+            </div>
+            <div className="divide-y divide-border">
+              {result.steps.map((step, i) => (
+                <div key={i} className="px-6 py-3 flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${step.ok ? "bg-up" : "bg-down"}`} />
+                    <span className="font-mono text-xs text-foreground">{i + 1}. {step.action}</span>
+                    {step.error && <span className="text-xs text-down truncate">{step.error}</span>}
+                  </div>
+                  <span className="text-xs text-muted-foreground flex-shrink-0 ml-3">{step.durationMs}ms</span>
+                </div>
+              ))}
+              {result.error && !result.success && (
+                <div className="px-6 py-3 text-xs text-down">{result.error}</div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Recent checks */}
       <div className="bg-card rounded-xl border border-border">
         <div className="px-6 py-4 border-b border-border">
@@ -470,7 +508,7 @@ export default function MonitorDetailPage() {
           </p>
         ) : (
           <div className="divide-y divide-border">
-            {checks.filter((c) => c.type !== "metric").map((c) => (
+            {checks.filter((c) => c.type !== "metric" && c.type !== "synthetic").map((c) => (
               <div key={c.id} className="px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span

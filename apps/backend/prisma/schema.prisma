@@ -19,6 +19,7 @@ model User {
   alertCertTransparency Boolean @default(true)
   alertBlocklist   Boolean  @default(true)
   alertContentChange Boolean @default(true)
+  alertSyntheticFailure Boolean @default(true)
   webhookUrl       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -50,6 +51,8 @@ model Monitor {
   userId          String
   name            String
   url             String
+  type            MonitorType @default(http)
+  syntheticSteps  Json?
   intervalMinutes Int      @default(5)
   isActive        Boolean  @default(true)
   paused          Boolean  @default(false)
@@ -102,6 +105,7 @@ model Check {
   contentHash  String?
   metricName   String?
   metricValue  Float?
+  syntheticResult Json?
   checkedAt    DateTime @default(now())
 
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
@@ -212,6 +216,7 @@ enum CheckType {
   dns
   exposure
   blocklist
+  synthetic
 }
 
 enum IncidentType {
@@ -221,4 +226,10 @@ enum IncidentType {
   unexpected_cert
   domain_blocklisted
   content_changed
+  synthetic_failure
+}
+
+enum MonitorType {
+  http
+  synthetic
 }

@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import type { CrtShEntry } from "../lib/crtsh";
 import type { BlocklistFindings } from "../lib/blocklist-utils";
+import type { SyntheticCheckResult } from "@watchdog/shared-types";
 
 let resend: Resend | null = null;
 
@@ -222,6 +223,65 @@ export function contentChangeAlertHtml(monitorName: string, url: string, changed
         <p style="margin:0;color:#6b7280;font-size:14px">
           If this was an intentional update, you can snooze content-change alerts for this
           monitor from its detail page. If not, investigate for possible defacement.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+export function syntheticFailureAlertHtml(monitorName: string, url: string, startedAt: Date, result: SyntheticCheckResult): string {
+  const failedStep = result.steps[result.steps.length - 1];
+  const detail = failedStep
+    ? `Step ${result.steps.length} (${escapeHtml(failedStep.action)}) failed: ${escapeHtml(failedStep.error ?? "unknown error")}`
+    : escapeHtml(result.error ?? "The scripted check failed");
+
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#ef4444;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">🔴 Transaction Failed — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #fca5a5;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          The scripted transaction for <strong>${escapeHtml(url)}</strong> did not complete successfully.
+        </p>
+        <p style="margin:0 0 12px;color:#6b7280;font-size:14px">
+          ${detail}
+        </p>
+        <p style="margin:0 0 12px;color:#6b7280;font-size:14px">
+          Incident started: ${startedAt.toLocaleString()}
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:13px">
+          You'll receive another alert when the transaction succeeds again.
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+export function syntheticRecoveryAlertHtml(monitorName: string, url: string, resolvedAt: Date, durationMinutes: number | null): string {
+  const duration = durationMinutes != null
+    ? durationMinutes < 60
+      ? `${durationMinutes} minute${durationMinutes === 1 ? "" : "s"}`
+      : `${Math.round(durationMinutes / 60)} hour${Math.round(durationMinutes / 60) === 1 ? "" : "s"}`
+    : null;
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">✅ Transaction Recovered — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          The scripted transaction for <strong>${escapeHtml(url)}</strong> is completing successfully again.
+        </p>
+        ${duration ? `<p style="margin:0 0 12px;color:#6b7280;font-size:14px">Failure duration: ${duration}</p>` : ""}
+        <p style="margin:0;color:#6b7280;font-size:13px">
+          Recovered at: ${resolvedAt.toLocaleString()}
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">

@@ -63,6 +63,8 @@ const monitor = {
   intervalMinutes: 1,
   isActive: true,
   paused: false,
+  type: "http" as const,
+  syntheticSteps: null,
   contentChangeEnabled: false,
   contentChangeSnoozeUntil: null,
   regionDownThreshold: 1,
@@ -104,7 +106,7 @@ describe("uptime worker — downtime detection", () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 500 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
     mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("down"));
-    mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([monitor]);
 
     await runCronTick();
 
@@ -118,7 +120,7 @@ describe("uptime worker — downtime detection", () => {
   it("creates an up check and resolves open incident on recovery", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 200 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(incident);
-    mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([monitor]);
 
     await runCronTick();
 
@@ -133,7 +135,7 @@ describe("uptime worker — downtime detection", () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 503 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(incident);
     mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("down"));
-    mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([monitor]);
 
     await runCronTick();
 
@@ -159,7 +161,7 @@ describe("uptime worker — downtime detection", () => {
     );
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
     mockCheckRepo.getLatestUptimePerSource.mockResolvedValue(latestUptimeRow("down", { statusCode: null }));
-    mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([monitor]);
 
     await runCronTick();
 
@@ -174,7 +176,7 @@ describe("uptime worker — timing breakdown persistence", () => {
   it("persists phase timings and payload size on the check", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse());
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
-    mockMonitorRepo.findAllActive.mockResolvedValue([monitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([monitor]);
 
     await runCronTick();
 
@@ -200,7 +202,7 @@ describe("uptime worker — content-change detection", () => {
   it("hashes the body and records contentHash when enabled", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ body: Buffer.from("<html>hello</html>") }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
-    mockMonitorRepo.findAllActive.mockResolvedValue([contentMonitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([contentMonitor]);
     mockCheckRepo.getLatest.mockResolvedValue(null);
 
     await runCronTick();
@@ -216,7 +218,7 @@ describe("uptime worker — content-change detection", () => {
     const contentIncident = { ...incident, type: "content_changed" as const, isResolved: true, resolvedAt: new Date() };
     mockTimedRequest.mockResolvedValue(makeResponse({ body: Buffer.from("<html>hacked</html>") }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
-    mockMonitorRepo.findAllActive.mockResolvedValue([contentMonitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([contentMonitor]);
     mockCheckRepo.getLatest.mockResolvedValue({ contentHash: hashContent(Buffer.from("<html>hello</html>")), checkedAt: new Date(0) } as any);
     mockIncidentRepo.create.mockResolvedValue(contentIncident);
     mockAlertService.notifyContentChanged = jest.fn().mockResolvedValue(undefined);
@@ -234,7 +236,7 @@ describe("uptime worker — content-change detection", () => {
     const snoozedMonitor = { ...contentMonitor, contentChangeSnoozeUntil: new Date(Date.now() + 3_600_000) };
     mockTimedRequest.mockResolvedValue(makeResponse({ body: Buffer.from("<html>hacked</html>") }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
-    mockMonitorRepo.findAllActive.mockResolvedValue([snoozedMonitor]);
+    mockMonitorRepo.findAllActiveHttp.mockResolvedValue([snoozedMonitor]);
     mockCheckRepo.getLatest.mockResolvedValue({ contentHash: hashContent(Buffer.from("<html>hello</html>")), checkedAt: new Date(0) } as any);
 
     await runCronTick();

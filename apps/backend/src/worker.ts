@@ -6,6 +6,7 @@ import { startCtWorker } from "./workers/ct.worker";
 import { startDnsWorker } from "./workers/dns.worker";
 import { startExposureWorker } from "./workers/exposure.worker";
 import { startBlocklistWorker } from "./workers/blocklist.worker";
+import { startSyntheticWorker } from "./workers/synthetic.worker";
 
 startUptimeWorker();
 startSslWorker();
@@ -14,5 +15,6 @@ startCtWorker();
 startDnsWorker();
 startExposureWorker();
 startBlocklistWorker();
+startSyntheticWorker();
 
 console.log("All workers running");

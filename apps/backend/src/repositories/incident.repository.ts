@@ -23,6 +23,12 @@ export const incidentRepository = {
       orderBy: { startedAt: "desc" },
     });
   },
+  async findOpenSyntheticIncident(monitorId: string): Promise<Incident | null> {
+    return prisma.incident.findFirst({
+      where: { monitorId, isResolved: false, type: "synthetic_failure" },
+      orderBy: { startedAt: "desc" },
+    });
+  },
   async resolve(id: string): Promise<Incident> {
     return prisma.incident.update({
       where: { id },

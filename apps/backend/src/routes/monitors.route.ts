@@ -3,17 +3,28 @@ import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import { monitorService } from "../services/monitor.service";
-import { SnoozeContentChangeSchema } from "@watchdog/shared-types";
+import { SnoozeContentChangeSchema, SyntheticStepsSchema } from "@watchdog/shared-types";
 
 const router = Router();
 router.use(authenticate);
 
-const createSchema = z.object({
-  name: z.string().min(1),
-  url: z.string().url(),
-  intervalMinutes: z.number().int().min(1).max(60).default(5),
-  agentId: z.string().uuid().optional(),
-});
+const createSchema = z
+  .object({
+    name: z.string().min(1),
+    url: z.string().url(),
+    intervalMinutes: z.number().int().min(1).max(60).default(5),
+    agentId: z.string().uuid().optional(),
+    type: z.enum(["http", "synthetic"]).default("http"),
+    syntheticSteps: SyntheticStepsSchema.optional(),
+  })
+  .refine((data) => data.type !== "synthetic" || (data.syntheticSteps && data.syntheticSteps.length > 0), {
+    message: "syntheticSteps is required when type is 'synthetic'",
+    path: ["syntheticSteps"],
+  })
+  .refine((data) => data.type !== "synthetic" || data.intervalMinutes >= 5, {
+    message: "Synthetic monitors require an interval of at least 5 minutes",
+    path: ["intervalMinutes"],
+  });
 
 router.get("/", async (req, res, next) => {
   try {
@@ -50,6 +61,7 @@ const updateSchema = z.object({
   paused: z.boolean().optional(),
   contentChangeEnabled: z.boolean().optional(),
   regionDownThreshold: z.number().int().min(1).max(10).optional(),
+  syntheticSteps: SyntheticStepsSchema.optional(),
 });
 
 router.patch("/:id", validate(updateSchema), async (req, res, next) => {

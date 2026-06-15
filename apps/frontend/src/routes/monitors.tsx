@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
-import type { Agent, AgentWithKey, Monitor } from "@watchdog/shared-types";
+import { SyntheticStepsSchema } from "@watchdog/shared-types";
+import type { Agent, AgentWithKey, Monitor, SyntheticStep } from "@watchdog/shared-types";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -333,6 +334,16 @@ const INTERVALS = [
   { label: "Every 60 min", value: 60 },
 ];
 
+const SYNTHETIC_INTERVALS = INTERVALS.filter((i) => i.value >= 5);
+
+const SYNTHETIC_STEPS_EXAMPLE: SyntheticStep[] = [
+  { action: "navigate", url: "https://example.com/login" },
+  { action: "fill", selector: "#username", value: "demo@example.com" },
+  { action: "fill", selector: "#password", value: "password123" },
+  { action: "click", selector: "#login-button" },
+  { action: "assert_text", selector: "h1", text: "Dashboard" },
+];
+
 function intervalLabel(minutes: number) {
   if (minutes === 1) return "every 1m";
   if (minutes < 60) return `every ${minutes}m`;
@@ -486,9 +497,11 @@ function MonitorRow({ monitor, onDelete }: { monitor: Monitor; onDelete: (id: st
 
 export default function MonitorsPage() {
   const qc = useQueryClient();
-  const [monitoringType, setMonitoringType] = useState<"cloud" | "agent">("cloud");
+  const [monitoringType, setMonitoringType] = useState<"cloud" | "agent" | "synthetic">("cloud");
   const [form, setForm] = useState({ name: "", url: "", intervalMinutes: 5, agentId: "" });
   const [agentSetup, setAgentSetup] = useState<AgentSetupInfo | null>(null);
+  const [syntheticStepsText, setSyntheticStepsText] = useState("");
+  const [syntheticStepsError, setSyntheticStepsError] = useState<string | null>(null);
 
   const { data: monitors = [], isLoading } = useQuery({
     queryKey: ["monitors"],
@@ -501,12 +514,13 @@ export default function MonitorsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (syntheticSteps?: SyntheticStep[]) =>
       api.monitors.create({
         name: form.name,
         url: form.url,
         intervalMinutes: form.intervalMinutes,
         ...(monitoringType === "agent" && form.agentId ? { agentId: form.agentId } : {}),
+        ...(monitoringType === "synthetic" ? { type: "synthetic" as const, syntheticSteps } : {}),
       }),
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["monitors"] });
@@ -521,9 +535,33 @@ export default function MonitorsPage() {
         });
       }
       setForm({ name: "", url: "", intervalMinutes: 5, agentId: "" });
+      setSyntheticStepsText("");
+      setSyntheticStepsError(null);
       setMonitoringType("cloud");
     },
   });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (monitoringType === "synthetic") {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(syntheticStepsText);
+      } catch {
+        setSyntheticStepsError("Steps must be valid JSON");
+        return;
+      }
+      const result = SyntheticStepsSchema.safeParse(parsed);
+      if (!result.success) {
+        setSyntheticStepsError(result.error.issues[0]?.message ?? "Invalid steps");
+        return;
+      }
+      setSyntheticStepsError(null);
+      createMutation.mutate(result.data);
+      return;
+    }
+    createMutation.mutate(undefined);
+  }
 
   const deleteMutation = useMutation({
     mutationFn: api.monitors.delete,
@@ -557,7 +595,7 @@ export default function MonitorsPage() {
         <h2 className="text-sm font-semibold text-foreground mb-4">Add a monitor</h2>
 
         {/* Monitoring type toggle */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="grid grid-cols-3 gap-3 mb-5">
           <button
             type="button"
             onClick={() => setMonitoringType("cloud")}
@@ -593,11 +631,32 @@ export default function MonitorsPage() {
               <p className="text-xs text-muted-foreground mt-0.5">Your machine checks it (localhost, internal)</p>
             </div>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMonitoringType("synthetic");
+              if (form.intervalMinutes < 5) setForm((f) => ({ ...f, intervalMinutes: 5 }));
+            }}
+            className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
+              monitoringType === "synthetic"
+                ? "border-primary/50 bg-primary/10"
+                : "border-border bg-muted/50 hover:border-border"
+            }`}
+          >
+            <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${monitoringType === "synthetic" ? "text-primary" : "text-muted-foreground"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <div>
+              <p className={`text-xs font-semibold ${monitoringType === "synthetic" ? "text-primary" : "text-foreground"}`}>Synthetic Transaction</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Run a scripted browser flow (login, checkout, etc.)</p>
+            </div>
+          </button>
         </div>
 
         <form
           className="space-y-3"
-          onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }}
+          onSubmit={handleSubmit}
         >
           <div className="flex gap-3">
             <input
@@ -612,7 +671,7 @@ export default function MonitorsPage() {
               value={form.intervalMinutes}
               onChange={(e) => setForm((f) => ({ ...f, intervalMinutes: Number(e.target.value) }))}
             >
-              {INTERVALS.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
+              {(monitoringType === "synthetic" ? SYNTHETIC_INTERVALS : INTERVALS).map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
             </select>
           </div>
 
@@ -645,6 +704,33 @@ export default function MonitorsPage() {
                   ))}
                 </select>
               )}
+            </div>
+          )}
+
+          {monitoringType === "synthetic" && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs font-medium text-foreground">Transaction steps (JSON)</p>
+                <button
+                  type="button"
+                  onClick={() => { setSyntheticStepsText(JSON.stringify(SYNTHETIC_STEPS_EXAMPLE, null, 2)); setSyntheticStepsError(null); }}
+                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-0.5 rounded hover:bg-accent transition-colors"
+                >
+                  Load example
+                </button>
+              </div>
+              <textarea
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground font-mono placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
+                rows={10}
+                placeholder={JSON.stringify(SYNTHETIC_STEPS_EXAMPLE, null, 2)}
+                value={syntheticStepsText}
+                onChange={(e) => { setSyntheticStepsText(e.target.value); setSyntheticStepsError(null); }}
+                required
+              />
+              <p className="text-xs text-muted-foreground/60 mt-1.5">
+                A list of steps: navigate, fill, click, assert_text, assert_status. The first step must be a "navigate".
+              </p>
+              {syntheticStepsError && <p className="text-xs text-down mt-1.5">{syntheticStepsError}</p>}
             </div>
           )}
 

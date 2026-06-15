@@ -21,6 +21,8 @@ const monitor = {
   intervalMinutes: 5,
   isActive: true,
   paused: false,
+  type: "http" as const,
+  syntheticSteps: null,
   contentChangeEnabled: false,
   contentChangeSnoozeUntil: null,
   regionDownThreshold: 1,
@@ -234,6 +236,104 @@ describe("alertService.notifyDomainBlocklisted", () => {
     mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
 
     await alertService.notifyDomainBlocklisted(monitor, blocklistIncident, findings);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("alertService.notifySyntheticFailure", () => {
+  const syntheticIncident = { ...incident, type: "synthetic_failure" as const };
+  const failureResult = {
+    success: false,
+    steps: [
+      { action: "navigate" as const, ok: true, durationMs: 120 },
+      { action: "fill" as const, ok: true, durationMs: 30 },
+      { action: "click" as const, ok: false, durationMs: 10_000, error: "Timeout waiting for selector #login-button" },
+    ],
+    totalDurationMs: 10_150,
+    error: "Step 3 (click) failed",
+  };
+
+  it("sends a transaction-failed email when no prior alert and alertSyntheticFailure is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertSyntheticFailure: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifySyntheticFailure(monitor, syntheticIncident, failureResult);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("Transaction failed") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1", type: "downtime" });
+  });
+
+  it("skips when alertSyntheticFailure is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertSyntheticFailure: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifySyntheticFailure(monitor, syntheticIncident, failureResult);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifySyntheticFailure(monitor, syntheticIncident, failureResult);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("alertService.notifySyntheticRecovery", () => {
+  const recoveryIncident = { ...incident, type: "synthetic_failure" as const, isResolved: true, resolvedAt: new Date() };
+
+  it("sends a transaction-recovered email when no prior recovery alert and alertSyntheticFailure is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertSyntheticFailure: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifySyntheticRecovery(monitor, recoveryIncident);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("Transaction recovered") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1", type: "recovery" });
+  });
+
+  it("skips when alertSyntheticFailure is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertSyntheticFailure: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifySyntheticRecovery(monitor, recoveryIncident);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (recovery alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifySyntheticRecovery(monitor, recoveryIncident);
 
     expect(mockSendEmail).not.toHaveBeenCalled();
     expect(mockAlertRepo.create).not.toHaveBeenCalled();

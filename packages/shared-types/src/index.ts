@@ -1,10 +1,40 @@
 import { z } from "zod";
 
-export const CreateMonitorSchema = z.object({
-  name: z.string().min(1),
-  url: z.string().url(),
-  intervalMinutes: z.number().int().min(1).max(60).default(5),
-});
+export const SyntheticStepSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("navigate"), url: z.string().url() }),
+  z.object({ action: z.literal("fill"), selector: z.string().min(1), value: z.string() }),
+  z.object({ action: z.literal("click"), selector: z.string().min(1) }),
+  z.object({ action: z.literal("assert_text"), selector: z.string().min(1), text: z.string().min(1) }),
+  z.object({ action: z.literal("assert_status"), expected: z.number().int().min(100).max(599) }),
+]);
+
+export const SyntheticStepsSchema = z
+  .array(SyntheticStepSchema)
+  .min(1)
+  .max(20)
+  .refine((steps) => steps[0]?.action === "navigate", {
+    message: "The first step must be a 'navigate' action",
+  });
+
+export type SyntheticStep = z.infer<typeof SyntheticStepSchema>;
+export type SyntheticStepAction = SyntheticStep["action"];
+
+export const CreateMonitorSchema = z
+  .object({
+    name: z.string().min(1),
+    url: z.string().url(),
+    intervalMinutes: z.number().int().min(1).max(60).default(5),
+    type: z.enum(["http", "synthetic"]).default("http"),
+    syntheticSteps: SyntheticStepsSchema.optional(),
+  })
+  .refine((data) => data.type !== "synthetic" || (data.syntheticSteps && data.syntheticSteps.length > 0), {
+    message: "syntheticSteps is required when type is 'synthetic'",
+    path: ["syntheticSteps"],
+  })
+  .refine((data) => data.type !== "synthetic" || data.intervalMinutes >= 5, {
+    message: "Synthetic monitors require an interval of at least 5 minutes",
+    path: ["intervalMinutes"],
+  });
 
 export const RegisterSchema = z.object({
   email: z.string().email(),
@@ -24,6 +54,7 @@ export const UpdateMonitorSchema = z.object({
   paused: z.boolean().optional(),
   contentChangeEnabled: z.boolean().optional(),
   regionDownThreshold: z.number().int().min(1).max(10).optional(),
+  syntheticSteps: SyntheticStepsSchema.optional(),
 });
 export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
 
@@ -37,7 +68,7 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure" | "blocklist";
+  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure" | "blocklist" | "synthetic";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
@@ -57,6 +88,7 @@ export interface Check {
   contentHash?: string | null;
   metricName?: string | null;
   metricValue?: number | null;
+  syntheticResult?: SyntheticCheckResult | null;
   checkedAt: string;
 }
 
@@ -206,6 +238,21 @@ export interface BlocklistCheckResult {
   checkedAt: string | null;
 }
 
+export interface SyntheticStepResult {
+  action: SyntheticStepAction;
+  ok: boolean;
+  durationMs: number;
+  error?: string;
+  statusCode?: number;
+}
+
+export interface SyntheticCheckResult {
+  success: boolean;
+  steps: SyntheticStepResult[];
+  totalDurationMs: number;
+  error?: string;
+}
+
 export interface ContentChangeStatus {
   enabled: boolean;
   snoozedUntil: string | null;
@@ -221,6 +268,7 @@ export interface AlertSettings {
   alertCertTransparency: boolean;
   alertBlocklist: boolean;
   alertContentChange: boolean;
+  alertSyntheticFailure: boolean;
   webhookUrl: string | null;
 }
 
@@ -235,7 +283,7 @@ export interface MonitorStats {
 export interface Incident {
   id: string;
   monitorId: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure";
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
@@ -316,6 +364,8 @@ export interface Monitor {
   userId: string;
   name: string;
   url: string;
+  type: "http" | "synthetic";
+  syntheticSteps?: SyntheticStep[] | null;
   intervalMinutes: number;
   isActive: boolean;
   paused: boolean;
@@ -401,7 +451,7 @@ export interface DashboardIncident {
   monitorId: string;
   monitorName: string;
   monitorUrl: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure";
   startedAt: string;
   resolvedAt: string | null;
   isResolved: boolean;
@@ -413,7 +463,7 @@ export interface AppNotification {
   sentAt: string;
   incidentId: string;
   alertType: "downtime" | "recovery";
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure";
   isResolved: boolean;
   resolvedAt: string | null;
   startedAt: string;

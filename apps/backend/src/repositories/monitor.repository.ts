@@ -26,6 +26,16 @@ export const monitorRepository = {
       where: { isActive: true, paused: false, monitorAgents: { none: {} } },
     });
   },
+  async findAllActiveHttp(): Promise<Monitor[]> {
+    return prisma.monitor.findMany({
+      where: { isActive: true, paused: false, type: "http", monitorAgents: { none: {} } },
+    });
+  },
+  async findAllSynthetic(): Promise<Monitor[]> {
+    return prisma.monitor.findMany({
+      where: { isActive: true, paused: false, type: "synthetic" },
+    });
+  },
   async findByAgent(agentId: string) {
     return prisma.monitor.findMany({
       where: { isActive: true, paused: false, monitorAgents: { some: { agentId } } },
