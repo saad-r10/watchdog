@@ -37,6 +37,7 @@ const INCIDENT_LABELS: Record<string, string> = {
   ssl_expiry: "SSL expiry",
   header_missing: "Missing headers",
   synthetic_failure: "Transaction failure",
+  performance_degraded: "Performance degraded",
 };
 
 function IncidentRow({ incident }: { incident: DashboardIncident }) {

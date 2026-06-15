@@ -20,6 +20,7 @@ model User {
   alertBlocklist   Boolean  @default(true)
   alertContentChange Boolean @default(true)
   alertSyntheticFailure Boolean @default(true)
+  alertPerformanceDegraded Boolean @default(true)
   webhookUrl       String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -227,6 +228,7 @@ enum IncidentType {
   domain_blocklisted
   content_changed
   synthetic_failure
+  performance_degraded
 }
 
 enum MonitorType {

@@ -3,6 +3,7 @@ import { incidentRepository } from "../repositories/incident.repository";
 import { maintenanceRepository } from "../repositories/maintenance.repository";
 import { monitorAgentRepository } from "../repositories/monitor-agent.repository";
 import { alertService } from "./alert.service";
+import { computeAnomalyStats, isAnomalous, MIN_SAMPLE_SIZE } from "../lib/anomaly-utils";
 import type { Monitor } from "@prisma/client";
 import type { SyntheticCheckResult } from "@watchdog/shared-types";
 
@@ -63,6 +64,37 @@ export const monitorStatusService = {
     } else if (result.success && openIncident) {
       const resolved = await incidentRepository.resolve(openIncident.id);
       await alertService.notifySyntheticRecovery(monitor, resolved).catch(console.error);
+    }
+  },
+
+  /**
+   * Opens or resolves the `performance_degraded` incident for a monitor by
+   * comparing its latest response time against a rolling 7-day mean/stddev
+   * baseline (z-score). No-ops if there isn't enough history yet or the
+   * baseline has zero variance.
+   */
+  async evaluatePerformanceStatus(monitor: Monitor): Promise<void> {
+    const samples = await checkRepository.getRecentResponseTimes(monitor.id, 7);
+    if (samples.length < MIN_SAMPLE_SIZE + 1) return;
+
+    const latest = samples[samples.length - 1];
+    const stats = computeAnomalyStats(samples.slice(0, -1));
+    if (!stats) return;
+
+    const openIncident = await incidentRepository.findOpenPerformanceIncident(monitor.id);
+
+    if (isAnomalous(latest, stats) && !openIncident) {
+      const incident = await incidentRepository.create({
+        monitor: { connect: { id: monitor.id } },
+        type: "performance_degraded",
+      });
+      const inMaintenance = await maintenanceRepository.isActive(monitor.id);
+      if (!inMaintenance) {
+        await alertService.notifyPerformanceDegraded(monitor, incident, { latest, ...stats }).catch(console.error);
+      }
+    } else if (!isAnomalous(latest, stats) && openIncident) {
+      const resolved = await incidentRepository.resolve(openIncident.id);
+      await alertService.notifyPerformanceRecovery(monitor, resolved).catch(console.error);
     }
   },
 };

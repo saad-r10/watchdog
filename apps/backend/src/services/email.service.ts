@@ -291,6 +291,58 @@ export function syntheticRecoveryAlertHtml(monitorName: string, url: string, res
   `;
 }
 
+export function performanceDegradedAlertHtml(monitorName: string, url: string, latestMs: number, meanMs: number, thresholdMs: number, detectedAt: Date): string {
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">⚠️ Performance Degraded — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          <strong>${escapeHtml(url)}</strong> is responding much slower than usual.
+        </p>
+        <p style="margin:0 0 12px;color:#6b7280;font-size:14px">
+          Latest response: <strong style="color:#f59e0b">${latestMs}ms</strong>
+          — normally ~${meanMs}ms, threshold ${thresholdMs}ms
+        </p>
+        <p style="margin:0;color:#6b7280;font-size:13px">
+          Detected: ${detectedAt.toLocaleString()}
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+export function performanceRecoveredAlertHtml(monitorName: string, url: string, resolvedAt: Date, durationMinutes: number | null): string {
+  const duration = durationMinutes != null
+    ? durationMinutes < 60
+      ? `${durationMinutes} minute${durationMinutes === 1 ? "" : "s"}`
+      : `${Math.round(durationMinutes / 60)} hour${Math.round(durationMinutes / 60) === 1 ? "" : "s"}`
+    : null;
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">✅ Performance Back to Normal — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          Response times for <strong>${escapeHtml(url)}</strong> are back within their normal range.
+        </p>
+        ${duration ? `<p style="margin:0 0 12px;color:#6b7280;font-size:14px">Degraded for: ${duration}</p>` : ""}
+        <p style="margin:0;color:#6b7280;font-size:13px">
+          Recovered at: ${resolvedAt.toLocaleString()}
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
 export function sslAlertHtml(monitorName: string, url: string, daysLeft: number): string {
   const urgent = daysLeft <= 3;
   const colour = urgent ? "#ef4444" : "#f59e0b";

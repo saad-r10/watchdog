@@ -7,6 +7,7 @@ import { startDnsWorker } from "./workers/dns.worker";
 import { startExposureWorker } from "./workers/exposure.worker";
 import { startBlocklistWorker } from "./workers/blocklist.worker";
 import { startSyntheticWorker } from "./workers/synthetic.worker";
+import { startAnomalyDetectionWorker } from "./workers/anomaly-detection.worker";
 
 startUptimeWorker();
 startSslWorker();
@@ -16,5 +17,6 @@ startDnsWorker();
 startExposureWorker();
 startBlocklistWorker();
 startSyntheticWorker();
+startAnomalyDetectionWorker();
 
 console.log("All workers running");

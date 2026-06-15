@@ -10,6 +10,7 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceDot,
+  ReferenceLine,
 } from "recharts";
 import type { ResponseTimeBucket, ResponseTimeRange } from "@watchdog/shared-types";
 
@@ -74,6 +75,26 @@ function makeChartTooltip(range: ResponseTimeRange) {
   };
 }
 
+// Lightweight visual aid: flags buckets whose average response time is a
+// statistical outlier (mean + 3 stddev) within the currently-viewed range.
+// The authoritative anomaly detection (incidents/alerts) runs server-side
+// against raw per-check data over a rolling 7-day window — this is just
+// context for whatever range the user happens to be looking at.
+const ANOMALY_MIN_BUCKETS = 8;
+const ANOMALY_SIGMA = 3;
+
+function computeAnomalyThreshold(data: ResponseTimeBucket[]): number | null {
+  const values = data.map((d) => d.avgMs).filter((v): v is number => v != null);
+  if (values.length < ANOMALY_MIN_BUCKETS) return null;
+
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+  const stddev = Math.sqrt(variance);
+  if (stddev === 0) return null;
+
+  return mean + ANOMALY_SIGMA * stddev;
+}
+
 const axisProps = {
   stroke: "hsl(var(--border))",
   tick: { fill: "hsl(var(--muted-foreground))", fontSize: 11 },
@@ -94,6 +115,11 @@ export function ResponseTimeChart({ data, range }: ResponseTimeChartProps) {
 
   const downDots = data.filter((r) => r.hasDown && r.avgMs == null).map((r) => r.bucket);
 
+  const anomalyThreshold = computeAnomalyThreshold(data);
+  const anomalyPoints = anomalyThreshold != null
+    ? data.filter((r) => r.avgMs != null && r.avgMs > anomalyThreshold)
+    : [];
+
   if (data.length === 0) {
     return <p className="text-sm text-muted-foreground text-center py-12">No data for this period yet.</p>;
   }
@@ -111,6 +137,18 @@ export function ResponseTimeChart({ data, range }: ResponseTimeChartProps) {
       <Tooltip content={makeChartTooltip(range)} />
       {downDots.map((bucket) => (
         <ReferenceDot key={bucket} x={bucket} y={0} r={4} fill="hsl(var(--down))" stroke="none" />
+      ))}
+      {anomalyThreshold != null && (
+        <ReferenceLine
+          y={anomalyThreshold}
+          stroke="hsl(var(--down))"
+          strokeDasharray="4 4"
+          strokeOpacity={0.6}
+          label={{ value: "anomaly threshold", position: "insideTopRight", fill: "hsl(var(--down))", fontSize: 11 }}
+        />
+      )}
+      {anomalyPoints.map((p) => (
+        <ReferenceDot key={`anomaly-${p.bucket}`} x={p.bucket} y={p.avgMs!} r={4} fill="hsl(var(--down))" stroke="none" />
       ))}
     </>
   );
