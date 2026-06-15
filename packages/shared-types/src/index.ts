@@ -54,6 +54,11 @@ export const UpdateMonitorSchema = z.object({
   paused: z.boolean().optional(),
   contentChangeEnabled: z.boolean().optional(),
   regionDownThreshold: z.number().int().min(1).max(10).optional(),
+  lighthouseEnabled: z.boolean().optional(),
+  lighthousePerformanceBudget: z.number().int().min(0).max(100).optional(),
+  lighthouseAccessibilityBudget: z.number().int().min(0).max(100).optional(),
+  lighthouseBestPracticesBudget: z.number().int().min(0).max(100).optional(),
+  lighthouseSeoBudget: z.number().int().min(0).max(100).optional(),
   syntheticSteps: SyntheticStepsSchema.optional(),
 });
 export type UpdateMonitorInput = z.infer<typeof UpdateMonitorSchema>;
@@ -68,7 +73,7 @@ export type LoginInput = z.infer<typeof LoginSchema>;
 export interface Check {
   id: string;
   monitorId: string;
-  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure" | "blocklist" | "synthetic";
+  type: "uptime" | "ssl" | "headers" | "metric" | "cert_transparency" | "dns" | "exposure" | "blocklist" | "synthetic" | "lighthouse";
   status: string;
   statusCode?: number | null;
   responseTime?: number | null;
@@ -89,6 +94,7 @@ export interface Check {
   metricName?: string | null;
   metricValue?: number | null;
   syntheticResult?: SyntheticCheckResult | null;
+  lighthouseResult?: LighthouseResult | null;
   checkedAt: string;
 }
 
@@ -253,12 +259,33 @@ export interface SyntheticCheckResult {
   error?: string;
 }
 
+export interface LighthouseResult {
+  success: boolean;
+  performance: number | null;
+  accessibility: number | null;
+  bestPractices: number | null;
+  seo: number | null;
+  error?: string;
+}
+
 export interface ContentChangeStatus {
   enabled: boolean;
   snoozedUntil: string | null;
   lastHash: string | null;
   lastCheckedAt: string | null;
   lastChangedAt: string | null;
+}
+
+export interface LighthouseStatus {
+  enabled: boolean;
+  budgets: {
+    performance: number;
+    accessibility: number;
+    bestPractices: number;
+    seo: number;
+  };
+  latest: (LighthouseResult & { checkedAt: string }) | null;
+  lastIncident: { startedAt: string; resolvedAt: string | null; isResolved: boolean } | null;
 }
 
 export interface AlertSettings {
@@ -270,6 +297,7 @@ export interface AlertSettings {
   alertContentChange: boolean;
   alertSyntheticFailure: boolean;
   alertPerformanceDegraded: boolean;
+  alertLighthouseBudget: boolean;
   webhookUrl: string | null;
 }
 
@@ -284,7 +312,7 @@ export interface MonitorStats {
 export interface Incident {
   id: string;
   monitorId: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded" | "lighthouse_budget_exceeded";
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
@@ -373,6 +401,11 @@ export interface Monitor {
   contentChangeEnabled: boolean;
   contentChangeSnoozeUntil: string | null;
   regionDownThreshold: number;
+  lighthouseEnabled: boolean;
+  lighthousePerformanceBudget: number;
+  lighthouseAccessibilityBudget: number;
+  lighthouseBestPracticesBudget: number;
+  lighthouseSeoBudget: number;
   agents: MonitorAgentInfo[];
   createdAt: string;
   updatedAt: string;
@@ -452,7 +485,7 @@ export interface DashboardIncident {
   monitorId: string;
   monitorName: string;
   monitorUrl: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded" | "lighthouse_budget_exceeded";
   startedAt: string;
   resolvedAt: string | null;
   isResolved: boolean;
@@ -464,7 +497,7 @@ export interface AppNotification {
   sentAt: string;
   incidentId: string;
   alertType: "downtime" | "recovery";
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded" | "lighthouse_budget_exceeded";
   isResolved: boolean;
   resolvedAt: string | null;
   startedAt: string;

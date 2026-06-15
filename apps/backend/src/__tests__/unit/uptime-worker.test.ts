@@ -68,6 +68,11 @@ const monitor = {
   contentChangeEnabled: false,
   contentChangeSnoozeUntil: null,
   regionDownThreshold: 1,
+  lighthouseEnabled: false,
+  lighthousePerformanceBudget: 80,
+  lighthouseAccessibilityBudget: 80,
+  lighthouseBestPracticesBudget: 80,
+  lighthouseSeoBudget: 80,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

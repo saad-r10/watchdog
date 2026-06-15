@@ -73,6 +73,11 @@ export const monitorService = {
       paused?: boolean;
       contentChangeEnabled?: boolean;
       regionDownThreshold?: number;
+      lighthouseEnabled?: boolean;
+      lighthousePerformanceBudget?: number;
+      lighthouseAccessibilityBudget?: number;
+      lighthouseBestPracticesBudget?: number;
+      lighthouseSeoBudget?: number;
       syntheticSteps?: SyntheticStep[];
     }
   ) {

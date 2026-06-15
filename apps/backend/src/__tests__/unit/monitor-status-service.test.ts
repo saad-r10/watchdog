@@ -29,6 +29,11 @@ const monitor = {
   contentChangeEnabled: false,
   contentChangeSnoozeUntil: null,
   regionDownThreshold: 1,
+  lighthouseEnabled: true,
+  lighthousePerformanceBudget: 80,
+  lighthouseAccessibilityBudget: 80,
+  lighthouseBestPracticesBudget: 80,
+  lighthouseSeoBudget: 80,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -45,11 +50,22 @@ const incident = {
   isResolved: false,
 };
 
+const lighthouseIncident = {
+  id: "inc-2",
+  monitorId: "mon-1",
+  type: "lighthouse_budget_exceeded" as const,
+  startedAt: new Date(),
+  resolvedAt: null,
+  isResolved: false,
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockMaintenanceRepo.isActive.mockResolvedValue(false);
   mockAlertService.notifyPerformanceDegraded.mockResolvedValue(undefined);
   mockAlertService.notifyPerformanceRecovery.mockResolvedValue(undefined);
+  mockAlertService.notifyLighthouseBudgetExceeded.mockResolvedValue(undefined);
+  mockAlertService.notifyLighthouseRecovery.mockResolvedValue(undefined);
 });
 
 describe("monitorStatusService.evaluatePerformanceStatus", () => {
@@ -111,5 +127,83 @@ describe("monitorStatusService.evaluatePerformanceStatus", () => {
 
     expect(mockIncidentRepo.resolve).toHaveBeenCalledWith(incident.id);
     expect(mockAlertService.notifyPerformanceRecovery).toHaveBeenCalledWith(monitor, resolved);
+  });
+});
+
+describe("monitorStatusService.evaluateLighthouseStatus", () => {
+  it("does nothing when the audit failed", async () => {
+    await monitorStatusService.evaluateLighthouseStatus(monitor, {
+      success: false,
+      performance: null,
+      accessibility: null,
+      bestPractices: null,
+      seo: null,
+      error: "boom",
+    });
+
+    expect(mockIncidentRepo.findOpenLighthouseIncident).not.toHaveBeenCalled();
+  });
+
+  it("opens a lighthouse_budget_exceeded incident when a score is under budget", async () => {
+    mockIncidentRepo.findOpenLighthouseIncident.mockResolvedValue(null);
+    mockIncidentRepo.create.mockResolvedValue(lighthouseIncident);
+
+    const result = { success: true, performance: 60, accessibility: 90, bestPractices: 95, seo: 90 } as const;
+    await monitorStatusService.evaluateLighthouseStatus(monitor, result);
+
+    expect(mockIncidentRepo.create).toHaveBeenCalledWith({
+      monitor: { connect: { id: monitor.id } },
+      type: "lighthouse_budget_exceeded",
+    });
+    expect(mockAlertService.notifyLighthouseBudgetExceeded).toHaveBeenCalledWith(monitor, lighthouseIncident, result);
+  });
+
+  it("does not open a duplicate incident when one is already open", async () => {
+    mockIncidentRepo.findOpenLighthouseIncident.mockResolvedValue(lighthouseIncident);
+
+    await monitorStatusService.evaluateLighthouseStatus(monitor, {
+      success: true,
+      performance: 60,
+      accessibility: 90,
+      bestPractices: 95,
+      seo: 90,
+    });
+
+    expect(mockIncidentRepo.create).not.toHaveBeenCalled();
+    expect(mockAlertService.notifyLighthouseBudgetExceeded).not.toHaveBeenCalled();
+  });
+
+  it("skips alerting during an active maintenance window", async () => {
+    mockIncidentRepo.findOpenLighthouseIncident.mockResolvedValue(null);
+    mockIncidentRepo.create.mockResolvedValue(lighthouseIncident);
+    mockMaintenanceRepo.isActive.mockResolvedValue(true);
+
+    await monitorStatusService.evaluateLighthouseStatus(monitor, {
+      success: true,
+      performance: 60,
+      accessibility: 90,
+      bestPractices: 95,
+      seo: 90,
+    });
+
+    expect(mockIncidentRepo.create).toHaveBeenCalled();
+    expect(mockAlertService.notifyLighthouseBudgetExceeded).not.toHaveBeenCalled();
+  });
+
+  it("resolves an open incident and sends a recovery alert once all scores are back in budget", async () => {
+    mockIncidentRepo.findOpenLighthouseIncident.mockResolvedValue(lighthouseIncident);
+    const resolved = { ...lighthouseIncident, isResolved: true, resolvedAt: new Date() };
+    mockIncidentRepo.resolve.mockResolvedValue(resolved);
+
+    await monitorStatusService.evaluateLighthouseStatus(monitor, {
+      success: true,
+      performance: 85,
+      accessibility: 90,
+      bestPractices: 95,
+      seo: 90,
+    });
+
+    expect(mockIncidentRepo.resolve).toHaveBeenCalledWith(lighthouseIncident.id);
+    expect(mockAlertService.notifyLighthouseRecovery).toHaveBeenCalledWith(monitor, resolved);
   });
 });

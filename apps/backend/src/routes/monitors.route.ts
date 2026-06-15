@@ -61,6 +61,11 @@ const updateSchema = z.object({
   paused: z.boolean().optional(),
   contentChangeEnabled: z.boolean().optional(),
   regionDownThreshold: z.number().int().min(1).max(10).optional(),
+  lighthouseEnabled: z.boolean().optional(),
+  lighthousePerformanceBudget: z.number().int().min(0).max(100).optional(),
+  lighthouseAccessibilityBudget: z.number().int().min(0).max(100).optional(),
+  lighthouseBestPracticesBudget: z.number().int().min(0).max(100).optional(),
+  lighthouseSeoBudget: z.number().int().min(0).max(100).optional(),
   syntheticSteps: SyntheticStepsSchema.optional(),
 });
 
