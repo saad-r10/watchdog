@@ -10,6 +10,8 @@ export interface WebhookPayload {
     | "content_changed"
     | "synthetic_failure"
     | "synthetic_recovery"
+    | "performance_degraded"
+    | "performance_recovery"
     | "test";
   monitorId?: string;
   monitorName?: string;
@@ -18,6 +20,9 @@ export interface WebhookPayload {
   startedAt?: string;
   resolvedAt?: string;
   durationMinutes?: number | null;
+  latestMs?: number;
+  meanMs?: number;
+  thresholdMs?: number;
   message?: string;
 }
 

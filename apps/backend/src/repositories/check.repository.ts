@@ -44,6 +44,33 @@ export const checkRepository = {
       totalChecks: checks.length,
     };
   },
+  /**
+   * Ordered (oldest -> newest) response times for completed uptime checks
+   * over the trailing `days`, excluding checks taken during a maintenance
+   * window. Used as the sample set for rolling anomaly detection — the last
+   * element is the latest check, the rest form the baseline.
+   */
+  async getRecentResponseTimes(monitorId: string, days = 7): Promise<number[]> {
+    const since = new Date(Date.now() - days * 86_400_000);
+    const rows = await prisma.$queryRaw<Array<{ responseTime: number }>>`
+      SELECT "responseTime"
+      FROM "Check"
+      WHERE "monitorId" = ${monitorId}
+        AND type = 'uptime'
+        AND status = 'up'
+        AND "responseTime" IS NOT NULL
+        AND "checkedAt" >= ${since}
+        AND NOT EXISTS (
+          SELECT 1 FROM "MaintenanceWindow" mw
+          WHERE mw."monitorId" = ${monitorId}
+            AND mw."startsAt" <= "checkedAt"
+            AND mw."endsAt"   >= "checkedAt"
+        )
+      ORDER BY "checkedAt" ASC
+    `;
+
+    return rows.map((r) => r.responseTime);
+  },
   async getLatest(monitorId: string): Promise<Check | null> {
     return prisma.check.findFirst({
       where: { monitorId, type: "uptime" },

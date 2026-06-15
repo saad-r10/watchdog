@@ -383,3 +383,92 @@ describe("alertService.notifyContentChanged", () => {
     expect(mockAlertRepo.create).not.toHaveBeenCalled();
   });
 });
+
+describe("alertService.notifyPerformanceDegraded", () => {
+  const performanceIncident = { ...incident, type: "performance_degraded" as const };
+  const stats = { latest: 950, mean: 200, stddev: 50, threshold: 350 };
+
+  it("sends a slow-response email when no prior alert and alertPerformanceDegraded is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertPerformanceDegraded: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyPerformanceDegraded(monitor, performanceIncident, stats);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("Slow response times") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1" });
+  });
+
+  it("skips when alertPerformanceDegraded is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertPerformanceDegraded: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyPerformanceDegraded(monitor, performanceIncident, stats);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifyPerformanceDegraded(monitor, performanceIncident, stats);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("alertService.notifyPerformanceRecovery", () => {
+  const recoveryIncident = { ...incident, type: "performance_degraded" as const, isResolved: true, resolvedAt: new Date() };
+
+  it("sends a recovery email when no prior recovery alert and alertPerformanceDegraded is enabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertPerformanceDegraded: true,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyPerformanceRecovery(monitor, recoveryIncident);
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ subject: expect.stringContaining("back to normal") })
+    );
+    expect(mockAlertRepo.create).toHaveBeenCalledWith({ userId: "user-1", incidentId: "inc-1", type: "recovery" });
+  });
+
+  it("skips when alertPerformanceDegraded is disabled", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(false);
+    (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
+      email: "user@example.com",
+      alertEmail: null,
+      alertPerformanceDegraded: false,
+      webhookUrl: null,
+    });
+
+    await alertService.notifyPerformanceRecovery(monitor, recoveryIncident);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("skips sending when cooldown is active (alert already sent)", async () => {
+    mockAlertRepo.hasAlertForIncident.mockResolvedValue(true);
+
+    await alertService.notifyPerformanceRecovery(monitor, recoveryIncident);
+
+    expect(mockSendEmail).not.toHaveBeenCalled();
+    expect(mockAlertRepo.create).not.toHaveBeenCalled();
+  });
+});

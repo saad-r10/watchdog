@@ -29,6 +29,12 @@ export const incidentRepository = {
       orderBy: { startedAt: "desc" },
     });
   },
+  async findOpenPerformanceIncident(monitorId: string): Promise<Incident | null> {
+    return prisma.incident.findFirst({
+      where: { monitorId, isResolved: false, type: "performance_degraded" },
+      orderBy: { startedAt: "desc" },
+    });
+  },
   async resolve(id: string): Promise<Incident> {
     return prisma.incident.update({
       where: { id },

@@ -269,6 +269,7 @@ export interface AlertSettings {
   alertBlocklist: boolean;
   alertContentChange: boolean;
   alertSyntheticFailure: boolean;
+  alertPerformanceDegraded: boolean;
   webhookUrl: string | null;
 }
 
@@ -283,7 +284,7 @@ export interface MonitorStats {
 export interface Incident {
   id: string;
   monitorId: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded";
   startedAt: string;
   resolvedAt?: string | null;
   isResolved: boolean;
@@ -451,7 +452,7 @@ export interface DashboardIncident {
   monitorId: string;
   monitorName: string;
   monitorUrl: string;
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded";
   startedAt: string;
   resolvedAt: string | null;
   isResolved: boolean;
@@ -463,7 +464,7 @@ export interface AppNotification {
   sentAt: string;
   incidentId: string;
   alertType: "downtime" | "recovery";
-  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure";
+  type: "downtime" | "ssl_expiry" | "header_missing" | "unexpected_cert" | "domain_blocklisted" | "content_changed" | "synthetic_failure" | "performance_degraded";
   isResolved: boolean;
   resolvedAt: string | null;
   startedAt: string;

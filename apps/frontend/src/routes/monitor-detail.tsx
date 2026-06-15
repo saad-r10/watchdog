@@ -31,6 +31,7 @@ const INCIDENT_LABELS: Record<string, { ongoing: string; resolved: string }> = {
   unexpected_cert: { ongoing: "New certificate detected", resolved: "New certificate detected" },
   content_changed: { ongoing: "Content change detected", resolved: "Content change detected" },
   synthetic_failure: { ongoing: "Transaction failing", resolved: "Transaction failure" },
+  performance_degraded: { ongoing: "Performance degraded", resolved: "Performance degradation" },
 };
 
 const RANGES: { label: string; value: ResponseTimeRange }[] = [
@@ -391,7 +392,7 @@ export default function MonitorDetailPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">{new Date(inc.startedAt).toLocaleString()}</p>
-                    {(inc.type === "downtime" || inc.type === "ssl_expiry") && (
+                    {(inc.type === "downtime" || inc.type === "ssl_expiry" || inc.type === "performance_degraded") && (
                       <p className="text-xs text-muted-foreground/60 mt-0.5">
                         {inc.isResolved
                           ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}`
