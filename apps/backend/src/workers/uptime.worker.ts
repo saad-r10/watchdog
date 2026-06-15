@@ -52,7 +52,7 @@ async function checkUptime(monitor: Monitor) {
 
 export function startUptimeWorker() {
   cron.schedule("* * * * *", async () => {
-    const monitors = await monitorRepository.findAllActive();
+    const monitors = await monitorRepository.findAllActiveHttp();
     await Promise.allSettled(monitors.map(checkUptime));
   });
   console.log("Uptime worker started");

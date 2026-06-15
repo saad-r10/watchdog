@@ -1,6 +1,9 @@
 import { monitorRepository } from "../repositories/monitor.repository";
 import { monitorAgentRepository } from "../repositories/monitor-agent.repository";
 import { checkRepository } from "../repositories/check.repository";
+import { syntheticMonitoringEnabled } from "../lib/feature-flags";
+import type { Prisma } from "@prisma/client";
+import type { SyntheticStep } from "@watchdog/shared-types";
 
 const CLOUD_SOURCE = "__cloud__";
 
@@ -9,6 +12,8 @@ interface CreateInput {
   url: string;
   intervalMinutes?: number;
   agentId?: string;
+  type?: "http" | "synthetic";
+  syntheticSteps?: SyntheticStep[];
 }
 
 interface MonitorWithAgents {
@@ -26,9 +31,17 @@ function mapMonitor<T extends MonitorWithAgents>(monitor: T) {
 
 export const monitorService = {
   async create(userId: string, input: CreateInput) {
-    const { agentId, ...rest } = input;
+    const { agentId, syntheticSteps, ...rest } = input;
+
+    if (rest.type === "synthetic" && !syntheticMonitoringEnabled()) {
+      const err = new Error("Synthetic monitoring is not enabled on this instance") as any;
+      err.status = 400;
+      throw err;
+    }
+
     const monitor = await monitorRepository.create({
       ...rest,
+      syntheticSteps: syntheticSteps as unknown as Prisma.InputJsonValue,
       user: { connect: { id: userId } },
     });
     if (agentId) {
@@ -60,10 +73,15 @@ export const monitorService = {
       paused?: boolean;
       contentChangeEnabled?: boolean;
       regionDownThreshold?: number;
+      syntheticSteps?: SyntheticStep[];
     }
   ) {
     await monitorService.getById(id, userId);
-    const monitor = await monitorRepository.update(id, input);
+    const { syntheticSteps, ...rest } = input;
+    const monitor = await monitorRepository.update(id, {
+      ...rest,
+      ...(syntheticSteps !== undefined ? { syntheticSteps: syntheticSteps as unknown as Prisma.InputJsonValue } : {}),
+    });
     return monitorService.getById(monitor.id, userId);
   },
   async delete(id: string, userId: string) {
