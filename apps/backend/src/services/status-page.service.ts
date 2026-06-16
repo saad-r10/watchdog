@@ -2,6 +2,15 @@ import { statusPageRepository } from "../repositories/status-page.repository";
 import { checkRepository } from "../repositories/check.repository";
 import type { PublicStatusPage } from "@watchdog/shared-types";
 
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 function notFound(): never {
   const err = new Error("Status page not found") as any;
   err.status = 404;
@@ -82,5 +91,42 @@ export const statusPageService = {
       monitors: monitorEntries,
       updatedAt: new Date().toISOString(),
     };
+  },
+
+  async getFeed(slug: string, baseUrl: string): Promise<string> {
+    const page = await statusPageRepository.findBySlug(slug);
+    if (!page) notFound();
+
+    const monitorIds = page.monitors.map(({ monitor }) => monitor.id);
+    const incidents = await statusPageRepository.getRecentIncidents(monitorIds);
+
+    const statusUrl = `${baseUrl}/status/${slug}`;
+
+    const items = incidents
+      .map((inc) => {
+        const typeLabel = inc.type.replace(/_/g, " ");
+        const statusText = inc.isResolved
+          ? `Resolved at ${inc.resolvedAt!.toUTCString()}`
+          : "Ongoing";
+        return `
+    <item>
+      <title>${escapeXml(`${inc.monitor.name}: ${typeLabel}`)}</title>
+      <description>${escapeXml(statusText)}</description>
+      <pubDate>${inc.startedAt.toUTCString()}</pubDate>
+      <guid isPermaLink="false">${inc.id}</guid>
+      <link>${escapeXml(statusUrl)}</link>
+    </item>`;
+      })
+      .join("");
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>${escapeXml(page.title)} – Incidents</title>
+    <link>${escapeXml(statusUrl)}</link>
+    <description>Incident history for ${escapeXml(page.title)}</description>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${items}
+  </channel>
+</rss>`;
   },
 };
