@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { useEffect } from "react";
 import { WatchdogMark } from "@/components/WatchdogMark";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../services/api";
@@ -58,6 +59,20 @@ const overallConfig = {
 
 export default function StatusPagePublic() {
   const { slug } = useParams<{ slug: string }>();
+  const apiBase = import.meta.env.VITE_API_URL ?? "";
+  const feedUrl = `${apiBase}/api/status/${slug}/feed.xml`;
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "alternate";
+    link.type = "application/rss+xml";
+    link.title = "Incident Feed";
+    link.href = feedUrl;
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [feedUrl]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["public-status", slug],
@@ -178,11 +193,26 @@ export default function StatusPagePublic() {
         )}
 
         {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground/60 mt-12">
-          Powered by{" "}
-          <span className="text-primary">Watchdog</span>
-          {" · "}Updated {new Date(data.updatedAt).toLocaleTimeString()}
-        </p>
+        <div className="flex items-center justify-center gap-4 mt-12">
+          <p className="text-xs text-muted-foreground/60">
+            Powered by{" "}
+            <span className="text-primary">Watchdog</span>
+            {" · "}Updated {new Date(data.updatedAt).toLocaleTimeString()}
+          </p>
+          <a
+            href={feedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+            title="Subscribe to incident feed"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+              <path d="M3.75 3a.75.75 0 0 0-.75.75v.5c0 .414.336.75.75.75H4c6.075 0 11 4.925 11 11v.25c0 .414.336.75.75.75h.5a.75.75 0 0 0 .75-.75V16C17 8.82 11.18 3 4 3h-.25Z" />
+              <path d="M3 8.75A.75.75 0 0 1 3.75 8H4a8 8 0 0 1 8 8v.25a.75.75 0 0 1-.75.75h-.5a.75.75 0 0 1-.75-.75V16a6 6 0 0 0-6-6h-.25A.75.75 0 0 1 3 9.25v-.5ZM7 15a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z" />
+            </svg>
+            RSS
+          </a>
+        </div>
       </div>
     </div>
   );

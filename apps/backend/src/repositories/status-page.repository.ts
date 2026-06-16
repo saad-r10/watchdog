@@ -72,4 +72,14 @@ export const statusPageRepository = {
     }
     return bars;
   },
+
+  async getRecentIncidents(monitorIds: string[]) {
+    if (monitorIds.length === 0) return [];
+    return prisma.incident.findMany({
+      where: { monitorId: { in: monitorIds } },
+      include: { monitor: { select: { name: true, url: true } } },
+      orderBy: { startedAt: "desc" },
+      take: 50,
+    });
+  },
 };
