@@ -97,6 +97,12 @@ export const api = {
       http.put<{ success: boolean; data: AlertSettings }>("/api/users/me/settings", data).then((r) => r.data.data),
     testWebhook: () =>
       http.post<{ success: boolean }>("/api/users/me/settings/test-webhook").then((r) => r.data),
+    testSlack: () =>
+      http.post<{ success: boolean }>("/api/users/me/settings/test-slack").then((r) => r.data),
+    testDiscord: () =>
+      http.post<{ success: boolean }>("/api/users/me/settings/test-discord").then((r) => r.data),
+    testTelegram: () =>
+      http.post<{ success: boolean }>("/api/users/me/settings/test-telegram").then((r) => r.data),
   },
   agents: {
     list: () =>
