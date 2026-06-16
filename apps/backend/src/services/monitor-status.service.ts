@@ -5,7 +5,7 @@ import { monitorAgentRepository } from "../repositories/monitor-agent.repository
 import { alertService } from "./alert.service";
 import { computeAnomalyStats, isAnomalous, MIN_SAMPLE_SIZE } from "../lib/anomaly-utils";
 import type { Monitor } from "@prisma/client";
-import type { SyntheticCheckResult } from "@watchdog/shared-types";
+import type { SyntheticCheckResult, LighthouseResult } from "@watchdog/shared-types";
 
 const CLOUD_SOURCE = "__cloud__";
 
@@ -95,6 +95,37 @@ export const monitorStatusService = {
     } else if (!isAnomalous(latest, stats) && openIncident) {
       const resolved = await incidentRepository.resolve(openIncident.id);
       await alertService.notifyPerformanceRecovery(monitor, resolved).catch(console.error);
+    }
+  },
+
+  /**
+   * Opens or resolves the `lighthouse_budget_exceeded` incident for a monitor
+   * by comparing its latest Lighthouse scores against the monitor's
+   * per-category budgets. No-ops if the audit itself failed.
+   */
+  async evaluateLighthouseStatus(monitor: Monitor, result: LighthouseResult): Promise<void> {
+    if (!result.success) return;
+
+    const overBudget =
+      (result.performance ?? 100) < monitor.lighthousePerformanceBudget ||
+      (result.accessibility ?? 100) < monitor.lighthouseAccessibilityBudget ||
+      (result.bestPractices ?? 100) < monitor.lighthouseBestPracticesBudget ||
+      (result.seo ?? 100) < monitor.lighthouseSeoBudget;
+
+    const openIncident = await incidentRepository.findOpenLighthouseIncident(monitor.id);
+
+    if (overBudget && !openIncident) {
+      const incident = await incidentRepository.create({
+        monitor: { connect: { id: monitor.id } },
+        type: "lighthouse_budget_exceeded",
+      });
+      const inMaintenance = await maintenanceRepository.isActive(monitor.id);
+      if (!inMaintenance) {
+        await alertService.notifyLighthouseBudgetExceeded(monitor, incident, result).catch(console.error);
+      }
+    } else if (!overBudget && openIncident) {
+      const resolved = await incidentRepository.resolve(openIncident.id);
+      await alertService.notifyLighthouseRecovery(monitor, resolved).catch(console.error);
     }
   },
 };

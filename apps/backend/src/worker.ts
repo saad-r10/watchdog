@@ -8,6 +8,7 @@ import { startExposureWorker } from "./workers/exposure.worker";
 import { startBlocklistWorker } from "./workers/blocklist.worker";
 import { startSyntheticWorker } from "./workers/synthetic.worker";
 import { startAnomalyDetectionWorker } from "./workers/anomaly-detection.worker";
+import { startLighthouseWorker } from "./workers/lighthouse.worker";
 
 startUptimeWorker();
 startSslWorker();
@@ -18,5 +19,6 @@ startExposureWorker();
 startBlocklistWorker();
 startSyntheticWorker();
 startAnomalyDetectionWorker();
+startLighthouseWorker();
 
 console.log("All workers running");

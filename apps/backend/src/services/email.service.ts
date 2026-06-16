@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import type { CrtShEntry } from "../lib/crtsh";
 import type { BlocklistFindings } from "../lib/blocklist-utils";
-import type { SyntheticCheckResult } from "@watchdog/shared-types";
+import type { SyntheticCheckResult, LighthouseResult } from "@watchdog/shared-types";
 
 let resend: Resend | null = null;
 
@@ -332,6 +332,82 @@ export function performanceRecoveredAlertHtml(monitorName: string, url: string, 
           Response times for <strong>${escapeHtml(url)}</strong> are back within their normal range.
         </p>
         ${duration ? `<p style="margin:0 0 12px;color:#6b7280;font-size:14px">Degraded for: ${duration}</p>` : ""}
+        <p style="margin:0;color:#6b7280;font-size:13px">
+          Recovered at: ${resolvedAt.toLocaleString()}
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+export function lighthouseBudgetAlertHtml(
+  monitorName: string,
+  url: string,
+  result: LighthouseResult,
+  budgets: { performance: number; accessibility: number; bestPractices: number; seo: number },
+  detectedAt: Date
+): string {
+  const rows: Array<{ label: string; score: number | null; budget: number }> = [
+    { label: "Performance", score: result.performance, budget: budgets.performance },
+    { label: "Accessibility", score: result.accessibility, budget: budgets.accessibility },
+    { label: "Best Practices", score: result.bestPractices, budget: budgets.bestPractices },
+    { label: "SEO", score: result.seo, budget: budgets.seo },
+  ];
+
+  const rowsHtml = rows
+    .map(({ label, score, budget }) => {
+      const failing = score != null && score < budget;
+      const color = failing ? "#ef4444" : "#22c55e";
+      return `
+        <tr>
+          <td style="padding:4px 0;color:#374151">${label}</td>
+          <td style="padding:4px 0;text-align:right;color:${color};font-weight:600">${score ?? "—"}</td>
+          <td style="padding:4px 0;text-align:right;color:#9ca3af;font-size:13px">budget ${budget}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">⚠️ Lighthouse Budget Exceeded — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          A Lighthouse audit of <strong>${escapeHtml(url)}</strong> fell below the configured budget.
+        </p>
+        <table style="width:100%;border-collapse:collapse;margin:0 0 12px">${rowsHtml}</table>
+        <p style="margin:0;color:#6b7280;font-size:13px">
+          Detected: ${detectedAt.toLocaleString()}
+        </p>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
+        Watchdog — Uptime &amp; Security Monitor
+      </p>
+    </div>
+  `;
+}
+
+export function lighthouseRecoveryAlertHtml(monitorName: string, url: string, resolvedAt: Date, durationMinutes: number | null): string {
+  const duration = durationMinutes != null
+    ? durationMinutes < 60
+      ? `${durationMinutes} minute${durationMinutes === 1 ? "" : "s"}`
+      : `${Math.round(durationMinutes / 60)} hour${Math.round(durationMinutes / 60) === 1 ? "" : "s"}`
+    : null;
+  return `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+      <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0;font-size:18px">✅ Lighthouse Scores Back Within Budget — ${monitorName}</h2>
+      </div>
+      <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+        <p style="margin:0 0 12px;color:#374151">
+          Lighthouse scores for <strong>${escapeHtml(url)}</strong> are back within their configured budgets.
+        </p>
+        ${duration ? `<p style="margin:0 0 12px;color:#6b7280;font-size:14px">Over budget for: ${duration}</p>` : ""}
         <p style="margin:0;color:#6b7280;font-size:13px">
           Recovered at: ${resolvedAt.toLocaleString()}
         </p>

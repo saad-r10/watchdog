@@ -8,7 +8,7 @@ import { sendWebhook } from "../services/webhook.service";
 const router = Router();
 router.use(authenticate);
 
-const SELECT = { alertEmail: true, alertDowntime: true, alertSslExpiry: true, alertCertTransparency: true, alertBlocklist: true, alertContentChange: true, alertSyntheticFailure: true, alertPerformanceDegraded: true, webhookUrl: true } as const;
+const SELECT = { alertEmail: true, alertDowntime: true, alertSslExpiry: true, alertCertTransparency: true, alertBlocklist: true, alertContentChange: true, alertSyntheticFailure: true, alertPerformanceDegraded: true, alertLighthouseBudget: true, webhookUrl: true } as const;
 
 const updateSchema = z.object({
   alertEmail: z.string().email().optional().nullable(),
@@ -19,6 +19,7 @@ const updateSchema = z.object({
   alertContentChange: z.boolean().optional(),
   alertSyntheticFailure: z.boolean().optional(),
   alertPerformanceDegraded: z.boolean().optional(),
+  alertLighthouseBudget: z.boolean().optional(),
   webhookUrl: z.string().url().optional().nullable(),
 });
 

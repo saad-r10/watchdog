@@ -1,11 +1,11 @@
 import { prisma } from "../db";
 import { alertRepository } from "../repositories/alert.repository";
-import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml, blocklistAlertHtml, contentChangeAlertHtml, syntheticFailureAlertHtml, syntheticRecoveryAlertHtml, performanceDegradedAlertHtml, performanceRecoveredAlertHtml } from "./email.service";
+import { sendEmail, downtimeAlertHtml, sslAlertHtml, recoveryAlertHtml, ctAlertHtml, blocklistAlertHtml, contentChangeAlertHtml, syntheticFailureAlertHtml, syntheticRecoveryAlertHtml, performanceDegradedAlertHtml, performanceRecoveredAlertHtml, lighthouseBudgetAlertHtml, lighthouseRecoveryAlertHtml } from "./email.service";
 import { sendWebhook } from "./webhook.service";
 import type { CrtShEntry } from "../lib/crtsh";
 import type { BlocklistFindings } from "../lib/blocklist-utils";
 import type { Monitor, Incident } from "@prisma/client";
-import type { SyntheticCheckResult } from "@watchdog/shared-types";
+import type { SyntheticCheckResult, LighthouseResult } from "@watchdog/shared-types";
 import type { AnomalyStats } from "../lib/anomaly-utils";
 
 export const alertService = {
@@ -332,6 +332,81 @@ export const alertService = {
       user.webhookUrl
         ? sendWebhook(user.webhookUrl, {
             event: "performance_recovery",
+            monitorId: monitor.id,
+            monitorName: monitor.name,
+            monitorUrl: monitor.url,
+            incidentId: incident.id,
+            resolvedAt: resolvedAt.toISOString(),
+            durationMinutes,
+          })
+        : Promise.resolve(),
+    ]);
+
+    await alertRepository.create({ userId: monitor.userId, incidentId: incident.id, type: "recovery" });
+  },
+
+  async notifyLighthouseBudgetExceeded(monitor: Monitor, incident: Incident, result: LighthouseResult): Promise<void> {
+    const alreadySent = await alertRepository.hasAlertForIncident(incident.id);
+    if (alreadySent) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: monitor.userId },
+      select: { email: true, alertEmail: true, alertLighthouseBudget: true, webhookUrl: true },
+    });
+    if (!user?.alertLighthouseBudget) return;
+
+    const budgets = {
+      performance: monitor.lighthousePerformanceBudget,
+      accessibility: monitor.lighthouseAccessibilityBudget,
+      bestPractices: monitor.lighthouseBestPracticesBudget,
+      seo: monitor.lighthouseSeoBudget,
+    };
+
+    await Promise.allSettled([
+      sendEmail({
+        to: user.alertEmail ?? user.email,
+        subject: `⚠️ Lighthouse budget exceeded: ${monitor.name}`,
+        html: lighthouseBudgetAlertHtml(monitor.name, monitor.url, result, budgets, incident.startedAt),
+      }),
+      user.webhookUrl
+        ? sendWebhook(user.webhookUrl, {
+            event: "lighthouse_budget_exceeded",
+            monitorId: monitor.id,
+            monitorName: monitor.name,
+            monitorUrl: monitor.url,
+            incidentId: incident.id,
+            startedAt: incident.startedAt.toISOString(),
+          })
+        : Promise.resolve(),
+    ]);
+
+    await alertRepository.create({ userId: monitor.userId, incidentId: incident.id });
+  },
+
+  async notifyLighthouseRecovery(monitor: Monitor, incident: Incident): Promise<void> {
+    const alreadySent = await alertRepository.hasAlertForIncident(incident.id, "recovery");
+    if (alreadySent) return;
+
+    const user = await prisma.user.findUnique({
+      where: { id: monitor.userId },
+      select: { email: true, alertEmail: true, alertLighthouseBudget: true, webhookUrl: true },
+    });
+    if (!user?.alertLighthouseBudget) return;
+
+    const resolvedAt = incident.resolvedAt ?? new Date();
+    const durationMinutes = incident.resolvedAt
+      ? Math.round((incident.resolvedAt.getTime() - incident.startedAt.getTime()) / 60_000)
+      : null;
+
+    await Promise.allSettled([
+      sendEmail({
+        to: user.alertEmail ?? user.email,
+        subject: `✅ Lighthouse scores back within budget: ${monitor.name}`,
+        html: lighthouseRecoveryAlertHtml(monitor.name, monitor.url, resolvedAt, durationMinutes),
+      }),
+      user.webhookUrl
+        ? sendWebhook(user.webhookUrl, {
+            event: "lighthouse_recovery",
             monitorId: monitor.id,
             monitorName: monitor.name,
             monitorUrl: monitor.url,

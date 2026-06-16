@@ -143,6 +143,35 @@ router.get("/content-change", async (req, res, next) => {
   }
 });
 
+router.get("/lighthouse", async (req, res, next) => {
+  try {
+    const id = monitorId(req as any);
+    const monitor = await monitorService.getById(id, req.user.id);
+    const [latest, lastIncident] = await Promise.all([
+      checkRepository.findLatestByType(id, "lighthouse"),
+      incidentRepository.findLatestByType(id, "lighthouse_budget_exceeded"),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        enabled: monitor.lighthouseEnabled,
+        budgets: {
+          performance: monitor.lighthousePerformanceBudget,
+          accessibility: monitor.lighthouseAccessibilityBudget,
+          bestPractices: monitor.lighthouseBestPracticesBudget,
+          seo: monitor.lighthouseSeoBudget,
+        },
+        latest: latest ? { ...(latest.lighthouseResult as object), checkedAt: latest.checkedAt } : null,
+        lastIncident: lastIncident
+          ? { startedAt: lastIncident.startedAt, resolvedAt: lastIncident.resolvedAt, isResolved: lastIncident.isResolved }
+          : null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/certs", async (req, res, next) => {
   try {
     const id = monitorId(req as any);

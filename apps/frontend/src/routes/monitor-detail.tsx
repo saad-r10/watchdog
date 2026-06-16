@@ -11,6 +11,7 @@ import { DnsCard } from "../components/DnsCard";
 import { ExposureCard } from "../components/ExposureCard";
 import { BlocklistCard } from "../components/BlocklistCard";
 import { ContentChangeCard } from "../components/ContentChangeCard";
+import { LighthouseCard } from "../components/LighthouseCard";
 import { RegionsCard } from "../components/RegionsCard";
 import { ResponseTimeChart, formatBytes } from "../components/ResponseTimeChart";
 import type { ResponseTimeRange } from "@watchdog/shared-types";
@@ -265,7 +266,7 @@ export default function MonitorDetailPage() {
       {/* Per-region status */}
       <RegionsCard monitor={monitor} />
 
-      {/* SSL + Headers + DNS + Exposure + Blocklist + Content Change */}
+      {/* SSL + Headers + DNS + Exposure + Blocklist + Content Change + Lighthouse */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SslCard monitorId={monitor.id} />
         <HeadersCard monitorId={monitor.id} />
@@ -274,6 +275,7 @@ export default function MonitorDetailPage() {
         <ExposureCard monitorId={monitor.id} />
         <BlocklistCard monitorId={monitor.id} />
         <ContentChangeCard monitorId={monitor.id} />
+        <LighthouseCard monitorId={monitor.id} />
       </div>
 
       {/* Maintenance windows */}

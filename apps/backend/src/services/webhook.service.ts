@@ -12,6 +12,8 @@ export interface WebhookPayload {
     | "synthetic_recovery"
     | "performance_degraded"
     | "performance_recovery"
+    | "lighthouse_budget_exceeded"
+    | "lighthouse_recovery"
     | "test";
   monitorId?: string;
   monitorName?: string;
