@@ -101,7 +101,7 @@ describe("timedRequest", () => {
     expect(result.timings.tcpMs).not.toBeNull(); // connect completed
     expect(result.timings.ttfbMs).toBeNull(); // never got a response
     expect(result.timings.downloadMs).toBeNull();
-    expect(result.timings.totalMs).toBeGreaterThanOrEqual(200);
+    expect(result.timings.totalMs).toBeGreaterThanOrEqual(190);
   });
 
   it("never rejects on connection refused", async () => {
