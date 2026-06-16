@@ -298,6 +298,7 @@ export interface AlertSettings {
   alertSyntheticFailure: boolean;
   alertPerformanceDegraded: boolean;
   alertLighthouseBudget: boolean;
+  alertWebPush: boolean;
   webhookUrl: string | null;
   slackWebhookUrl: string | null;
   discordWebhookUrl: string | null;

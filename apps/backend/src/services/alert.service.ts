@@ -5,6 +5,7 @@ import { sendWebhook, type WebhookPayload } from "./webhook.service";
 import { sendSlackAlert } from "./slack.service";
 import { sendDiscordAlert } from "./discord.service";
 import { sendTelegramAlert } from "./telegram.service";
+import { sendPushToUser } from "./push.service";
 import type { CrtShEntry } from "../lib/crtsh";
 import type { BlocklistFindings } from "../lib/blocklist-utils";
 import type { Monitor, Incident } from "@prisma/client";
@@ -12,11 +13,13 @@ import type { SyntheticCheckResult, LighthouseResult } from "@watchdog/shared-ty
 import type { AnomalyStats } from "../lib/anomaly-utils";
 
 type ChatUser = {
+  id: string;
   webhookUrl: string | null;
   slackWebhookUrl: string | null;
   discordWebhookUrl: string | null;
   telegramBotToken: string | null;
   telegramChatId: string | null;
+  alertWebPush: boolean;
 };
 
 function chatChannelPromises(user: ChatUser, payload: WebhookPayload): Promise<unknown>[] {
@@ -27,10 +30,11 @@ function chatChannelPromises(user: ChatUser, payload: WebhookPayload): Promise<u
     user.telegramBotToken && user.telegramChatId
       ? sendTelegramAlert(user.telegramBotToken, user.telegramChatId, payload)
       : Promise.resolve(),
+    user.alertWebPush ? sendPushToUser(user.id, payload) : Promise.resolve(),
   ];
 }
 
-const CHAT_SELECT = { webhookUrl: true, slackWebhookUrl: true, discordWebhookUrl: true, telegramBotToken: true, telegramChatId: true } as const;
+const CHAT_SELECT = { id: true, webhookUrl: true, slackWebhookUrl: true, discordWebhookUrl: true, telegramBotToken: true, telegramChatId: true, alertWebPush: true } as const;
 
 export const alertService = {
   async notifyDowntime(monitor: Monitor, incident: Incident): Promise<void> {
