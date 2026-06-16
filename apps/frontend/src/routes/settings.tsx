@@ -19,8 +19,15 @@ export default function SettingsPage() {
   const [alertPerformanceDegraded, setAlertPerformanceDegraded] = useState(true);
   const [alertLighthouseBudget, setAlertLighthouseBudget] = useState(true);
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [discordWebhookUrl, setDiscordWebhookUrl] = useState("");
+  const [telegramBotToken, setTelegramBotToken] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
   const [saved, setSaved] = useState(false);
   const [testState, setTestState] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [testSlackState, setTestSlackState] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [testDiscordState, setTestDiscordState] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [testTelegramState, setTestTelegramState] = useState<"idle" | "sending" | "ok" | "error">("idle");
 
   useEffect(() => {
     if (data) {
@@ -34,6 +41,10 @@ export default function SettingsPage() {
       setAlertPerformanceDegraded(data.alertPerformanceDegraded);
       setAlertLighthouseBudget(data.alertLighthouseBudget);
       setWebhookUrl(data.webhookUrl ?? "");
+      setSlackWebhookUrl(data.slackWebhookUrl ?? "");
+      setDiscordWebhookUrl(data.discordWebhookUrl ?? "");
+      setTelegramBotToken(data.telegramBotToken ?? "");
+      setTelegramChatId(data.telegramChatId ?? "");
     }
   }, [data]);
 
@@ -44,8 +55,29 @@ export default function SettingsPage() {
     finally { setTimeout(() => setTestState("idle"), 3000); }
   }
 
+  async function handleTestSlack() {
+    setTestSlackState("sending");
+    try { await api.settings.testSlack(); setTestSlackState("ok"); }
+    catch { setTestSlackState("error"); }
+    finally { setTimeout(() => setTestSlackState("idle"), 3000); }
+  }
+
+  async function handleTestDiscord() {
+    setTestDiscordState("sending");
+    try { await api.settings.testDiscord(); setTestDiscordState("ok"); }
+    catch { setTestDiscordState("error"); }
+    finally { setTimeout(() => setTestDiscordState("idle"), 3000); }
+  }
+
+  async function handleTestTelegram() {
+    setTestTelegramState("sending");
+    try { await api.settings.testTelegram(); setTestTelegramState("ok"); }
+    catch { setTestTelegramState("error"); }
+    finally { setTimeout(() => setTestTelegramState("idle"), 3000); }
+  }
+
   const mutation = useMutation({
-    mutationFn: () => api.settings.update({ alertEmail: alertEmail.trim() || null, alertDowntime, alertSslExpiry, alertCertTransparency, alertBlocklist, alertContentChange, alertSyntheticFailure, alertPerformanceDegraded, alertLighthouseBudget, webhookUrl: webhookUrl.trim() || null }),
+    mutationFn: () => api.settings.update({ alertEmail: alertEmail.trim() || null, alertDowntime, alertSslExpiry, alertCertTransparency, alertBlocklist, alertContentChange, alertSyntheticFailure, alertPerformanceDegraded, alertLighthouseBudget, webhookUrl: webhookUrl.trim() || null, slackWebhookUrl: slackWebhookUrl.trim() || null, discordWebhookUrl: discordWebhookUrl.trim() || null, telegramBotToken: telegramBotToken.trim() || null, telegramChatId: telegramChatId.trim() || null }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["settings"] }); setSaved(true); setTimeout(() => setSaved(false), 3000); },
   });
 
@@ -176,11 +208,11 @@ export default function SettingsPage() {
 
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Webhook URL</label>
-            <p className="text-xs text-muted-foreground mb-4">Watchdog POSTs a JSON payload on every incident — works with Slack, Discord, and any custom endpoint.</p>
+            <p className="text-xs text-muted-foreground mb-4">Watchdog POSTs a JSON payload on every incident — works with any custom endpoint.</p>
             <div className="flex gap-2">
               <input type="url"
                 className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
-                placeholder="https://hooks.slack.com/services/…" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
+                placeholder="https://example.com/webhook" value={webhookUrl} onChange={(e) => setWebhookUrl(e.target.value)} />
               <button type="button" onClick={handleTestWebhook} disabled={!webhookUrl.trim() || testState === "sending"}
                 className="flex-shrink-0 bg-muted border border-border text-foreground hover:text-foreground hover:border-border disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
                 {testState === "sending" ? "Sending…" : testState === "ok" ? "Sent ✓" : testState === "error" ? "Failed ✗" : "Test"}
@@ -188,6 +220,53 @@ export default function SettingsPage() {
             </div>
             <div className="mt-3 bg-muted rounded-lg px-4 py-3 text-xs text-muted-foreground font-mono leading-relaxed">
               {"{ \"event\": \"downtime\", \"monitorName\": \"…\", \"monitorUrl\": \"…\", \"startedAt\": \"…\" }"}
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-6">
+            <label className="block text-sm font-semibold text-foreground mb-1">Slack</label>
+            <p className="text-xs text-muted-foreground mb-4">Paste an <span className="font-medium text-foreground">Incoming Webhook URL</span> from your Slack app to receive alerts in a channel.</p>
+            <div className="flex gap-2">
+              <input type="url"
+                className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
+                placeholder="https://hooks.slack.com/services/…" value={slackWebhookUrl} onChange={(e) => setSlackWebhookUrl(e.target.value)} />
+              <button type="button" onClick={handleTestSlack} disabled={!slackWebhookUrl.trim() || testSlackState === "sending"}
+                className="flex-shrink-0 bg-muted border border-border text-foreground hover:text-foreground hover:border-border disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                {testSlackState === "sending" ? "Sending…" : testSlackState === "ok" ? "Sent ✓" : testSlackState === "error" ? "Failed ✗" : "Test"}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-6">
+            <label className="block text-sm font-semibold text-foreground mb-1">Discord</label>
+            <p className="text-xs text-muted-foreground mb-4">Paste a <span className="font-medium text-foreground">server webhook URL</span> from Discord channel settings → Integrations → Webhooks.</p>
+            <div className="flex gap-2">
+              <input type="url"
+                className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
+                placeholder="https://discord.com/api/webhooks/…" value={discordWebhookUrl} onChange={(e) => setDiscordWebhookUrl(e.target.value)} />
+              <button type="button" onClick={handleTestDiscord} disabled={!discordWebhookUrl.trim() || testDiscordState === "sending"}
+                className="flex-shrink-0 bg-muted border border-border text-foreground hover:text-foreground hover:border-border disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                {testDiscordState === "sending" ? "Sending…" : testDiscordState === "ok" ? "Sent ✓" : testDiscordState === "error" ? "Failed ✗" : "Test"}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-6">
+            <label className="block text-sm font-semibold text-foreground mb-1">Telegram</label>
+            <p className="text-xs text-muted-foreground mb-4">Create a bot via <span className="font-medium text-foreground">@BotFather</span>, then enter the bot token and the chat ID where alerts should be sent.</p>
+            <div className="space-y-3">
+              <input type="text"
+                className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
+                placeholder="Bot token (e.g. 123456:ABC-DEF…)" value={telegramBotToken} onChange={(e) => setTelegramBotToken(e.target.value)} />
+              <div className="flex gap-2">
+                <input type="text"
+                  className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
+                  placeholder="Chat ID (e.g. -1001234567890)" value={telegramChatId} onChange={(e) => setTelegramChatId(e.target.value)} />
+                <button type="button" onClick={handleTestTelegram} disabled={!telegramBotToken.trim() || !telegramChatId.trim() || testTelegramState === "sending"}
+                  className="flex-shrink-0 bg-muted border border-border text-foreground hover:text-foreground hover:border-border disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                  {testTelegramState === "sending" ? "Sending…" : testTelegramState === "ok" ? "Sent ✓" : testTelegramState === "error" ? "Failed ✗" : "Test"}
+                </button>
+              </div>
             </div>
           </div>
 

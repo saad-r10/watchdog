@@ -299,6 +299,10 @@ export interface AlertSettings {
   alertPerformanceDegraded: boolean;
   alertLighthouseBudget: boolean;
   webhookUrl: string | null;
+  slackWebhookUrl: string | null;
+  discordWebhookUrl: string | null;
+  telegramBotToken: string | null;
+  telegramChatId: string | null;
 }
 
 export interface MonitorStats {
