@@ -7,11 +7,12 @@ import { sendWebhook } from "../services/webhook.service";
 import { sendSlackAlert } from "../services/slack.service";
 import { sendDiscordAlert } from "../services/discord.service";
 import { sendTelegramAlert } from "../services/telegram.service";
+import { sendPushToUser, getVapidPublicKey } from "../services/push.service";
 
 const router = Router();
 router.use(authenticate);
 
-const SELECT = { alertEmail: true, alertDowntime: true, alertSslExpiry: true, alertCertTransparency: true, alertBlocklist: true, alertContentChange: true, alertSyntheticFailure: true, alertPerformanceDegraded: true, alertLighthouseBudget: true, webhookUrl: true, slackWebhookUrl: true, discordWebhookUrl: true, telegramBotToken: true, telegramChatId: true } as const;
+const SELECT = { alertEmail: true, alertDowntime: true, alertSslExpiry: true, alertCertTransparency: true, alertBlocklist: true, alertContentChange: true, alertSyntheticFailure: true, alertPerformanceDegraded: true, alertLighthouseBudget: true, webhookUrl: true, slackWebhookUrl: true, discordWebhookUrl: true, telegramBotToken: true, telegramChatId: true, alertWebPush: true } as const;
 
 const updateSchema = z.object({
   alertEmail: z.string().email().optional().nullable(),
@@ -28,6 +29,7 @@ const updateSchema = z.object({
   discordWebhookUrl: z.string().url().optional().nullable(),
   telegramBotToken: z.string().optional().nullable(),
   telegramChatId: z.string().optional().nullable(),
+  alertWebPush: z.boolean().optional(),
 });
 
 router.get("/", async (req, res, next) => {
@@ -94,6 +96,57 @@ router.post("/test-telegram", async (req, res, next) => {
       return res.status(400).json({ error: "Telegram bot token and chat ID must both be configured" });
     }
     await sendTelegramAlert(user.telegramBotToken, user.telegramChatId, { event: "test", message: "This is a test alert from Watchdog" });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/vapid-public-key", (_req, res) => {
+  const key = getVapidPublicKey();
+  if (!key) return res.status(503).json({ error: "Web Push not configured" });
+  res.json({ success: true, data: key });
+});
+
+const pushSubscriptionSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+});
+
+router.post("/push-subscription", validate(pushSubscriptionSchema), async (req, res, next) => {
+  try {
+    const { endpoint, keys } = req.body as { endpoint: string; keys: { p256dh: string; auth: string } };
+    await prisma.pushSubscription.upsert({
+      where: { userId_endpoint: { userId: req.user.id, endpoint } },
+      create: { userId: req.user.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+      update: { p256dh: keys.p256dh, auth: keys.auth },
+    });
+    res.status(201).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/push-subscription", async (req, res, next) => {
+  try {
+    const { endpoint } = req.body as { endpoint?: string };
+    if (endpoint) {
+      await prisma.pushSubscription.deleteMany({ where: { userId: req.user.id, endpoint } });
+    } else {
+      await prisma.pushSubscription.deleteMany({ where: { userId: req.user.id } });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/test-push", async (req, res, next) => {
+  try {
+    const count = await prisma.pushSubscription.count({ where: { userId: req.user.id } });
+    if (count === 0) return res.status(400).json({ error: "No push subscription found for this browser" });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { name: true } });
+    await sendPushToUser(req.user.id, { event: "test", monitorName: user?.name ?? "Watchdog", message: "This is a test push notification from Watchdog." });
     res.json({ success: true });
   } catch (err) {
     next(err);

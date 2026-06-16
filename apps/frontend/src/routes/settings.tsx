@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { api } from "../services/api";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 
 // ─── Settings page ────────────────────────────────────────────────────────────
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const [alertSyntheticFailure, setAlertSyntheticFailure] = useState(true);
   const [alertPerformanceDegraded, setAlertPerformanceDegraded] = useState(true);
   const [alertLighthouseBudget, setAlertLighthouseBudget] = useState(true);
+  const [alertWebPush, setAlertWebPush] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
   const [discordWebhookUrl, setDiscordWebhookUrl] = useState("");
@@ -28,6 +30,8 @@ export default function SettingsPage() {
   const [testSlackState, setTestSlackState] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [testDiscordState, setTestDiscordState] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [testTelegramState, setTestTelegramState] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [testPushState, setTestPushState] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const push = usePushNotifications();
 
   useEffect(() => {
     if (data) {
@@ -40,6 +44,7 @@ export default function SettingsPage() {
       setAlertSyntheticFailure(data.alertSyntheticFailure);
       setAlertPerformanceDegraded(data.alertPerformanceDegraded);
       setAlertLighthouseBudget(data.alertLighthouseBudget);
+      setAlertWebPush(data.alertWebPush);
       setWebhookUrl(data.webhookUrl ?? "");
       setSlackWebhookUrl(data.slackWebhookUrl ?? "");
       setDiscordWebhookUrl(data.discordWebhookUrl ?? "");
@@ -76,8 +81,15 @@ export default function SettingsPage() {
     finally { setTimeout(() => setTestTelegramState("idle"), 3000); }
   }
 
+  async function handleTestPush() {
+    setTestPushState("sending");
+    try { await api.settings.testPush(); setTestPushState("ok"); }
+    catch { setTestPushState("error"); }
+    finally { setTimeout(() => setTestPushState("idle"), 3000); }
+  }
+
   const mutation = useMutation({
-    mutationFn: () => api.settings.update({ alertEmail: alertEmail.trim() || null, alertDowntime, alertSslExpiry, alertCertTransparency, alertBlocklist, alertContentChange, alertSyntheticFailure, alertPerformanceDegraded, alertLighthouseBudget, webhookUrl: webhookUrl.trim() || null, slackWebhookUrl: slackWebhookUrl.trim() || null, discordWebhookUrl: discordWebhookUrl.trim() || null, telegramBotToken: telegramBotToken.trim() || null, telegramChatId: telegramChatId.trim() || null }),
+    mutationFn: () => api.settings.update({ alertEmail: alertEmail.trim() || null, alertDowntime, alertSslExpiry, alertCertTransparency, alertBlocklist, alertContentChange, alertSyntheticFailure, alertPerformanceDegraded, alertLighthouseBudget, alertWebPush, webhookUrl: webhookUrl.trim() || null, slackWebhookUrl: slackWebhookUrl.trim() || null, discordWebhookUrl: discordWebhookUrl.trim() || null, telegramBotToken: telegramBotToken.trim() || null, telegramChatId: telegramChatId.trim() || null }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["settings"] }); setSaved(true); setTimeout(() => setSaved(false), 3000); },
   });
 
@@ -268,6 +280,49 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-6">
+            <label className="block text-sm font-semibold text-foreground mb-1">Browser Push Notifications</label>
+            <p className="text-xs text-muted-foreground mb-4">
+              Get real-time alerts in your browser even when the Watchdog tab is closed. Uses the standard Web Push API — no third-party service required.
+            </p>
+            {push.state === "unsupported" ? (
+              <p className="text-xs text-muted-foreground">Your browser does not support Web Push notifications.</p>
+            ) : push.state === "denied" ? (
+              <p className="text-xs text-down">Notifications are blocked. Allow them in your browser settings and reload the page.</p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  {push.state === "subscribed" ? (
+                    <button type="button" onClick={push.unsubscribe}
+                      className="bg-muted border border-border text-foreground hover:border-ring px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                      Unsubscribe this browser
+                    </button>
+                  ) : (
+                    <button type="button" onClick={push.subscribe} disabled={push.state === "loading"}
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                      {push.state === "loading" ? "Connecting…" : "Subscribe this browser"}
+                    </button>
+                  )}
+                  {push.state === "subscribed" && (
+                    <button type="button" onClick={handleTestPush} disabled={testPushState === "sending"}
+                      className="bg-muted border border-border text-foreground hover:border-ring disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                      {testPushState === "sending" ? "Sending…" : testPushState === "ok" ? "Sent ✓" : testPushState === "error" ? "Failed ✗" : "Send test"}
+                    </button>
+                  )}
+                </div>
+                {push.state === "subscribed" && (
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <div onClick={() => setAlertWebPush((v) => !v)}
+                      className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${alertWebPush ? "bg-primary" : "bg-muted"}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${alertWebPush ? "translate-x-4" : "translate-x-0"}`} />
+                    </div>
+                    <span className="text-sm text-foreground">Enable push alerts for this account</span>
+                  </label>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

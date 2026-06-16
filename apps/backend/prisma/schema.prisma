@@ -27,6 +27,7 @@ model User {
   discordWebhookUrl String?
   telegramBotToken String?
   telegramChatId   String?
+  alertWebPush     Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -36,6 +37,7 @@ model User {
   statusPages               StatusPage[]
   passwordResetTokens       PasswordResetToken[]
   emailVerificationTokens   EmailVerificationToken[]
+  pushSubscriptions         PushSubscription[]
 }
 
 model Agent {
@@ -195,6 +197,19 @@ model MonitorCertificate {
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 
   @@unique([monitorId, crtShId])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
 }
 
 model EmailVerificationToken {

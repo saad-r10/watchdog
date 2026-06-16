@@ -103,6 +103,14 @@ export const api = {
       http.post<{ success: boolean }>("/api/users/me/settings/test-discord").then((r) => r.data),
     testTelegram: () =>
       http.post<{ success: boolean }>("/api/users/me/settings/test-telegram").then((r) => r.data),
+    testPush: () =>
+      http.post<{ success: boolean }>("/api/users/me/settings/test-push").then((r) => r.data),
+    getVapidPublicKey: () =>
+      http.get<{ success: boolean; data: string }>("/api/users/me/settings/vapid-public-key").then((r) => r.data),
+    savePushSubscription: (endpoint: string, keys: { p256dh: string; auth: string }) =>
+      http.post<{ success: boolean }>("/api/users/me/settings/push-subscription", { endpoint, keys }).then((r) => r.data),
+    deletePushSubscription: (endpoint: string) =>
+      http.delete<{ success: boolean }>("/api/users/me/settings/push-subscription", { data: { endpoint } }).then((r) => r.data),
   },
   agents: {
     list: () =>
