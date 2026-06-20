@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/error";
+import { authRateLimiter, apiRateLimiter } from "./middleware/rate-limit";
 import authRouter from "./routes/auth.route";
 import monitorsRouter from "./routes/monitors.route";
 import checksRouter from "./routes/checks.route";
@@ -30,7 +31,8 @@ app.use(cors({
 app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
-app.use("/api/auth", authRouter);
+app.use("/api/auth", authRateLimiter, authRouter);
+app.use("/api", apiRateLimiter);
 app.use("/api/monitors", monitorsRouter);
 app.use("/api/monitors/:id", checksRouter);
 app.use("/api/users", usersRouter);
