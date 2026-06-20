@@ -1,13 +1,21 @@
 import request from "supertest";
-
-// Set very low limits before the app (and its rate limiters) are loaded
-process.env.RATE_LIMIT_AUTH_MAX = "3";
-process.env.RATE_LIMIT_AUTH_WINDOW_MS = "60000";
-process.env.RATE_LIMIT_API_MAX = "5";
-process.env.RATE_LIMIT_API_WINDOW_MS = "60000";
-
-// eslint-disable-next-line import/first
 import app from "../index";
+
+// Set very low limits so tests don't need to fire hundreds of requests.
+// Limits are read per-request (lazy), so setting them before the first call is enough.
+beforeAll(() => {
+  process.env.RATE_LIMIT_AUTH_MAX = "3";
+  process.env.RATE_LIMIT_AUTH_WINDOW_MS = "60000";
+  process.env.RATE_LIMIT_API_MAX = "5";
+  process.env.RATE_LIMIT_API_WINDOW_MS = "60000";
+});
+
+afterAll(() => {
+  delete process.env.RATE_LIMIT_AUTH_MAX;
+  delete process.env.RATE_LIMIT_AUTH_WINDOW_MS;
+  delete process.env.RATE_LIMIT_API_MAX;
+  delete process.env.RATE_LIMIT_API_WINDOW_MS;
+});
 
 describe("Rate limiting", () => {
   describe("Auth limiter — POST /api/auth/login", () => {
