@@ -398,6 +398,10 @@ See `.env.example` at the root. Critical vars:
 | `VAPID_PUBLIC_KEY` | VAPID public key for Web Push — generate with `node -e "const wp=require('web-push');const k=wp.generateVAPIDKeys();console.log(JSON.stringify(k,null,2))"` |
 | `VAPID_PRIVATE_KEY` | VAPID private key (keep secret) |
 | `VAPID_SUBJECT` | Contact URI for VAPID (`mailto:…` or `https://…`) |
+| `RATE_LIMIT_AUTH_WINDOW_MS` | Window (ms) for auth rate limiter — default `900000` (15 min) |
+| `RATE_LIMIT_AUTH_MAX` | Max requests per window on `/api/auth/*` — default `20` |
+| `RATE_LIMIT_API_WINDOW_MS` | Window (ms) for general API rate limiter — default `60000` (1 min) |
+| `RATE_LIMIT_API_MAX` | Max requests per window on `/api/*` — default `120` |
 
 ---
 
