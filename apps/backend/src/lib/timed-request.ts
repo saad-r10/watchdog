@@ -107,7 +107,7 @@ export async function timedRequest(
           agent: false, // fresh connection per hop: DNS/TCP/TLS phases are always real
           headers: {
             Accept: "application/json, text/plain, */*",
-            // axios parity; body is discarded, never decompressed — except when capturing for
+            // axios parity; body is discarded, never decompressed - except when capturing for
             // content hashing, where compression must be disabled so unchanged content hashes stable
             // (gzip embeds a per-response mtime).
             "Accept-Encoding": captureBody ? "identity" : "gzip, deflate",

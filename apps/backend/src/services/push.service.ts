@@ -32,7 +32,7 @@ export async function sendPushToUser(userId: string, payload: WebhookPayload): P
           data
         );
       } catch (err: unknown) {
-        // 410 Gone = subscription expired — clean it up
+        // 410 Gone = subscription expired - clean it up
         const webPushErr = err as { statusCode?: number };
         if (webPushErr?.statusCode === 410) {
           await prisma.pushSubscription.deleteMany({ where: { userId, endpoint: sub.endpoint } });

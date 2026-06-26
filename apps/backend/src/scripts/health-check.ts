@@ -71,7 +71,7 @@ const services: ServiceCheck[] = [
 ];
 
 async function main() {
-  console.log("\n🔍 Watchdog — service health check\n");
+  console.log("\n🔍 Watchdog - service health check\n");
   const results = await Promise.all(
     services.map(async (s) => ({ name: s.name, ok: await s.check() }))
   );

@@ -1,7 +1,7 @@
 const faqs = [
   {
     q: "Is it really free to start?",
-    a: "Yes — no credit card, unlimited monitors. Create an account and your first check is running in under a minute.",
+    a: "Yes - no credit card, unlimited monitors. Create an account and your first check is running in under a minute.",
   },
   {
     q: "How fast does it detect downtime?",
@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: "Can it watch services behind my firewall?",
-    a: "Yes. Run the lightweight agent on your own infrastructure and it pushes check results to Watchdog — internal services never need to be exposed.",
+    a: "Yes. Run the lightweight agent on your own infrastructure and it pushes check results to Watchdog - internal services never need to be exposed.",
   },
   {
     q: "How do alerts work?",
@@ -17,11 +17,11 @@ const faqs = [
   },
   {
     q: "What about SSL certificates?",
-    a: "Every certificate is checked hourly, and you're warned 14 days before one expires — long before your users see a browser warning.",
+    a: "Every certificate is checked hourly, and you're warned 14 days before one expires - long before your users see a browser warning.",
   },
   {
     q: "Which security headers are checked?",
-    a: "X-Frame-Options, Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy — audited every six hours.",
+    a: "X-Frame-Options, Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy - audited every six hours.",
   },
 ];
 

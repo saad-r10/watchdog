@@ -52,7 +52,7 @@ export default function LoginPage() {
             <Alert className="mb-5 border-emerald-500/20 bg-emerald-500/10">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <AlertDescription className="text-emerald-400 text-sm">
-                Password reset — you can now sign in.
+                Password reset - you can now sign in.
               </AlertDescription>
             </Alert>
           )}

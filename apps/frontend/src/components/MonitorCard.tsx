@@ -68,13 +68,13 @@ export function MonitorCard({ monitor }: { monitor: Monitor }) {
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Uptime</p>
               <p className={cn("text-xl font-bold tabular-nums", isDown ? "text-down" : "text-foreground")}>
-                {stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "—"}
+                {stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "-"}
               </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Avg response</p>
               <p className="text-xl font-bold text-foreground tabular-nums">
-                {stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "—"}
+                {stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "-"}
               </p>
             </div>
           </div>

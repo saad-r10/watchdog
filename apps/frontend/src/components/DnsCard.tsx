@@ -62,7 +62,7 @@ export function DnsCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data || !findings ? (
-        <p className="text-sm text-muted-foreground">DNS check runs every 6 hours — check back soon.</p>
+        <p className="text-sm text-muted-foreground">DNS check runs every 6 hours - check back soon.</p>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between py-1">

@@ -2,7 +2,7 @@ import axios from "axios";
 
 const REQUEST_TIMEOUT = 8_000;
 
-// Short, curated list to avoid noisy false positives — common accidental-exposure paths only.
+// Short, curated list to avoid noisy false positives - common accidental-exposure paths only.
 export const EXPOSED_PATHS = [
   "/.env",
   "/.git/config",
@@ -54,7 +54,7 @@ export async function checkSecurityTxt(baseUrl: string): Promise<SecurityTxtFind
 }
 
 export async function checkExposedPaths(baseUrl: string): Promise<ExposedPathFinding[]> {
-  // Probe a path that can't exist — sites with a SPA catch-all return 200 for everything,
+  // Probe a path that can't exist - sites with a SPA catch-all return 200 for everything,
   // so any real path that matches this baseline isn't actually an exposure.
   const baseline = await fetchPath(baseUrl, `/__watchdog-exposure-probe-${Date.now()}__`);
 
@@ -74,7 +74,7 @@ export async function analyseExposure(baseUrl: string): Promise<ExposureAnalysis
     checkExposedPaths(baseUrl),
   ]);
 
-  // Missing security.txt is informational only — it doesn't fail the check on its own.
+  // Missing security.txt is informational only - it doesn't fail the check on its own.
   const hasExposedPath = exposedPaths.some((p) => p.exposed);
 
   return { securityTxt, exposedPaths, status: hasExposedPath ? "fail" : "pass" };

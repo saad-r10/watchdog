@@ -2,7 +2,7 @@
 // exceed to be considered anomalous.
 export const ANOMALY_SIGMA = 3;
 
-// Minimum number of baseline samples required before computing stats —
+// Minimum number of baseline samples required before computing stats -
 // avoids flagging brand-new monitors that have no meaningful history yet.
 export const MIN_SAMPLE_SIZE = 20;
 

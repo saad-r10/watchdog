@@ -153,7 +153,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">New certificate detected</p>
-                <p className="text-xs text-muted-foreground mt-0.5">A Certificate Transparency log shows a new cert for your domain — possible compromise or shadow IT.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">A Certificate Transparency log shows a new cert for your domain - possible compromise or shadow IT.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -165,7 +165,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Domain appears on a blocklist</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Your domain shows up on URLhaus or Spamhaus DBL — often a sign of compromise or malware injection.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Your domain shows up on URLhaus or Spamhaus DBL - often a sign of compromise or malware injection.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -177,7 +177,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Page content changes unexpectedly</p>
-                <p className="text-xs text-muted-foreground mt-0.5">For monitors with defacement detection enabled — alerts when the page content hash changes.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">For monitors with defacement detection enabled - alerts when the page content hash changes.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -189,7 +189,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Scripted transaction fails</p>
-                <p className="text-xs text-muted-foreground mt-0.5">For synthetic monitors — alerts when a step in the scripted browser flow fails (e.g. broken login).</p>
+                <p className="text-xs text-muted-foreground mt-0.5">For synthetic monitors - alerts when a step in the scripted browser flow fails (e.g. broken login).</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -213,14 +213,14 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Lighthouse budget exceeded</p>
-                <p className="text-xs text-muted-foreground mt-0.5">For monitors with Lighthouse enabled — alerts when performance, accessibility, best practices, or SEO scores drop below their configured budget.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">For monitors with Lighthouse enabled - alerts when performance, accessibility, best practices, or SEO scores drop below their configured budget.</p>
               </div>
             </label>
           </div>
 
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Webhook URL</label>
-            <p className="text-xs text-muted-foreground mb-4">Watchdog POSTs a JSON payload on every incident — works with any custom endpoint.</p>
+            <p className="text-xs text-muted-foreground mb-4">Watchdog POSTs a JSON payload on every incident - works with any custom endpoint.</p>
             <div className="flex gap-2">
               <input type="url"
                 className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
@@ -285,7 +285,7 @@ export default function SettingsPage() {
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Browser Push Notifications</label>
             <p className="text-xs text-muted-foreground mb-4">
-              Get real-time alerts in your browser even when the Watchdog tab is closed. Uses the standard Web Push API — no third-party service required.
+              Get real-time alerts in your browser even when the Watchdog tab is closed. Uses the standard Web Push API - no third-party service required.
             </p>
             {push.state === "unsupported" ? (
               <p className="text-xs text-muted-foreground">Your browser does not support Web Push notifications.</p>

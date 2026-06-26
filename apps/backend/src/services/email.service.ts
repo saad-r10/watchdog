@@ -20,7 +20,7 @@ export interface EmailPayload {
 export async function sendEmail(payload: EmailPayload): Promise<void> {
   const client = getClient();
   if (!client) {
-    console.warn("RESEND_API_KEY not configured — skipping email:", payload.subject);
+    console.warn("RESEND_API_KEY not configured - skipping email:", payload.subject);
     return;
   }
   await client.emails.send({
@@ -33,7 +33,7 @@ export function downtimeAlertHtml(monitorName: string, url: string, startedAt: D
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#ef4444;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">🔴 Site Down — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">🔴 Site Down - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fca5a5;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -47,7 +47,7 @@ export function downtimeAlertHtml(monitorName: string, url: string, startedAt: D
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -62,7 +62,7 @@ export function recoveryAlertHtml(monitorName: string, url: string, resolvedAt: 
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">✅ Recovered — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">✅ Recovered - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -74,7 +74,7 @@ export function recoveryAlertHtml(monitorName: string, url: string, resolvedAt: 
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -98,7 +98,7 @@ export function verifyEmailHtml(verifyUrl: string, name: string): string {
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -122,7 +122,7 @@ export function passwordResetHtml(resetUrl: string): string {
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -152,7 +152,7 @@ export function ctAlertHtml(monitorName: string, url: string, newCerts: CrtShEnt
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">🔏 New Certificate Detected — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">🔏 New Certificate Detected - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -162,11 +162,11 @@ export function ctAlertHtml(monitorName: string, url: string, newCerts: CrtShEnt
         <ul style="margin:0 0 12px;padding-left:20px;color:#374151;font-size:14px">${items}</ul>
         <p style="margin:0;color:#6b7280;font-size:14px">
           If you don't recognize these certificates, this could indicate a compromised DNS provider,
-          a phishing subdomain, or unauthorized cert issuance — investigate promptly.
+          a phishing subdomain, or unauthorized cert issuance - investigate promptly.
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -187,7 +187,7 @@ export function blocklistAlertHtml(monitorName: string, url: string, findings: B
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#ef4444;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">🚫 Domain Blocklisted — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">🚫 Domain Blocklisted - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fca5a5;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -201,7 +201,7 @@ export function blocklistAlertHtml(monitorName: string, url: string, findings: B
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -211,7 +211,7 @@ export function contentChangeAlertHtml(monitorName: string, url: string, changed
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">✏️ Content Changed — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">✏️ Content Changed - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -226,7 +226,7 @@ export function contentChangeAlertHtml(monitorName: string, url: string, changed
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -241,7 +241,7 @@ export function syntheticFailureAlertHtml(monitorName: string, url: string, star
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#ef4444;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">🔴 Transaction Failed — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">🔴 Transaction Failed - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fca5a5;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -258,7 +258,7 @@ export function syntheticFailureAlertHtml(monitorName: string, url: string, star
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -273,7 +273,7 @@ export function syntheticRecoveryAlertHtml(monitorName: string, url: string, res
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">✅ Transaction Recovered — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">✅ Transaction Recovered - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -285,7 +285,7 @@ export function syntheticRecoveryAlertHtml(monitorName: string, url: string, res
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -295,7 +295,7 @@ export function performanceDegradedAlertHtml(monitorName: string, url: string, l
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">⚠️ Performance Degraded — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">⚠️ Performance Degraded - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -303,14 +303,14 @@ export function performanceDegradedAlertHtml(monitorName: string, url: string, l
         </p>
         <p style="margin:0 0 12px;color:#6b7280;font-size:14px">
           Latest response: <strong style="color:#f59e0b">${latestMs}ms</strong>
-          — normally ~${meanMs}ms, threshold ${thresholdMs}ms
+          - normally ~${meanMs}ms, threshold ${thresholdMs}ms
         </p>
         <p style="margin:0;color:#6b7280;font-size:13px">
           Detected: ${detectedAt.toLocaleString()}
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -325,7 +325,7 @@ export function performanceRecoveredAlertHtml(monitorName: string, url: string, 
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">✅ Performance Back to Normal — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">✅ Performance Back to Normal - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -337,7 +337,7 @@ export function performanceRecoveredAlertHtml(monitorName: string, url: string, 
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -364,7 +364,7 @@ export function lighthouseBudgetAlertHtml(
       return `
         <tr>
           <td style="padding:4px 0;color:#374151">${label}</td>
-          <td style="padding:4px 0;text-align:right;color:${color};font-weight:600">${score ?? "—"}</td>
+          <td style="padding:4px 0;text-align:right;color:${color};font-weight:600">${score ?? "-"}</td>
           <td style="padding:4px 0;text-align:right;color:#9ca3af;font-size:13px">budget ${budget}</td>
         </tr>
       `;
@@ -374,7 +374,7 @@ export function lighthouseBudgetAlertHtml(
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#f59e0b;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">⚠️ Lighthouse Budget Exceeded — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">⚠️ Lighthouse Budget Exceeded - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -386,7 +386,7 @@ export function lighthouseBudgetAlertHtml(
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -401,7 +401,7 @@ export function lighthouseRecoveryAlertHtml(monitorName: string, url: string, re
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:#22c55e;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">✅ Lighthouse Scores Back Within Budget — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">✅ Lighthouse Scores Back Within Budget - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #86efac;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -413,7 +413,7 @@ export function lighthouseRecoveryAlertHtml(monitorName: string, url: string, re
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;
@@ -426,7 +426,7 @@ export function sslAlertHtml(monitorName: string, url: string, daysLeft: number)
   return `
     <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
       <div style="background:${colour};color:#fff;padding:16px 24px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0;font-size:18px">🔒 SSL Expiry ${label} — ${monitorName}</h2>
+        <h2 style="margin:0;font-size:18px">🔒 SSL Expiry ${label} - ${monitorName}</h2>
       </div>
       <div style="border:1px solid #fcd34d;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         <p style="margin:0 0 12px;color:#374151">
@@ -438,7 +438,7 @@ export function sslAlertHtml(monitorName: string, url: string, daysLeft: number)
         </p>
       </div>
       <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">
-        Watchdog — Uptime &amp; Security Monitor
+        Watchdog - Uptime &amp; Security Monitor
       </p>
     </div>
   `;

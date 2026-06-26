@@ -138,7 +138,7 @@ function AgentRow({ agent, allMonitors, onRevoke }: { agent: Agent; allMonitors:
                     <select className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring"
                       defaultValue="" onChange={(e) => { if (e.target.value) { assignMutation.mutate(e.target.value); e.target.value = ""; } }} disabled={assignMutation.isPending}>
                       <option value="" disabled>Assign a monitor…</option>
-                      {unassigned.map((m) => <option key={m.id} value={m.id}>{m.name} — {m.url}</option>)}
+                      {unassigned.map((m) => <option key={m.id} value={m.id}>{m.name} - {m.url}</option>)}
                     </select>
                   </div>
                 )}
@@ -205,7 +205,7 @@ function AgentsSection() {
             className="bg-up/10 border border-up/20 rounded-xl p-5">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div>
-                <p className="text-sm font-semibold text-up">Agent created — copy your key now</p>
+                <p className="text-sm font-semibold text-up">Agent created - copy your key now</p>
                 <p className="text-xs text-muted-foreground mt-0.5">This key will not be shown again.</p>
               </div>
               <button onClick={() => setNewAgent(null)} className="text-muted-foreground hover:text-foreground transition-colors text-xl leading-none">×</button>
@@ -286,7 +286,7 @@ function AgentSetupBanner({ info, onDismiss }: { info: AgentSetupInfo; onDismiss
     >
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <p className="text-sm font-semibold text-foreground">Agent monitor created — finish setup</p>
+          <p className="text-sm font-semibold text-foreground">Agent monitor created - finish setup</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Agent: <span className="text-foreground font-medium">{info.agentName}</span> · Run the agent runner on your server to start receiving checks.
           </p>
@@ -747,7 +747,7 @@ export default function MonitorsPage() {
         </form>
       </div>
 
-      {/* Agents — create/manage agents that power "Agent" monitors above */}
+      {/* Agents - create/manage agents that power "Agent" monitors above */}
       <AgentsSection />
 
       {/* Monitor list */}

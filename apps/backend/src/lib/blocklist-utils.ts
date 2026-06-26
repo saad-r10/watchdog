@@ -4,7 +4,7 @@ import { promises as dns } from "dns";
 const REQUEST_TIMEOUT = 15_000;
 const URLHAUS_HOSTFILE_URL = "https://urlhaus.abuse.ch/downloads/hostfile/";
 
-// URLhaus publishes a single bulk hostfile rather than a per-domain lookup API —
+// URLhaus publishes a single bulk hostfile rather than a per-domain lookup API -
 // cache it across a worker run (and a little beyond) to avoid re-downloading
 // it once per monitor and to stay within abuse.ch's fair-use expectations.
 const URLHAUS_CACHE_TTL_MS = 60 * 60 * 1000;

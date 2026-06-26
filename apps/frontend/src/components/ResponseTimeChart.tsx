@@ -78,7 +78,7 @@ function makeChartTooltip(range: ResponseTimeRange) {
 // Lightweight visual aid: flags buckets whose average response time is a
 // statistical outlier (mean + 3 stddev) within the currently-viewed range.
 // The authoritative anomaly detection (incidents/alerts) runs server-side
-// against raw per-check data over a rolling 7-day window — this is just
+// against raw per-check data over a rolling 7-day window - this is just
 // context for whatever range the user happens to be looking at.
 const ANOMALY_MIN_BUCKETS = 8;
 const ANOMALY_SIGMA = 3;

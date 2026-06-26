@@ -82,13 +82,13 @@ async function gatherResults(monitor: MonitorConfig): Promise<CheckResult[]> {
   const uptime = await checkUrl(monitor.url);
   const timestamp = new Date().toISOString();
   const icon = uptime.status === "up" ? "✅" : "🔴";
-  console.log(`[${timestamp}] ${icon} ${monitor.url} — ${uptime.status.toUpperCase()} ${uptime.statusCode} (${uptime.responseTime}ms)`);
+  console.log(`[${timestamp}] ${icon} ${monitor.url} - ${uptime.status.toUpperCase()} ${uptime.statusCode} (${uptime.responseTime}ms)`);
   results.push({ monitorId: monitor.monitorId, type: "uptime", ...uptime });
 
   for (const metric of monitor.systemMetrics ?? []) {
     const { value, status } = collectMetric(metric);
     const metricIcon = status === "up" ? "📊" : "⚠️ ";
-    console.log(`[${new Date().toISOString()}] ${metricIcon} ${metric}: ${value}${metric === "load" ? "" : "%"} — ${status.toUpperCase()}`);
+    console.log(`[${new Date().toISOString()}] ${metricIcon} ${metric}: ${value}${metric === "load" ? "" : "%"} - ${status.toUpperCase()}`);
     results.push({ monitorId: monitor.monitorId, type: "metric", status, metricName: metric, metricValue: value });
   }
 
@@ -148,7 +148,7 @@ function applyMonitors(connection: { watchdogUrl: string; agentKey: string }, mo
       clearInterval(timer);
       timers.delete(monitorId);
       signatures.delete(monitorId);
-      console.log(`[${new Date().toISOString()}] ➖ Monitor unassigned — stopped watching (monitorId: ${monitorId})`);
+      console.log(`[${new Date().toISOString()}] ➖ Monitor unassigned - stopped watching (monitorId: ${monitorId})`);
     }
   }
 }
@@ -177,13 +177,13 @@ async function runRemote(watchdogUrl: string, agentKey: string) {
 
   const connection = { watchdogUrl, agentKey };
 
-  // Initial connect — retry on network errors, bail on a bad key.
+  // Initial connect - retry on network errors, bail on a bad key.
   for (;;) {
     try {
       const monitors = await fetchRemoteConfig(watchdogUrl, agentKey);
       console.log(`[${new Date().toISOString()}] ✅ Connected to Watchdog`);
       if (monitors.length === 0) {
-        console.log(`[${new Date().toISOString()}] 💤 No monitors assigned yet — assign them in the Watchdog UI and they'll be picked up automatically.`);
+        console.log(`[${new Date().toISOString()}] 💤 No monitors assigned yet - assign them in the Watchdog UI and they'll be picked up automatically.`);
       }
       applyMonitors(connection, monitors);
       break;
@@ -192,7 +192,7 @@ async function runRemote(watchdogUrl: string, agentKey: string) {
         console.error(`❌ Watchdog rejected the agent key. Check the key, or revoke this agent and create a new one in the UI.`);
         process.exit(1);
       }
-      console.error(`[${new Date().toISOString()}] ⚠️  Cannot reach Watchdog at ${watchdogUrl} (${err.message}) — retrying in 15s`);
+      console.error(`[${new Date().toISOString()}] ⚠️  Cannot reach Watchdog at ${watchdogUrl} (${err.message}) - retrying in 15s`);
       await sleep(15_000);
     }
   }
@@ -202,7 +202,7 @@ async function runRemote(watchdogUrl: string, agentKey: string) {
       const monitors = await fetchRemoteConfig(watchdogUrl, agentKey);
       applyMonitors(connection, monitors);
     } catch (err: any) {
-      console.error(`[${new Date().toISOString()}] ⚠️  Config refresh failed (${err.message}) — keeping current monitors`);
+      console.error(`[${new Date().toISOString()}] ⚠️  Config refresh failed (${err.message}) - keeping current monitors`);
     }
   }, CONFIG_REFRESH_MS);
 }
@@ -215,7 +215,7 @@ function loadConfig(configPath: string): AgentConfig {
     console.error(`❌ Config file not found: ${resolved}`);
     console.error(`   Run with an agent key instead (no config file needed):`);
     console.error(`     node agent-runner.js --key wdg_xxx --url https://your-watchdog`);
-    console.error(`   Or create a watchdog-agent.config.json — see watchdog-agent.config.example.json`);
+    console.error(`   Or create a watchdog-agent.config.json - see watchdog-agent.config.example.json`);
     process.exit(1);
   }
   return JSON.parse(fs.readFileSync(resolved, "utf-8"));

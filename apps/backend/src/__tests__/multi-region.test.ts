@@ -79,17 +79,17 @@ describe("multi-region downtime thresholds", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ regionDownThreshold: 2 });
 
-    // Only region A down — below threshold, no incident yet
+    // Only region A down - below threshold, no incident yet
     await checkin(agentA.key, monitorId, "down");
     expect(await getOpenIncidents(monitorId)).toHaveLength(0);
 
-    // Region B also down — threshold met, incident opens
+    // Region B also down - threshold met, incident opens
     await checkin(agentB.key, monitorId, "down");
     const open = await getOpenIncidents(monitorId);
     expect(open).toHaveLength(1);
     expect(open[0].type).toBe("downtime");
 
-    // Region A recovers — back below threshold, incident resolves
+    // Region A recovers - back below threshold, incident resolves
     await checkin(agentA.key, monitorId, "up");
     expect(await getOpenIncidents(monitorId)).toHaveLength(0);
   });

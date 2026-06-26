@@ -133,7 +133,7 @@ export function LighthouseCard({ monitorId }: Props) {
                     <p className="text-degraded">Last audit failed{latest.error ? `: ${latest.error}` : ""} ({new Date(latest.checkedAt).toLocaleString()})</p>
                   )
                 ) : (
-                  <p>No audit run yet — runs once daily.</p>
+                  <p>No audit run yet - runs once daily.</p>
                 )}
               </div>
             </>

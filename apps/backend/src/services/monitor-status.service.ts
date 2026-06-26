@@ -14,7 +14,7 @@ export const monitorStatusService = {
    * Re-evaluates the aggregate up/down status for a monitor across all of its
    * sources (cloud checker if no agents are assigned, otherwise each assigned
    * agent/region) and opens or resolves the downtime incident based on
-   * `monitor.regionDownThreshold` — the number of distinct sources that must
+   * `monitor.regionDownThreshold` - the number of distinct sources that must
    * be reporting "down" at once.
    */
   async evaluateUptimeStatus(monitor: Monitor): Promise<void> {
@@ -46,7 +46,7 @@ export const monitorStatusService = {
 
   /**
    * Opens or resolves the `synthetic_failure` incident for a synthetic monitor
-   * based on the result of its most recent scripted check. Single-source —
+   * based on the result of its most recent scripted check. Single-source -
    * synthetic checks always run from Watchdog's own infrastructure.
    */
   async evaluateSyntheticStatus(monitor: Monitor, result: SyntheticCheckResult): Promise<void> {

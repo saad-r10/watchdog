@@ -15,13 +15,13 @@ app.get("/", (_req, res) => {
 
 app.post("/break", (_req, res) => {
   broken = true;
-  console.log("💥 Demo app set to DOWN — returning 503");
+  console.log("💥 Demo app set to DOWN - returning 503");
   res.json({ ok: true, status: "down" });
 });
 
 app.post("/fix", (_req, res) => {
   broken = false;
-  console.log("✅ Demo app set to UP — returning 200");
+  console.log("✅ Demo app set to UP - returning 200");
   res.json({ ok: true, status: "up" });
 });
 
@@ -31,7 +31,7 @@ app.get("/status", (_req, res) => {
 
 app.listen(4000, () => {
   console.log("🟢 Demo app → http://localhost:4000");
-  console.log("   POST /break  — simulate outage (503)");
-  console.log("   POST /fix    — restore (200)");
-  console.log("   GET  /status — current state");
+  console.log("   POST /break  - simulate outage (503)");
+  console.log("   POST /fix    - restore (200)");
+  console.log("   GET  /status - current state");
 });
