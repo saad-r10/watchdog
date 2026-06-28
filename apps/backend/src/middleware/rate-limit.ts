@@ -19,6 +19,6 @@ export const apiRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: errorResponse,
-  // Agent checkin is high-frequency by design — exclude it
+  // Agent checkin is high-frequency by design - exclude it
   skip: (req) => req.path === "/agents/checkin" && req.method === "POST",
 });

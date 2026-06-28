@@ -62,7 +62,7 @@ export function BlocklistCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data || !findings ? (
-        <p className="text-sm text-muted-foreground">Blocklist check runs daily — check back soon.</p>
+        <p className="text-sm text-muted-foreground">Blocklist check runs daily - check back soon.</p>
       ) : (
         <div className="space-y-2">
           {findings.sources.map((s) => (

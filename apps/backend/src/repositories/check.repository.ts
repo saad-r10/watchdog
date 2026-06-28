@@ -47,7 +47,7 @@ export const checkRepository = {
   /**
    * Ordered (oldest -> newest) response times for completed uptime checks
    * over the trailing `days`, excluding checks taken during a maintenance
-   * window. Used as the sample set for rolling anomaly detection — the last
+   * window. Used as the sample set for rolling anomaly detection - the last
    * element is the latest check, the rest form the baseline.
    */
   async getRecentResponseTimes(monitorId: string, days = 7): Promise<number[]> {

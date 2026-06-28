@@ -66,7 +66,7 @@ export async function checkDmarc(hostname: string): Promise<DmarcFinding> {
   const policy = policyMatch ? policyMatch[1].trim() : null;
   const issue =
     policy === "none"
-      ? "DMARC policy is 'none' — spoofed mail is reported but not rejected or quarantined"
+      ? "DMARC policy is 'none' - spoofed mail is reported but not rejected or quarantined"
       : policy === null
         ? "DMARC record is missing a policy (p=) tag"
         : null;
@@ -110,7 +110,7 @@ export async function checkDanglingCname(hostname: string): Promise<DanglingCnam
         present: true,
         target,
         dangling: true,
-        issue: `CNAME points to "${target}", which does not resolve — possible subdomain takeover risk`,
+        issue: `CNAME points to "${target}", which does not resolve - possible subdomain takeover risk`,
       };
     }
   }
@@ -124,7 +124,7 @@ export async function analyseDns(hostname: string): Promise<DnsAnalysisResult> {
     checkDanglingCname(hostname),
   ]);
 
-  // DKIM is excluded from the pass/fail verdict — the selector-guessing heuristic
+  // DKIM is excluded from the pass/fail verdict - the selector-guessing heuristic
   // above is too unreliable to flag as a finding on its own.
   const hasIssue = !!spf.issue || !!dmarc.issue || danglingCname.dangling;
 

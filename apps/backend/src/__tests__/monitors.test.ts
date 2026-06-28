@@ -54,7 +54,7 @@ describe("POST /api/monitors", () => {
   });
 });
 
-describe("POST /api/monitors — synthetic type", () => {
+describe("POST /api/monitors - synthetic type", () => {
   const validSteps = [
     { action: "navigate", url: "https://example.com/login" },
     { action: "fill", selector: "#username", value: "demo@example.com" },

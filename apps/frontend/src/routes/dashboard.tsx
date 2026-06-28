@@ -167,7 +167,7 @@ export default function DashboardPage() {
             { label: "Down", value: summary.down, color: summary.down > 0 ? "text-down" : "text-muted-foreground" },
             {
               label: "Avg uptime · 7d",
-              value: summary.avgUptime != null ? `${summary.avgUptime}%` : "—",
+              value: summary.avgUptime != null ? `${summary.avgUptime}%` : "-",
               color:
                 summary.avgUptime == null
                   ? "text-muted-foreground"
@@ -232,7 +232,7 @@ export default function DashboardPage() {
           </div>
           <h2 className="text-lg font-bold text-foreground mb-2">Nothing on watch yet</h2>
           <p className="text-muted-foreground text-sm mb-8 leading-relaxed">
-            Add a URL and Watchdog will check it every minute — barking the moment it goes down.
+            Add a URL and Watchdog will check it every minute - barking the moment it goes down.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {!isOnboardingDone() && (

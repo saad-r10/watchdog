@@ -59,7 +59,7 @@ export interface MixedContentFinding {
   url: string;
 }
 
-// Lightweight regex scan rather than full DOM parsing — negative lookbehind avoids
+// Lightweight regex scan rather than full DOM parsing - negative lookbehind avoids
 // false positives on attributes like data-src / ng-src.
 const MIXED_CONTENT_REGEX = /(?<![\w-])(?:src|href)\s*=\s*["']http:\/\/[^"'\s>]+["']/gi;
 

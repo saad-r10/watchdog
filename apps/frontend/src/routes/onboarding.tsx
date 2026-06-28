@@ -113,7 +113,7 @@ export default function OnboardingPage() {
                   Welcome{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
                 </h1>
                 <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                  Watchdog monitors your websites and APIs around the clock — checking uptime, SSL certificates, and security headers. You'll get an email the moment something goes wrong.
+                  Watchdog monitors your websites and APIs around the clock - checking uptime, SSL certificates, and security headers. You'll get an email the moment something goes wrong.
                 </p>
                 <div className="space-y-3 mb-8">
                   {[
@@ -149,7 +149,7 @@ export default function OnboardingPage() {
                   </svg>
                 </div>
                 <h1 className="text-2xl font-bold text-foreground mb-1">Add your first monitor</h1>
-                <p className="text-sm text-muted-foreground mb-6">Enter any URL — your website, API, or local service.</p>
+                <p className="text-sm text-muted-foreground mb-6">Enter any URL - your website, API, or local service.</p>
                 <form className="space-y-3" onSubmit={handleAddMonitor}>
                   <input
                     className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
@@ -232,7 +232,7 @@ export default function OnboardingPage() {
                   </motion.div>
                   <h1 className="text-2xl font-bold text-foreground mb-2">You're all set!</h1>
                   <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
-                    Watchdog is now monitoring your site. The first check runs within a minute — you'll be notified if anything goes wrong.
+                    Watchdog is now monitoring your site. The first check runs within a minute - you'll be notified if anything goes wrong.
                   </p>
                   <button
                     onClick={() => { markOnboardingDone(); navigate("/dashboard"); }}

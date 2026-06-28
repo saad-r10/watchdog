@@ -19,7 +19,7 @@ interface StatusDotProps {
 }
 
 /**
- * The signature Watchdog "live" indicator — a status dot with an
+ * The signature Watchdog "live" indicator - a status dot with an
  * expanding radar ring, evoking a sentry constantly scanning.
  */
 export function StatusDot({ status, pulse, className, size = "sm" }: StatusDotProps) {

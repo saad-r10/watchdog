@@ -57,7 +57,7 @@ export function ExposureCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data || !findings ? (
-        <p className="text-sm text-muted-foreground">Exposure check runs every 6 hours — check back soon.</p>
+        <p className="text-sm text-muted-foreground">Exposure check runs every 6 hours - check back soon.</p>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between py-1">
@@ -86,7 +86,7 @@ export function ExposureCard({ monitorId }: Props) {
 
       {exposedPaths.length > 0 && (
         <p className="text-xs text-down/80 mt-4 leading-relaxed">
-          {exposedPaths.length} sensitive path{exposedPaths.length === 1 ? "" : "s"} publicly accessible — review and restrict access.
+          {exposedPaths.length} sensitive path{exposedPaths.length === 1 ? "" : "s"} publicly accessible - review and restrict access.
         </p>
       )}
 

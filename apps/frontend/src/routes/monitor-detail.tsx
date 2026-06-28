@@ -208,17 +208,17 @@ export default function MonitorDetailPage() {
         {[
           {
             label: "Uptime (7d)",
-            value: stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "—",
+            value: stats?.uptimePercent != null ? `${stats.uptimePercent}%` : "-",
             color: isDown ? "text-down" : "text-up",
           },
           {
             label: "Avg response",
-            value: stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "—",
+            value: stats?.avgResponseTime != null ? `${stats.avgResponseTime}ms` : "-",
             color: "text-foreground",
           },
           {
             label: "Checks (7d)",
-            value: stats?.totalChecks ?? "—",
+            value: stats?.totalChecks ?? "-",
             color: "text-primary",
           },
         ].map((stat, i) => (
@@ -330,7 +330,7 @@ export default function MonitorDetailPage() {
               </button>
             </div>
             {createMaintenanceMutation.isError && (
-              <p className="col-span-2 text-down text-xs">Failed — check that end is after start.</p>
+              <p className="col-span-2 text-down text-xs">Failed - check that end is after start.</p>
             )}
           </form>
         </div>
@@ -398,7 +398,7 @@ export default function MonitorDetailPage() {
                       <p className="text-xs text-muted-foreground/60 mt-0.5">
                         {inc.isResolved
                           ? `Resolved after ${formatDuration(inc.startedAt, inc.resolvedAt)}`
-                          : `Ongoing — ${formatDuration(inc.startedAt)}`}
+                          : `Ongoing - ${formatDuration(inc.startedAt)}`}
                       </p>
                     )}
                   </div>
@@ -433,7 +433,7 @@ export default function MonitorDetailPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-foreground capitalize">{name}</span>
                           <span className={`text-xs px-1.5 py-0.5 rounded font-mono ${isHigh ? "bg-down/10 text-down" : "bg-up/10 text-up"}`}>
-                            {latest?.metricValue != null ? `${latest.metricValue}${unit}` : "—"}
+                            {latest?.metricValue != null ? `${latest.metricValue}${unit}` : "-"}
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
@@ -507,7 +507,7 @@ export default function MonitorDetailPage() {
         </div>
         {checks.length === 0 ? (
           <p className="px-6 py-8 text-sm text-muted-foreground">
-            No checks yet — the worker runs every minute.
+            No checks yet - the worker runs every minute.
           </p>
         ) : (
           <div className="divide-y divide-border">

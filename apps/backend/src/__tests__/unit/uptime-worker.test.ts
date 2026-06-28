@@ -106,7 +106,7 @@ async function runCronTick() {
   await cronCallback();
 }
 
-describe("uptime worker — downtime detection", () => {
+describe("uptime worker - downtime detection", () => {
   it("creates a down check when site returns 500", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse({ statusCode: 500 }));
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
@@ -177,7 +177,7 @@ describe("uptime worker — downtime detection", () => {
   });
 });
 
-describe("uptime worker — timing breakdown persistence", () => {
+describe("uptime worker - timing breakdown persistence", () => {
   it("persists phase timings and payload size on the check", async () => {
     mockTimedRequest.mockResolvedValue(makeResponse());
     mockIncidentRepo.findOpenByMonitor.mockResolvedValue(null);
@@ -201,7 +201,7 @@ describe("uptime worker — timing breakdown persistence", () => {
   });
 });
 
-describe("uptime worker — content-change detection", () => {
+describe("uptime worker - content-change detection", () => {
   const contentMonitor = { ...monitor, contentChangeEnabled: true };
 
   it("hashes the body and records contentHash when enabled", async () => {

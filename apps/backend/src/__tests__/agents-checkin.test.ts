@@ -34,7 +34,7 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-describe("POST /api/agents/checkin — timing breakdown", () => {
+describe("POST /api/agents/checkin - timing breakdown", () => {
   it("accepts and persists phase timings + payload size", async () => {
     const res = await request(app)
       .post("/api/agents/checkin")

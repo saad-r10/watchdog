@@ -194,7 +194,7 @@ export default function StatusPagesPage() {
                         Select which monitors appear on this page:
                       </p>
                       {monitors.length === 0 ? (
-                        <p className="text-xs text-muted-foreground/60">No monitors yet — add some first.</p>
+                        <p className="text-xs text-muted-foreground/60">No monitors yet - add some first.</p>
                       ) : (
                         <div className="space-y-2">
                           {monitors.map((m) => {

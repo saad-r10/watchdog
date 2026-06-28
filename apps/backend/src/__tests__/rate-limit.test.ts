@@ -18,7 +18,7 @@ afterAll(() => {
 });
 
 describe("Rate limiting", () => {
-  describe("Auth limiter — POST /api/auth/login", () => {
+  describe("Auth limiter - POST /api/auth/login", () => {
     it("allows requests up to the limit", async () => {
       for (let i = 0; i < 3; i++) {
         const res = await request(app)

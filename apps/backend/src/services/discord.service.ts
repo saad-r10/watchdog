@@ -52,7 +52,7 @@ function buildDescription(payload: WebhookPayload): string {
 
 export async function sendDiscordAlert(webhookUrl: string, payload: WebhookPayload): Promise<void> {
   const embed = {
-    title: `${TITLE[payload.event] ?? "Watchdog Alert"}${payload.monitorName ? ` — ${payload.monitorName}` : ""}`,
+    title: `${TITLE[payload.event] ?? "Watchdog Alert"}${payload.monitorName ? ` - ${payload.monitorName}` : ""}`,
     description: buildDescription(payload) || undefined,
     color: COLOR[payload.event] ?? 0x6b7280,
     timestamp: new Date().toISOString(),

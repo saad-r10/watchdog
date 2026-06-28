@@ -57,7 +57,7 @@ export function CertTransparencyCard({ monitorId }: Props) {
           <div className="h-6 bg-muted rounded" />
         </div>
       ) : !data || !data.status ? (
-        <p className="text-sm text-muted-foreground">CT log check runs every 4 hours — check back soon.</p>
+        <p className="text-sm text-muted-foreground">CT log check runs every 4 hours - check back soon.</p>
       ) : newCerts.length > 0 ? (
         <div className="space-y-3">
           {newCerts.slice(0, 5).map((c) => (
@@ -77,7 +77,7 @@ export function CertTransparencyCard({ monitorId }: Props) {
 
       {status === "new_cert" && (
         <p className="text-xs text-down/80 mt-4 leading-relaxed">
-          Unrecognized certificate{newCerts.length > 1 ? "s" : ""} detected — verify this wasn't issued by an attacker or shadow IT.
+          Unrecognized certificate{newCerts.length > 1 ? "s" : ""} detected - verify this wasn't issued by an attacker or shadow IT.
         </p>
       )}
 

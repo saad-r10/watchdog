@@ -59,12 +59,12 @@ export function SslCard({ monitorId }: Props) {
           <div className="h-3 bg-muted rounded w-28" />
         </div>
       ) : !data ? (
-        <p className="text-sm text-muted-foreground">SSL check runs hourly — check back soon.</p>
+        <p className="text-sm text-muted-foreground">SSL check runs hourly - check back soon.</p>
       ) : (
         <div className="flex items-center justify-between">
           <div>
             <p className={`text-3xl font-bold ${daysColor}`}>
-              {daysLeft != null ? `${daysLeft}d` : "—"}
+              {daysLeft != null ? `${daysLeft}d` : "-"}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">days remaining</p>
           </div>

@@ -67,7 +67,7 @@ export const agentService = {
   },
 
   async getConfig(agentId: string) {
-    // A config fetch counts as a heartbeat — the agent is connected even if
+    // A config fetch counts as a heartbeat - the agent is connected even if
     // no monitors are assigned yet.
     await agentRepository.updateLastSeen(agentId);
     const monitors = await monitorRepository.findByAgent(agentId);

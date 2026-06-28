@@ -61,7 +61,7 @@ describe("GET /api/monitors/:id/incidents", () => {
   });
 });
 
-describe("GET /api/monitors/:id/response-times — timing breakdown", () => {
+describe("GET /api/monitors/:id/response-times - timing breakdown", () => {
   beforeAll(async () => {
     await prisma.check.create({
       data: {

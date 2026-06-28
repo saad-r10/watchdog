@@ -61,7 +61,7 @@ export function HeadersCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data ? (
-        <p className="text-sm text-muted-foreground">Header check runs every 6 hours — check back soon.</p>
+        <p className="text-sm text-muted-foreground">Header check runs every 6 hours - check back soon.</p>
       ) : (
         <div className="space-y-2">
           {SECURITY_HEADERS.map((h) => {
@@ -84,7 +84,7 @@ export function HeadersCard({ monitorId }: Props) {
 
       {missing.length > 0 && (
         <p className="text-xs text-down/80 mt-4 leading-relaxed">
-          {missing.length} missing header{missing.length > 1 ? "s" : ""} — may be vulnerable to clickjacking or XSS.
+          {missing.length} missing header{missing.length > 1 ? "s" : ""} - may be vulnerable to clickjacking or XSS.
         </p>
       )}
 
@@ -114,7 +114,7 @@ export function HeadersCard({ monitorId }: Props) {
           )}
           {cookieIssues.length > 0 && (
             <p className="text-xs text-down/80 leading-relaxed">
-              {cookieIssues.length} cookie{cookieIssues.length > 1 ? "s" : ""} missing security attributes — may be
+              {cookieIssues.length} cookie{cookieIssues.length > 1 ? "s" : ""} missing security attributes - may be
               vulnerable to theft or CSRF.
             </p>
           )}
@@ -138,7 +138,7 @@ export function HeadersCard({ monitorId }: Props) {
                 </div>
               ))}
               <p className="text-xs text-down/80 leading-relaxed">
-                {mixedContent.length} insecure resource{mixedContent.length > 1 ? "s" : ""} loaded over HTTP —
+                {mixedContent.length} insecure resource{mixedContent.length > 1 ? "s" : ""} loaded over HTTP -
                 may trigger browser warnings or be tampered with.
               </p>
             </>

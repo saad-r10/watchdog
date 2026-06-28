@@ -26,7 +26,7 @@ export const demoMonitors = [
 
 const demoLatency = [142, 138, 151, 144, 139, 162, 148, 141, 137, 158, 149, 143, 140, 155, 146, 142];
 
-/* ── Shared card shell — fixed-width in the hero wall, fluid in the feature grid ── */
+/* ── Shared card shell - fixed-width in the hero wall, fluid in the feature grid ── */
 function PreviewCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cn("rounded-xl border border-border bg-card p-4", className)}>
@@ -175,7 +175,7 @@ export function PreviewAgent({ className }: { className?: string }) {
   );
 }
 
-/* ── Hero wall composition — 6 columns, varied so adjacent cards never repeat ── */
+/* ── Hero wall composition - 6 columns, varied so adjacent cards never repeat ── */
 const wall = "w-60 sm:w-64";
 const m = demoMonitors;
 

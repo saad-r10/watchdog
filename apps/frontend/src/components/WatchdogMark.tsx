@@ -3,7 +3,7 @@ interface WatchdogMarkProps {
 }
 
 /**
- * Watchdog brand mark — a geometric alert guard-dog head in profile.
+ * Watchdog brand mark - a geometric alert guard-dog head in profile.
  * Single-color: fills with `currentColor`, the eye is cut out (evenodd)
  * so it reads on any background. Scales cleanly from 16px to hero size.
  */

@@ -28,7 +28,7 @@ const features = [
   },
   {
     title: "Response times",
-    copy: "Every check records a full timing breakdown — DNS, TCP, TLS, TTFB — so slow is as visible as down.",
+    copy: "Every check records a full timing breakdown - DNS, TCP, TLS, TTFB - so slow is as visible as down.",
     chips: ["per-phase timing", "24h / 7d / 30d"],
     visual: <PreviewSparkline className="w-full" />,
   },
@@ -52,20 +52,20 @@ const features = [
   },
   {
     title: "Private agents",
-    copy: "Monitor services behind your firewall — the agent pushes results out, nothing comes in.",
+    copy: "Monitor services behind your firewall - the agent pushes results out, nothing comes in.",
     chips: ["behind firewall", "one binary"],
     visual: <PreviewAgent className="w-full" />,
   },
 ];
 
 const steps = [
-  { n: "01", t: "Point it at a URL", d: "Paste an endpoint and name it. Checks start immediately — no agent required." },
+  { n: "01", t: "Point it at a URL", d: "Paste an endpoint and name it. Checks start immediately - no agent required." },
   { n: "02", t: "Choose how to hear about it", d: "Wire up email or a webhook. Set quiet hours and cooldowns on your terms." },
   { n: "03", t: "Get back to building", d: "Watchdog keeps watch. You only hear from it when something actually needs you." },
 ];
 
 export default function LandingPage() {
-  // Smooth anchor scrolling, scoped to the landing page — the document
+  // Smooth anchor scrolling, scoped to the landing page - the document
   // scroller is <html>, so the class can't live on this component's root.
   useEffect(() => {
     document.documentElement.classList.add("scroll-smooth");
@@ -76,18 +76,18 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground">
       <PillNav />
 
-      {/* Hero — preview wall with floating panel */}
+      {/* Hero - preview wall with floating panel */}
       <section className="relative min-h-[600px] h-[78vh] max-h-[820px] flex items-center justify-center px-4 pt-24">
         <HeroWall />
         <div className="relative z-10 mx-auto max-w-2xl text-center rounded-2xl border border-border bg-background/85 backdrop-blur-md px-6 py-10 sm:px-12 sm:py-14 shadow-2xl shadow-black/50">
           <MonoChip status="up" className="mb-7">
-            On watch — 24/7
+            On watch - 24/7
           </MonoChip>
           <h1 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.02] mb-6 text-balance">
             Your sites have a <span className="text-primary">guard dog</span> now.
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto mb-9 text-balance">
-            Watchdog watches your uptime, SSL certificates, and security headers —
+            Watchdog watches your uptime, SSL certificates, and security headers -
             and barks the second something breaks, so you hear about it before your users do.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
@@ -110,14 +110,14 @@ export default function LandingPage() {
 
       <Ticker />
 
-      {/* Features — shared-border grid */}
+      {/* Features - shared-border grid */}
       <SectionShell id="features">
         <BracketLabel>On duty</BracketLabel>
         <SectionHeading className="mb-4">
           Everything it watches <span className="text-primary">while you sleep</span>.
         </SectionHeading>
         <p className="text-muted-foreground max-w-xl mb-14">
-          One dashboard for uptime, certificates, security posture, and alerts —
+          One dashboard for uptime, certificates, security posture, and alerts -
           public or behind your firewall.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border">
@@ -138,7 +138,7 @@ export default function LandingPage() {
         </div>
       </SectionShell>
 
-      {/* How it works — hairline step strip */}
+      {/* How it works - hairline step strip */}
       <SectionShell id="how">
         <BracketLabel>How it works</BracketLabel>
         <SectionHeading className="mb-14">
@@ -190,7 +190,7 @@ export default function LandingPage() {
             </span>
           </div>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            © {new Date().getFullYear()} — Always watching
+            © {new Date().getFullYear()} - Always watching
           </p>
         </div>
       </footer>
