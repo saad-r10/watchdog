@@ -153,7 +153,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">New certificate detected</p>
-                <p className="text-xs text-muted-foreground mt-0.5">A Certificate Transparency log shows a new cert for your domain - possible compromise or shadow IT.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">A new security certificate was issued for your domain without your knowledge - may indicate unauthorized access.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -165,7 +165,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Domain appears on a blocklist</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Your domain shows up on URLhaus or Spamhaus DBL - often a sign of compromise or malware injection.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Your domain appears on a spam or malware blocklist - often a sign that your site has been compromised.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -177,7 +177,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">Page content changes unexpectedly</p>
-                <p className="text-xs text-muted-foreground mt-0.5">For monitors with defacement detection enabled - alerts when the page content hash changes.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">For monitors with content change detection enabled - alerts when your page content changes unexpectedly.</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -188,8 +188,8 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Scripted transaction fails</p>
-                <p className="text-xs text-muted-foreground mt-0.5">For synthetic monitors - alerts when a step in the scripted browser flow fails (e.g. broken login).</p>
+                <p className="text-sm font-medium text-foreground">Automated workflow test fails</p>
+                <p className="text-xs text-muted-foreground mt-0.5">For monitors that simulate user actions - alerts when a step fails (e.g. login form breaks).</p>
               </div>
             </label>
             <label className="flex items-start gap-4 cursor-pointer group">
@@ -212,15 +212,15 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">Lighthouse budget exceeded</p>
-                <p className="text-xs text-muted-foreground mt-0.5">For monitors with Lighthouse enabled - alerts when performance, accessibility, best practices, or SEO scores drop below their configured budget.</p>
+                <p className="text-sm font-medium text-foreground">Website quality scores drop below target</p>
+                <p className="text-xs text-muted-foreground mt-0.5">For monitors with quality checks enabled - alerts when performance, accessibility, best practices, or SEO scores drop too low.</p>
               </div>
             </label>
           </div>
 
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Webhook URL</label>
-            <p className="text-xs text-muted-foreground mb-4">Watchdog POSTs a JSON payload on every incident - works with any custom endpoint.</p>
+            <p className="text-xs text-muted-foreground mb-4">Watchdog sends an HTTP notification to your URL on every incident - works with Zapier, Make, or any custom endpoint.</p>
             <div className="flex gap-2">
               <input type="url"
                 className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
@@ -237,7 +237,7 @@ export default function SettingsPage() {
 
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Slack</label>
-            <p className="text-xs text-muted-foreground mb-4">Paste an <span className="font-medium text-foreground">Incoming Webhook URL</span> from your Slack app to receive alerts in a channel.</p>
+            <p className="text-xs text-muted-foreground mb-4">Paste an <span className="font-medium text-foreground">Incoming Webhook URL</span> from your Slack app (Settings → Integrations → Incoming Webhooks) to receive alerts in a channel.</p>
             <div className="flex gap-2">
               <input type="url"
                 className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
@@ -251,7 +251,7 @@ export default function SettingsPage() {
 
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Discord</label>
-            <p className="text-xs text-muted-foreground mb-4">Paste a <span className="font-medium text-foreground">server webhook URL</span> from Discord channel settings → Integrations → Webhooks.</p>
+            <p className="text-xs text-muted-foreground mb-4">Paste a <span className="font-medium text-foreground">webhook URL</span> from your Discord channel settings → Integrations → Webhooks to receive alerts in a channel.</p>
             <div className="flex gap-2">
               <input type="url"
                 className="flex-1 bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
@@ -265,7 +265,7 @@ export default function SettingsPage() {
 
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Telegram</label>
-            <p className="text-xs text-muted-foreground mb-4">Create a bot via <span className="font-medium text-foreground">@BotFather</span>, then enter the bot token and the chat ID where alerts should be sent.</p>
+            <p className="text-xs text-muted-foreground mb-4">Create a Telegram bot via <span className="font-medium text-foreground">@BotFather</span> on Telegram, then paste the bot token and the chat or group ID where alerts should be sent.</p>
             <div className="space-y-3">
               <input type="text"
                 className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring transition-colors"
@@ -285,7 +285,7 @@ export default function SettingsPage() {
           <div className="bg-card rounded-xl border border-border p-6">
             <label className="block text-sm font-semibold text-foreground mb-1">Browser Push Notifications</label>
             <p className="text-xs text-muted-foreground mb-4">
-              Get real-time alerts in your browser even when the Watchdog tab is closed. Uses the standard Web Push API - no third-party service required.
+              Get real-time alerts directly in your browser, even when this tab is closed. No extra apps needed.
             </p>
             {push.state === "unsupported" ? (
               <p className="text-xs text-muted-foreground">Your browser does not support Web Push notifications.</p>

@@ -28,10 +28,10 @@ function formatBucket(iso: string, range: ResponseTimeRange) {
 }
 
 const PHASES = [
-  { key: "avgDnsMs", label: "DNS", color: "hsl(var(--chart-dns))" },
-  { key: "avgTcpMs", label: "TCP", color: "hsl(var(--chart-tcp))" },
-  { key: "avgTlsMs", label: "TLS", color: "hsl(var(--chart-tls))" },
-  { key: "avgTtfbMs", label: "TTFB", color: "hsl(var(--chart-ttfb))" },
+  { key: "avgDnsMs", label: "DNS lookup", color: "hsl(var(--chart-dns))" },
+  { key: "avgTcpMs", label: "Connection", color: "hsl(var(--chart-tcp))" },
+  { key: "avgTlsMs", label: "Security handshake", color: "hsl(var(--chart-tls))" },
+  { key: "avgTtfbMs", label: "Server response", color: "hsl(var(--chart-ttfb))" },
   { key: "avgDownloadMs", label: "Download", color: "hsl(var(--chart-download))" },
 ] as const;
 

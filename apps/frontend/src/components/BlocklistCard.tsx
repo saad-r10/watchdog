@@ -32,7 +32,7 @@ export function BlocklistCard({ monitorId }: Props) {
 
   const label =
     status === "listed"
-      ? `${listed.length} blocklist${listed.length === 1 ? "" : "s"}`
+      ? `Listed on ${listed.length} spam/malware list${listed.length === 1 ? "" : "s"}`
       : status === "clean"
         ? "Healthy"
         : status === "error"
@@ -62,7 +62,7 @@ export function BlocklistCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data || !findings ? (
-        <p className="text-sm text-muted-foreground">Blocklist check runs daily - check back soon.</p>
+        <p className="text-sm text-muted-foreground">Reputation check runs daily - check back soon.</p>
       ) : (
         <div className="space-y-2">
           {findings.sources.map((s) => (

@@ -628,7 +628,7 @@ export default function MonitorsPage() {
             </svg>
             <div>
               <p className={`text-xs font-semibold ${monitoringType === "agent" ? "text-primary" : "text-foreground"}`}>Agent</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Your machine checks it (localhost, internal)</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Your own server checks it — good for internal or local services</p>
             </div>
           </button>
 
@@ -648,8 +648,8 @@ export default function MonitorsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <div>
-              <p className={`text-xs font-semibold ${monitoringType === "synthetic" ? "text-primary" : "text-foreground"}`}>Synthetic Transaction</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Run a scripted browser flow (login, checkout, etc.)</p>
+              <p className={`text-xs font-semibold ${monitoringType === "synthetic" ? "text-primary" : "text-foreground"}`}>Automated User Test</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Simulate a real user flow (login, checkout, form submit, etc.)</p>
             </div>
           </button>
         </div>

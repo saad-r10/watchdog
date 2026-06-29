@@ -34,10 +34,14 @@ function timeAgo(iso: string): string {
 
 const INCIDENT_LABELS: Record<string, string> = {
   downtime: "Downtime",
-  ssl_expiry: "SSL expiry",
-  header_missing: "Missing headers",
-  synthetic_failure: "Transaction failure",
-  performance_degraded: "Performance degraded",
+  ssl_expiry: "Certificate expiring",
+  header_missing: "Missing security headers",
+  unexpected_cert: "New certificate detected",
+  domain_blocklisted: "Domain flagged as malicious",
+  content_changed: "Page content changed",
+  synthetic_failure: "Automated test failed",
+  performance_degraded: "Unusually slow response",
+  lighthouse_budget_exceeded: "Quality scores dropped",
 };
 
 function IncidentRow({ incident }: { incident: DashboardIncident }) {

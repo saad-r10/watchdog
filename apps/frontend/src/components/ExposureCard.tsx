@@ -41,7 +41,7 @@ export function ExposureCard({ monitorId }: Props) {
           <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 10-8 0v2" />
           </svg>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Exposed Paths</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sensitive Files Exposed</h3>
         </div>
         {data && (
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge}`}>
@@ -57,7 +57,7 @@ export function ExposureCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data || !findings ? (
-        <p className="text-sm text-muted-foreground">Exposure check runs every 6 hours - check back soon.</p>
+        <p className="text-sm text-muted-foreground">Sensitive file check runs every 6 hours - check back soon.</p>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between py-1">
@@ -86,7 +86,7 @@ export function ExposureCard({ monitorId }: Props) {
 
       {exposedPaths.length > 0 && (
         <p className="text-xs text-down/80 mt-4 leading-relaxed">
-          {exposedPaths.length} sensitive path{exposedPaths.length === 1 ? "" : "s"} publicly accessible - review and restrict access.
+          {exposedPaths.length} sensitive file{exposedPaths.length === 1 ? "" : "s"} publicly accessible - these should not be reachable by visitors.
         </p>
       )}
 

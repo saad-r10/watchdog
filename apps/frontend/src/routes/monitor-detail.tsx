@@ -26,13 +26,15 @@ function formatDuration(start: string, end?: string | null) {
 }
 
 const INCIDENT_LABELS: Record<string, { ongoing: string; resolved: string }> = {
-  downtime: { ongoing: "Ongoing downtime", resolved: "Downtime" },
-  ssl_expiry: { ongoing: "SSL certificate expiring", resolved: "SSL certificate expiry" },
-  header_missing: { ongoing: "Missing security header", resolved: "Missing security header" },
-  unexpected_cert: { ongoing: "New certificate detected", resolved: "New certificate detected" },
-  content_changed: { ongoing: "Content change detected", resolved: "Content change detected" },
-  synthetic_failure: { ongoing: "Transaction failing", resolved: "Transaction failure" },
-  performance_degraded: { ongoing: "Performance degraded", resolved: "Performance degradation" },
+  downtime: { ongoing: "Site is down", resolved: "Downtime" },
+  ssl_expiry: { ongoing: "Security certificate expiring soon", resolved: "Security certificate expired" },
+  header_missing: { ongoing: "Missing security settings", resolved: "Missing security settings" },
+  unexpected_cert: { ongoing: "Unrecognized certificate detected", resolved: "Unrecognized certificate detected" },
+  content_changed: { ongoing: "Page content changed unexpectedly", resolved: "Page content changed unexpectedly" },
+  synthetic_failure: { ongoing: "Automated test failing", resolved: "Automated test failed" },
+  performance_degraded: { ongoing: "Unusually slow response times", resolved: "Unusually slow response times" },
+  lighthouse_budget_exceeded: { ongoing: "Quality scores below target", resolved: "Quality scores below target" },
+  domain_blocklisted: { ongoing: "Domain flagged as malicious", resolved: "Domain flagged as malicious" },
 };
 
 const RANGES: { label: string; value: ResponseTimeRange }[] = [

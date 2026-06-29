@@ -7,12 +7,12 @@ interface Props {
 }
 
 const HEADER_LABELS: Record<string, string> = {
-  "x-frame-options": "X-Frame-Options",
-  "content-security-policy": "CSP",
-  "strict-transport-security": "HSTS",
-  "x-content-type-options": "X-Content-Type-Options",
-  "referrer-policy": "Referrer-Policy",
-  "permissions-policy": "Permissions-Policy",
+  "x-frame-options": "Clickjacking Protection",
+  "content-security-policy": "Content Security Policy",
+  "strict-transport-security": "Force HTTPS",
+  "x-content-type-options": "File Type Protection",
+  "referrer-policy": "Referrer Policy",
+  "permissions-policy": "Browser Permissions Policy",
 };
 
 export function HeadersCard({ monitorId }: Props) {
@@ -84,7 +84,7 @@ export function HeadersCard({ monitorId }: Props) {
 
       {missing.length > 0 && (
         <p className="text-xs text-down/80 mt-4 leading-relaxed">
-          {missing.length} missing header{missing.length > 1 ? "s" : ""} - may be vulnerable to clickjacking or XSS.
+          {missing.length} missing security setting{missing.length > 1 ? "s" : ""} - your site may be vulnerable to common web attacks.
         </p>
       )}
 
@@ -114,8 +114,7 @@ export function HeadersCard({ monitorId }: Props) {
           )}
           {cookieIssues.length > 0 && (
             <p className="text-xs text-down/80 leading-relaxed">
-              {cookieIssues.length} cookie{cookieIssues.length > 1 ? "s" : ""} missing security attributes - may be
-              vulnerable to theft or CSRF.
+              {cookieIssues.length} cookie{cookieIssues.length > 1 ? "s" : ""} missing security attributes - may be vulnerable to theft or cross-site request forgery.
             </p>
           )}
         </div>
