@@ -46,7 +46,7 @@ export function DnsCard({ monitorId }: Props) {
           <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0zM3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18" />
           </svg>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">DNS Hygiene</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Security</h3>
         </div>
         {data && (
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge}`}>
@@ -62,11 +62,11 @@ export function DnsCard({ monitorId }: Props) {
           ))}
         </div>
       ) : !data || !findings ? (
-        <p className="text-sm text-muted-foreground">DNS check runs every 6 hours - check back soon.</p>
+        <p className="text-sm text-muted-foreground">Email security check runs every 6 hours - check back soon.</p>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-mono text-foreground">SPF</span>
+            <span className="text-xs font-mono text-foreground">SPF (sender allowlist)</span>
             {findings.spf.present ? (
               <span className="text-xs text-up font-semibold">✓</span>
             ) : (
@@ -74,7 +74,7 @@ export function DnsCard({ monitorId }: Props) {
             )}
           </div>
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-mono text-foreground">DMARC</span>
+            <span className="text-xs font-mono text-foreground">DMARC (email policy)</span>
             {findings.dmarc.present && !findings.dmarc.issue ? (
               <span className="text-xs text-up font-semibold">✓</span>
             ) : findings.dmarc.present ? (
@@ -84,7 +84,7 @@ export function DnsCard({ monitorId }: Props) {
             )}
           </div>
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-mono text-foreground">DKIM</span>
+            <span className="text-xs font-mono text-foreground">DKIM (email signature)</span>
             {findings.dkim.present ? (
               <span className="text-xs text-up font-semibold">✓ ({findings.dkim.selectors.join(", ")})</span>
             ) : (
@@ -92,11 +92,11 @@ export function DnsCard({ monitorId }: Props) {
             )}
           </div>
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs font-mono text-foreground">CNAME</span>
+            <span className="text-xs font-mono text-foreground">Domain alias (CNAME)</span>
             {!findings.danglingCname.present ? (
               <span className="text-xs text-muted-foreground/60">none</span>
             ) : findings.danglingCname.dangling ? (
-              <span className="text-xs text-down font-medium">dangling</span>
+              <span className="text-xs text-down font-medium">broken — hijack risk</span>
             ) : (
               <span className="text-xs text-up font-semibold">✓</span>
             )}

@@ -28,9 +28,15 @@ function timeAgo(iso: string): string {
 }
 
 const INCIDENT_TYPE_LABEL: Record<string, string> = {
-  downtime: "Downtime detected",
-  ssl_expiry: "SSL expiry warning",
-  header_missing: "Missing security headers",
+  downtime: "Site is down",
+  ssl_expiry: "Security certificate expiring soon",
+  header_missing: "Missing security settings",
+  unexpected_cert: "Unrecognized certificate detected",
+  domain_blocklisted: "Domain flagged as malicious",
+  content_changed: "Page content changed unexpectedly",
+  synthetic_failure: "Automated test failed",
+  performance_degraded: "Unusually slow response times",
+  lighthouse_budget_exceeded: "Quality scores dropped below target",
 };
 
 function NotificationItem({ n }: { n: AppNotification }) {

@@ -9,19 +9,19 @@ const faqs = [
   },
   {
     q: "Can it watch services behind my firewall?",
-    a: "Yes. Run the lightweight agent on your own infrastructure and it pushes check results to Watchdog - internal services never need to be exposed.",
+    a: "Yes. Run the lightweight agent on your own server and it reports results to Watchdog - your internal services never need to be publicly accessible.",
   },
   {
     q: "How do alerts work?",
-    a: "Email and webhook, fired the moment an incident opens. Cooldowns guarantee one alert per monitor per incident, so a flapping service never spams you.",
+    a: "Email and webhook notifications fire the moment an incident opens. You get one alert per incident, so an unstable service that keeps flipping up and down won't flood your inbox.",
   },
   {
     q: "What about SSL certificates?",
-    a: "Every certificate is checked hourly, and you're warned 14 days before one expires - long before your users see a browser warning.",
+    a: "Every security certificate is checked hourly, and you're warned 14 days before one expires - long before your visitors see a browser warning.",
   },
   {
-    q: "Which security headers are checked?",
-    a: "X-Frame-Options, Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy - audited every six hours.",
+    q: "Which security settings are checked?",
+    a: "Six key browser security settings are audited every six hours: clickjacking protection, content security policy, HTTPS enforcement, file type protection, referrer policy, and browser permissions policy.",
   },
 ];
 

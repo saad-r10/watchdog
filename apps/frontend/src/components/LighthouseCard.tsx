@@ -58,7 +58,7 @@ export function LighthouseCard({ monitorId }: Props) {
         ? "bg-down/10 text-down border-down/20"
         : "bg-up/10 text-up border-up/20";
 
-  const label = !enabled ? "Disabled" : latest && !latest.success ? "Audit Failed" : overBudget ? "Budget Exceeded" : "Passing";
+  const label = !enabled ? "Disabled" : latest && !latest.success ? "Check failed" : overBudget ? "Scores below target" : "Passing";
 
   return (
     <div className="bg-card rounded-xl border border-border p-5">
@@ -67,7 +67,7 @@ export function LighthouseCard({ monitorId }: Props) {
           <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
           </svg>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lighthouse</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Website Quality</h3>
         </div>
         {!isLoading && (
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badge}`}>
@@ -89,7 +89,7 @@ export function LighthouseCard({ monitorId }: Props) {
               className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${enabled ? "bg-primary" : "bg-muted"}`}>
               <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? "translate-x-4" : "translate-x-0"}`} />
             </div>
-            <span className="text-sm text-foreground">Run daily Lighthouse audit</span>
+            <span className="text-sm text-foreground">Run daily website quality check (Google Lighthouse)</span>
           </label>
 
           {enabled && (
