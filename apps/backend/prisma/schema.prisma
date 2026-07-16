@@ -8,11 +8,16 @@ datasource db {
 }
 
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
+  id               String    @id @default(uuid())
+  email            String    @unique
   password         String
   name             String
-  emailVerified    Boolean  @default(false)
+  role             UserRole  @default(owner)
+  emailVerified    Boolean   @default(false)
+  mfaEnabled       Boolean   @default(false)
+  mfaSecret        String?
+  loginAttempts    Int       @default(0)
+  lockedUntil      DateTime?
   alertEmail       String?
   alertDowntime    Boolean  @default(true)
   alertSslExpiry   Boolean  @default(true)
@@ -262,4 +267,10 @@ enum IncidentType {
 enum MonitorType {
   http
   synthetic
+}
+
+enum UserRole {
+  owner
+  admin
+  viewer
 }

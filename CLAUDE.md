@@ -271,6 +271,33 @@ Workers create `Incident` records on state changes (up→down, down→up) and tr
 
 ---
 
+## Authentication & Authorization
+
+### MFA (TOTP)
+
+Login flow when MFA is enabled: `POST /api/auth/login` returns `{ requiresMfa: true, mfaToken }` (short-lived 5-min JWT, purpose `"mfa"`). Client calls `POST /api/auth/mfa-verify` with `{ mfaToken, code }` and receives the full `{ token, user }` auth response.
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `POST /api/auth/mfa-verify` | None (uses `mfaToken`) | Complete MFA login with TOTP code |
+| `POST /api/users/me/mfa/setup` | JWT | Generate TOTP secret + QR code (does not enable MFA yet) |
+| `POST /api/users/me/mfa/enable` | JWT | Enable MFA after verifying a TOTP code |
+| `DELETE /api/users/me/mfa` | JWT | Disable MFA (body: `{ code }`) |
+
+### Account Lockout
+
+After 5 consecutive failed login attempts, the account is locked with exponential backoff (`2^(attempts−5)` minutes, max 24 h). HTTP 423 with `{ error, retryAfter }` in seconds. Lockout resets on successful login.
+
+### Password Policy
+
+`POST /api/auth/register` and `POST /api/auth/reset-password` check the password against the HaveIBeenPwned k-anonymity API (SHA-1 prefix lookup). Breached passwords are rejected with 422. Set `SKIP_HIBP_CHECK=true` in test environments.
+
+### RBAC
+
+`UserRole` enum (`owner`, `admin`, `viewer`, default `owner`). Destructive routes (POST/PATCH/DELETE on monitors, agents, status pages, maintenance windows) require at minimum `admin` via `requireRole("admin")` middleware. Role is included in the JWT payload.
+
+---
+
 ## Agent System
 
 Agents run on user infrastructure and push check results to Watchdog via `POST /api/agents/checkin` using an `X-Agent-Key` header.
@@ -340,7 +367,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 
 | Model | Purpose |
 |-------|---------|
-| `User` | Registered user; alert channel settings include `webhookUrl`, `slackWebhookUrl`, `discordWebhookUrl`, `telegramBotToken`, `telegramChatId`; `alertWebPush` enables browser Web Push (VAPID) delivery |
+| `User` | Registered user; `role` (`owner`/`admin`/`viewer`, default `owner`); `mfaEnabled` + `mfaSecret` (TOTP); `loginAttempts` + `lockedUntil` (account lockout); alert channel settings include `webhookUrl`, `slackWebhookUrl`, `discordWebhookUrl`, `telegramBotToken`, `telegramChatId`; `alertWebPush` enables browser Web Push (VAPID) delivery |
 | `PushSubscription` | One row per browser/device push subscription for a User — stores the W3C Push API `endpoint`, `p256dh`, and `auth` keys; cleaned up automatically on 410 Gone responses from the push service |
 | `Agent` | API-key-authenticated agent that reports check results from user infrastructure; optionally tagged with a free-text `region` label |
 | `Monitor` | A URL to watch (belongs to User); `regionDownThreshold` (default 1) sets how many assigned agents/regions must report "down" to open a downtime incident |
@@ -399,9 +426,10 @@ See `.env.example` at the root. Critical vars:
 | `VAPID_PRIVATE_KEY` | VAPID private key (keep secret) |
 | `VAPID_SUBJECT` | Contact URI for VAPID (`mailto:…` or `https://…`) |
 | `RATE_LIMIT_AUTH_WINDOW_MS` | Window (ms) for auth rate limiter — default `900000` (15 min) |
-| `RATE_LIMIT_AUTH_MAX` | Max requests per window on `/api/auth/*` — default `20` |
+| `RATE_LIMIT_AUTH_MAX` | Max requests per window on `/api/auth/*` — default `20` (also controls per-login limiter; set high in tests) |
 | `RATE_LIMIT_API_WINDOW_MS` | Window (ms) for general API rate limiter — default `60000` (1 min) |
 | `RATE_LIMIT_API_MAX` | Max requests per window on `/api/*` — default `120` |
+| `SKIP_HIBP_CHECK` | Set to any truthy value to skip HaveIBeenPwned password-breach check at register/reset-password — for test environments only |
 
 ---
 

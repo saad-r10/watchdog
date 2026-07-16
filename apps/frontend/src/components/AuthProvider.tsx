@@ -17,7 +17,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const { token, user } = await api.auth.login({ email, password });
+    const result = await api.auth.login({ email, password });
+    if ("requiresMfa" in result) {
+      return { requiresMfa: true as const, mfaToken: result.mfaToken };
+    }
+    tokenStore.set(result.token);
+    setUser(result.user);
+  }, []);
+
+  const mfaVerify = useCallback(async (mfaToken: string, code: string) => {
+    const { token, user } = await api.auth.mfaVerify({ mfaToken, code });
     tokenStore.set(token);
     setUser(user);
   }, []);
@@ -34,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, mfaVerify, register, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   );

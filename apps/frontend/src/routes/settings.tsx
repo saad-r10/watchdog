@@ -1,14 +1,71 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
+import { ShieldCheck, ShieldOff } from "lucide-react";
 import { api } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 
 // ─── Settings page ────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const qc = useQueryClient();
+  const { user, setUser } = useAuth();
   const { data, isLoading } = useQuery({ queryKey: ["settings"], queryFn: api.settings.get });
+
+  // MFA state machine: idle → setup (show QR) → enable (verify code) | disable
+  const [mfaState, setMfaState] = useState<"idle" | "setup" | "disable">("idle");
+  const [mfaSetup, setMfaSetup] = useState<{ secret: string; qrCode: string } | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaError, setMfaError] = useState("");
+  const [mfaLoading, setMfaLoading] = useState(false);
+
+  async function handleMfaSetup() {
+    setMfaLoading(true);
+    setMfaError("");
+    try {
+      const data = await api.auth.mfaSetup();
+      setMfaSetup({ secret: data.secret, qrCode: data.qrCode });
+      setMfaState("setup");
+    } catch (err: any) {
+      setMfaError(err?.response?.data?.error ?? "Failed to start MFA setup.");
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  async function handleMfaEnable() {
+    setMfaLoading(true);
+    setMfaError("");
+    try {
+      await api.auth.mfaEnable(mfaCode);
+      setUser(user ? { ...user, mfaEnabled: true } : user);
+      setMfaState("idle");
+      setMfaSetup(null);
+      setMfaCode("");
+    } catch {
+      setMfaError("Invalid code. Please try again.");
+      setMfaCode("");
+    } finally {
+      setMfaLoading(false);
+    }
+  }
+
+  async function handleMfaDisable() {
+    setMfaLoading(true);
+    setMfaError("");
+    try {
+      await api.auth.mfaDisable(mfaCode);
+      setUser(user ? { ...user, mfaEnabled: false } : user);
+      setMfaState("idle");
+      setMfaCode("");
+    } catch {
+      setMfaError("Invalid code. Please try again.");
+      setMfaCode("");
+    } finally {
+      setMfaLoading(false);
+    }
+  }
 
   const [alertEmail, setAlertEmail] = useState("");
   const [alertDowntime, setAlertDowntime] = useState(true);
@@ -98,6 +155,108 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">Configure your alert preferences</p>
+      </div>
+
+      {/* MFA */}
+      <div className="bg-card rounded-xl border border-border p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {user?.mfaEnabled ? (
+              <ShieldCheck className="w-4 h-4 text-up" />
+            ) : (
+              <ShieldOff className="w-4 h-4 text-muted-foreground" />
+            )}
+            <p className="text-sm font-semibold text-foreground">Two-factor authentication</p>
+          </div>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${user?.mfaEnabled ? "bg-up/10 text-up" : "bg-muted text-muted-foreground"}`}>
+            {user?.mfaEnabled ? "Enabled" : "Disabled"}
+          </span>
+        </div>
+
+        {mfaState === "idle" && !user?.mfaEnabled && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Use an authenticator app (like Google Authenticator or 1Password) to require a time-based code at login.
+            </p>
+            <button type="button" onClick={handleMfaSetup} disabled={mfaLoading}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              {mfaLoading ? "Loading…" : "Set up authenticator"}
+            </button>
+            {mfaError && <p className="text-xs text-down">{mfaError}</p>}
+          </div>
+        )}
+
+        {mfaState === "setup" && mfaSetup && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              Scan this QR code with your authenticator app, then enter the 6-digit code to confirm.
+            </p>
+            <img src={mfaSetup.qrCode} alt="MFA QR code" className="w-40 h-40 rounded-lg border border-border" />
+            <p className="text-xs text-muted-foreground font-mono break-all">
+              Manual key: <span className="text-foreground">{mfaSetup.secret}</span>
+            </p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                placeholder="000000"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                className="w-32 text-center bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring tracking-widest"
+              />
+              <button type="button" onClick={handleMfaEnable} disabled={mfaLoading || mfaCode.length !== 6}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                {mfaLoading ? "Verifying…" : "Enable"}
+              </button>
+              <button type="button" onClick={() => { setMfaState("idle"); setMfaCode(""); setMfaError(""); }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Cancel
+              </button>
+            </div>
+            {mfaError && <p className="text-xs text-down">{mfaError}</p>}
+          </div>
+        )}
+
+        {mfaState === "idle" && user?.mfaEnabled && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Your account is protected. To disable, enter your current authenticator code.
+            </p>
+            <button type="button" onClick={() => setMfaState("disable")}
+              className="bg-muted border border-border text-foreground hover:border-ring px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              Disable authenticator
+            </button>
+          </div>
+        )}
+
+        {mfaState === "disable" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">Enter your authenticator code to confirm.</p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                placeholder="000000"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                className="w-32 text-center bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring tracking-widest"
+              />
+              <button type="button" onClick={handleMfaDisable} disabled={mfaLoading || mfaCode.length !== 6}
+                className="bg-down/90 text-white hover:bg-down disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                {mfaLoading ? "Disabling…" : "Disable MFA"}
+              </button>
+              <button type="button" onClick={() => { setMfaState("idle"); setMfaCode(""); setMfaError(""); }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Cancel
+              </button>
+            </div>
+            {mfaError && <p className="text-xs text-down">{mfaError}</p>}
+          </div>
+        )}
       </div>
 
       {/* Alert settings */}

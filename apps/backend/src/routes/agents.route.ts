@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
+import { requireRole } from "../middleware/require-role";
 import { authenticateAgent } from "../middleware/agent-auth";
 import { agentService } from "../services/agent.service";
 import { AgentCheckResultSchema, CreateAgentSchema, UpdateAgentSchema } from "@watchdog/shared-types";
@@ -21,7 +22,7 @@ router.get("/", authenticate, async (req, res, next) => {
   }
 });
 
-router.post("/", authenticate, validate(CreateAgentSchema), async (req, res, next) => {
+router.post("/", authenticate, requireRole("admin"), validate(CreateAgentSchema), async (req, res, next) => {
   try {
     const { agent, key } = await agentService.create(req.user.id, req.body.name, req.body.region);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -32,7 +33,7 @@ router.post("/", authenticate, validate(CreateAgentSchema), async (req, res, nex
   }
 });
 
-router.patch("/:id", authenticate, validate(UpdateAgentSchema), async (req, res, next) => {
+router.patch("/:id", authenticate, requireRole("admin"), validate(UpdateAgentSchema), async (req, res, next) => {
   try {
     const agent = await agentService.update(req.params.id, req.user.id, req.body);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -43,7 +44,7 @@ router.patch("/:id", authenticate, validate(UpdateAgentSchema), async (req, res,
   }
 });
 
-router.delete("/:id", authenticate, async (req, res, next) => {
+router.delete("/:id", authenticate, requireRole("admin"), async (req, res, next) => {
   try {
     await agentService.delete(req.params.id, req.user.id);
     res.status(204).end();

@@ -24,12 +24,25 @@ interface AuthResponse {
   user: AuthUser;
 }
 
+export interface MfaChallenge {
+  requiresMfa: true;
+  mfaToken: string;
+}
+
+export interface MfaSetupData {
+  secret: string;
+  otpUri: string;
+  qrCode: string;
+}
+
 export const api = {
   auth: {
     register: (data: { email: string; password: string; name: string }) =>
       http.post<AuthResponse>("/api/auth/register", data).then((r) => r.data),
     login: (data: { email: string; password: string }) =>
-      http.post<AuthResponse>("/api/auth/login", data).then((r) => r.data),
+      http.post<AuthResponse | MfaChallenge>("/api/auth/login", data).then((r) => r.data),
+    mfaVerify: (data: { mfaToken: string; code: string }) =>
+      http.post<AuthResponse>("/api/auth/mfa-verify", data).then((r) => r.data),
     forgotPassword: (email: string) =>
       http.post<{ ok: boolean }>("/api/auth/forgot-password", { email }).then((r) => r.data),
     resetPassword: (token: string, password: string) =>
@@ -40,6 +53,12 @@ export const api = {
       http.post<{ ok: boolean }>("/api/auth/resend-verification").then((r) => r.data),
     me: () =>
       http.get<{ success: boolean; data: AuthUser }>("/api/users/me").then((r) => r.data.data),
+    mfaSetup: () =>
+      http.post<{ success: boolean; data: MfaSetupData }>("/api/users/me/mfa/setup").then((r) => r.data.data),
+    mfaEnable: (code: string) =>
+      http.post<{ success: boolean }>("/api/users/me/mfa/enable", { code }).then((r) => r.data),
+    mfaDisable: (code: string) =>
+      http.delete<{ success: boolean }>("/api/users/me/mfa", { data: { code } }).then((r) => r.data),
   },
   monitors: {
     list: () =>
