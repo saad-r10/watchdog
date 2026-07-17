@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
+import { requireRole } from "../middleware/require-role";
 import { monitorService } from "../services/monitor.service";
 import { SnoozeContentChangeSchema, SyntheticStepsSchema } from "@watchdog/shared-types";
 
@@ -35,7 +36,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/", validate(createSchema), async (req, res, next) => {
+router.post("/", requireRole("admin"), validate(createSchema), async (req, res, next) => {
   try {
     const monitor = await monitorService.create(req.user.id, req.body);
     res.status(201).json({ success: true, data: monitor });
@@ -69,7 +70,7 @@ const updateSchema = z.object({
   syntheticSteps: SyntheticStepsSchema.optional(),
 });
 
-router.patch("/:id", validate(updateSchema), async (req, res, next) => {
+router.patch("/:id", requireRole("admin"), validate(updateSchema), async (req, res, next) => {
   try {
     const monitor = await monitorService.update(req.params.id, req.user.id, req.body);
     res.json({ success: true, data: monitor });
@@ -78,7 +79,7 @@ router.patch("/:id", validate(updateSchema), async (req, res, next) => {
   }
 });
 
-router.post("/:id/agents/:agentId", async (req, res, next) => {
+router.post("/:id/agents/:agentId", requireRole("admin"), async (req, res, next) => {
   try {
     const monitor = await monitorService.assignAgent(req.params.id, req.user.id, req.params.agentId);
     res.json({ success: true, data: monitor });
@@ -87,7 +88,7 @@ router.post("/:id/agents/:agentId", async (req, res, next) => {
   }
 });
 
-router.delete("/:id/agents/:agentId", async (req, res, next) => {
+router.delete("/:id/agents/:agentId", requireRole("admin"), async (req, res, next) => {
   try {
     const monitor = await monitorService.unassignAgent(req.params.id, req.user.id, req.params.agentId);
     res.json({ success: true, data: monitor });
@@ -114,7 +115,7 @@ router.post("/:id/snooze-content-change", validate(SnoozeContentChangeSchema), a
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireRole("admin"), async (req, res, next) => {
   try {
     await monitorService.delete(req.params.id, req.user.id);
     res.status(204).end();

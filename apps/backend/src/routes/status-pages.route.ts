@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
+import { requireRole } from "../middleware/require-role";
 import { statusPageService } from "../services/status-page.service";
 import { CreateStatusPageSchema, UpdateStatusPageMonitorsSchema } from "@watchdog/shared-types";
 
@@ -16,7 +17,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/", validate(CreateStatusPageSchema), async (req, res, next) => {
+router.post("/", requireRole("admin"), validate(CreateStatusPageSchema), async (req, res, next) => {
   try {
     const page = await statusPageService.create(req.user.id, req.body.slug, req.body.title);
     res.status(201).json({ success: true, data: page });
@@ -25,7 +26,7 @@ router.post("/", validate(CreateStatusPageSchema), async (req, res, next) => {
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireRole("admin"), async (req, res, next) => {
   try {
     await statusPageService.delete(req.params.id, req.user.id);
     res.status(204).end();
@@ -34,7 +35,7 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
-router.put("/:id/monitors", validate(UpdateStatusPageMonitorsSchema), async (req, res, next) => {
+router.put("/:id/monitors", requireRole("admin"), validate(UpdateStatusPageMonitorsSchema), async (req, res, next) => {
   try {
     await statusPageService.setMonitors(req.params.id, req.user.id, req.body.monitorIds);
     res.json({ success: true });

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
+import { requireRole } from "../middleware/require-role";
 import { monitorService } from "../services/monitor.service";
 import { maintenanceRepository } from "../repositories/maintenance.repository";
 
@@ -27,7 +28,7 @@ router.get("/", async (req: any, res, next) => {
   }
 });
 
-router.post("/", validate(createSchema), async (req: any, res, next) => {
+router.post("/", requireRole("admin"), validate(createSchema), async (req: any, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const window = await maintenanceRepository.create({
@@ -42,7 +43,7 @@ router.post("/", validate(createSchema), async (req: any, res, next) => {
   }
 });
 
-router.delete("/:windowId", async (req: any, res, next) => {
+router.delete("/:windowId", requireRole("admin"), async (req: any, res, next) => {
   try {
     await monitorService.getById(req.params.id, req.user.id);
     const window = await maintenanceRepository.findById(req.params.windowId);
