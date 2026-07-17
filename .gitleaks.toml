@@ -1,0 +1,16 @@
+title = "Watchdog gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules.allowlist]]
+description = "CI test JWT secret"
+regexes = ['''ci-test-secret-do-not-use-in-production''']
+
+[[rules.allowlist]]
+description = "Placeholder values in .env.example"
+paths = ['''\.env\.example$''']
+
+[[rules.allowlist]]
+description = "Docs and runbooks"
+paths = ['''docs/.*\.md$''']

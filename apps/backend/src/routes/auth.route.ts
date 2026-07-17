@@ -1,7 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import jwt from "jsonwebtoken";
 import https from "https";
 import { authenticator } from "otplib";
 import { rateLimit } from "express-rate-limit";
@@ -9,6 +8,7 @@ import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { prisma } from "../db";
 import { sendEmail, passwordResetHtml, verifyEmailHtml } from "../services/email.service";
+import { signToken, verifyToken } from "../lib/jwt";
 
 const router = Router();
 
@@ -88,9 +88,8 @@ router.post("/register", registerLimiter, validate(registerSchema), async (req, 
     if (existing) return res.status(409).json({ error: "Email already registered" });
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({ data: { email, password: hash, name } });
-    const token = jwt.sign(
+    const token = signToken(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
     sendVerificationEmail(user.id, user.email, user.name).catch(console.error);
@@ -139,17 +138,15 @@ router.post("/login", loginLimiter, validate(loginSchema), async (req, res, next
 
     // MFA challenge — return a short-lived token instead of the full auth token
     if (user.mfaEnabled) {
-      const mfaToken = jwt.sign(
+      const mfaToken = signToken(
         { id: user.id, email: user.email, purpose: "mfa" },
-        process.env.JWT_SECRET!,
         { expiresIn: "5m" }
       );
       return res.json({ requiresMfa: true, mfaToken });
     }
 
-    const token = jwt.sign(
+    const token = signToken(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
@@ -169,7 +166,7 @@ router.post("/mfa-verify", validate(mfaVerifySchema), async (req, res, next) => 
 
     let payload: { id: string; email: string; purpose: string };
     try {
-      payload = jwt.verify(mfaToken, process.env.JWT_SECRET!) as any;
+      payload = verifyToken<{ id: string; email: string; purpose: string }>(mfaToken);
     } catch {
       return res.status(401).json({ error: "Invalid or expired MFA session. Please log in again." });
     }
@@ -188,9 +185,8 @@ router.post("/mfa-verify", validate(mfaVerifySchema), async (req, res, next) => 
       return res.status(401).json({ error: "Invalid verification code." });
     }
 
-    const token = jwt.sign(
+    const token = signToken(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
