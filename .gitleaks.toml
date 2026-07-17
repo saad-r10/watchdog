@@ -1,0 +1,14 @@
+title = "Watchdog gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known safe values — CI fixtures, example files, and documentation"
+regexes = [
+  '''ci-test-secret-do-not-use-in-production''',
+]
+paths = [
+  '''\.env\.example$''',
+  '''docs/.*\.md$''',
+]
