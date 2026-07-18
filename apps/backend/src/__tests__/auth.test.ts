@@ -282,7 +282,6 @@ function extractRefreshCookie(res: request.Response): string | null {
 }
 
 describe("Session management", () => {
-  let accessToken: string;
   let refreshCookie: string;
 
   beforeAll(async () => {
@@ -295,13 +294,12 @@ describe("Session management", () => {
         name: "Session Tester",
       },
     });
-    // Log in to get initial access + refresh tokens
+    // Log in to get initial refresh token cookie
     const loginRes = await request(app).post("/api/auth/login").send({
       email: SESSION_EMAIL,
       password: "Str0ngP@ssword!",
     });
     expect(loginRes.status).toBe(200);
-    accessToken = loginRes.body.token;
     refreshCookie = extractRefreshCookie(loginRes)!;
     expect(refreshCookie).toBeTruthy();
   });
@@ -325,8 +323,6 @@ describe("Session management", () => {
     expect(newCookie).toBeTruthy();
     // Refresh cookie must rotate to a new value on each use
     expect(newCookie).not.toBe(refreshCookie);
-    // Update for subsequent tests
-    accessToken = res.body.token;
     refreshCookie = newCookie!;
   });
 
