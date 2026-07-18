@@ -252,7 +252,7 @@ watchdog/
 
 ## Worker System (node-cron)
 
-Ten recurring workers defined in `apps/backend/src/workers/`:
+Eleven recurring workers defined in `apps/backend/src/workers/`:
 
 | Worker | Schedule | Purpose |
 |--------|----------|---------|
@@ -266,6 +266,7 @@ Ten recurring workers defined in `apps/backend/src/workers/`:
 | `syntheticWorker` | Every 5 minutes | For `Monitor.type === "synthetic"`, runs the monitor's `syntheticSteps` (navigate/fill/click/assert_text/assert_status) headlessly via `lib/synthetic-runner.ts` (Playwright Chromium). No-op unless `SYNTHETIC_MONITORING_ENABLED=true`; per-monitor interval is clamped to a minimum of 5 minutes. Requires `npx playwright install chromium` to be run once for the headless browser binary |
 | `anomalyDetectionWorker` | Every 15 minutes | Response-time anomaly detection via `lib/anomaly-utils.ts` — for each monitor, computes a rolling mean/stddev (z-score, `ANOMALY_SIGMA = 3`) over the trailing 7 days of `Check.responseTime` (min `MIN_SAMPLE_SIZE = 20` samples) and opens/resolves a `performance_degraded` incident via `monitorStatusService.evaluatePerformanceStatus` when the latest check exceeds the threshold |
 | `lighthouseWorker` | Daily | For monitors with `Monitor.lighthouseEnabled`, runs a Lighthouse audit (`lib/lighthouse-runner.ts`, Lighthouse CLI via `execFile` against Playwright's Chromium) scoring performance/accessibility/best-practices/SEO (0-100 each), stores the result on `Check.lighthouseResult`, and opens/resolves a `lighthouse_budget_exceeded` incident via `monitorStatusService.evaluateLighthouseStatus` when any score drops below its per-monitor budget (`Monitor.lighthouse*Budget`, default 80). No-op unless `LIGHTHOUSE_MONITORING_ENABLED=true`; monitors are checked in batches of 2 (`CONCURRENCY`) since audits are resource-intensive |
+| `refreshTokenCleanupWorker` | Daily (03:00) | Deletes expired `RefreshToken` rows to prevent unbounded table growth |
 
 Workers create `Incident` records on state changes (up→down, down→up) and trigger alert sends via `AlertService`. `uptimeWorker` and `agentService.recordCheckin` both delegate downtime incident open/resolve logic to the shared `monitorStatusService.evaluateUptimeStatus` — see "Multi-Region Agents" below. `ctWorker` creates point-in-time `unexpected_cert` incidents (already resolved) rather than open/ongoing ones. `dnsWorker` records findings on `Check.dnsFindings` only and does not create incidents. `exposureWorker` records findings on `Check.exposureFindings` only and does not create incidents. `blocklistWorker` opens a `domain_blocklisted` incident when a monitor's hostname becomes listed and resolves it once the hostname is clean again. `uptimeWorker` creates a point-in-time, already-resolved `content_changed` incident when `Check.contentHash` differs from the previous check's hash (opt-in via `Monitor.contentChangeEnabled`, off by default) — unless `Monitor.contentChangeSnoozeUntil` is in the future, in which case the new hash is still recorded but no incident/alert is raised. `POST /api/monitors/:id/snooze-content-change` (body: `{ hours: 1-168 }`) sets the snooze window, and `GET /api/monitors/:id/content-change` returns the current enabled/snoozed state plus the last hash and last-detected-change time. `syntheticWorker` opens/resolves a `synthetic_failure` incident via `monitorStatusService.evaluateSyntheticStatus` based on `SyntheticCheckResult.success`, storing the full step-by-step result on `Check.syntheticResult`. `anomalyDetectionWorker` opens/resolves a `performance_degraded` incident via `monitorStatusService.evaluatePerformanceStatus`, gated on `User.alertPerformanceDegraded`. `lighthouseWorker` opens/resolves a `lighthouse_budget_exceeded` incident via `monitorStatusService.evaluateLighthouseStatus`, gated on `User.alertLighthouseBudget`.
 
@@ -273,9 +274,21 @@ Workers create `Incident` records on state changes (up→down, down→up) and tr
 
 ## Authentication & Authorization
 
+### Session Management (Refresh Tokens)
+
+Access tokens are short-lived (15 min, signed JWT). A long-lived refresh token (7 days, `crypto.randomBytes(40)`, SHA-256 hashed in DB) is issued as an `HttpOnly; Secure; SameSite=Strict` cookie on the `/api/auth` path on every successful login, register, or MFA-verify. The frontend axios client has a 401 response interceptor that transparently calls `/api/auth/refresh` and retries the original request; if the refresh also fails the user is redirected to `/login`. Refresh tokens rotate on every use (one-time use). Presenting a token that has already been rotated triggers **token-family revocation** (entire rotation chain is invalidated — replay-attack detection).
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `POST /api/auth/refresh` | `refresh_token` cookie | Exchange valid refresh token for new 15-min access token; rotates cookie |
+| `POST /api/auth/logout` | `refresh_token` cookie | Revoke the specific refresh token (server-side); clears cookie |
+| `POST /api/auth/logout-all` | JWT | Revoke all refresh tokens for the user (e.g. after password change) |
+
+Token model: `RefreshToken` (`tokenHash`, `family` UUID for rotation-chain tracking, `expiresAt`, `revokedAt`). Cleanup: `refreshTokenCleanupWorker` prunes expired rows daily.
+
 ### MFA (TOTP)
 
-Login flow when MFA is enabled: `POST /api/auth/login` returns `{ requiresMfa: true, mfaToken }` (short-lived 5-min JWT, purpose `"mfa"`). Client calls `POST /api/auth/mfa-verify` with `{ mfaToken, code }` and receives the full `{ token, user }` auth response.
+Login flow when MFA is enabled: `POST /api/auth/login` returns `{ requiresMfa: true, mfaToken }` (short-lived 5-min JWT, purpose `"mfa"`). Client calls `POST /api/auth/mfa-verify` with `{ mfaToken, code }` and receives the full `{ token, user }` auth response plus a refresh-token cookie.
 
 | Endpoint | Auth | Purpose |
 |----------|------|---------|
@@ -379,6 +392,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | `StatusPageMonitor` | Join table linking monitors to a StatusPage |
 | `MaintenanceWindow` | Scheduled downtime window for a Monitor — alerts suppressed, excluded from uptime % |
 | `MonitorCertificate` | Certificate Transparency baseline — one row per crt.sh cert seen for a Monitor's hostname, used to diff and detect unrecognized new certs |
+| `RefreshToken` | Server-side refresh token for session management — `tokenHash` (SHA-256 of the raw cookie value), `family` UUID (shared across a rotation chain for replay-attack detection), `expiresAt` (7 days), `revokedAt` |
 
 ---
 

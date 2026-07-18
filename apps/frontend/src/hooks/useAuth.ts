@@ -20,7 +20,7 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<MfaChallengeResult | void>;
   mfaVerify: (mfaToken: string, code: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
 }
 
