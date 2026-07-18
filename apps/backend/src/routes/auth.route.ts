@@ -9,6 +9,12 @@ import { validate } from "../middleware/validate";
 import { prisma } from "../db";
 import { sendEmail, passwordResetHtml, verifyEmailHtml } from "../services/email.service";
 import { signToken, verifyToken } from "../lib/jwt";
+import {
+  createRefreshToken,
+  rotateRefreshToken,
+  setCookieRefreshToken,
+  clearCookieRefreshToken,
+} from "../lib/refresh-token";
 
 const router = Router();
 
@@ -88,10 +94,9 @@ router.post("/register", registerLimiter, validate(registerSchema), async (req, 
     if (existing) return res.status(409).json({ error: "Email already registered" });
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({ data: { email, password: hash, name } });
-    const token = signToken(
-      { id: user.id, email: user.email, role: user.role },
-      { expiresIn: "7d" }
-    );
+    const token = signToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: "15m" });
+    const rawRefresh = await createRefreshToken(user.id);
+    setCookieRefreshToken(res, rawRefresh);
     sendVerificationEmail(user.id, user.email, user.name).catch(console.error);
     res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: false } });
   } catch (err) {
@@ -145,10 +150,9 @@ router.post("/login", loginLimiter, validate(loginSchema), async (req, res, next
       return res.json({ requiresMfa: true, mfaToken });
     }
 
-    const token = signToken(
-      { id: user.id, email: user.email, role: user.role },
-      { expiresIn: "7d" }
-    );
+    const token = signToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: "15m" });
+    const rawRefresh = await createRefreshToken(user.id);
+    setCookieRefreshToken(res, rawRefresh);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
   } catch (err) {
     next(err);
@@ -185,10 +189,9 @@ router.post("/mfa-verify", validate(mfaVerifySchema), async (req, res, next) => 
       return res.status(401).json({ error: "Invalid verification code." });
     }
 
-    const token = signToken(
-      { id: user.id, email: user.email, role: user.role },
-      { expiresIn: "7d" }
-    );
+    const token = signToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: "15m" });
+    const rawRefresh = await createRefreshToken(user.id);
+    setCookieRefreshToken(res, rawRefresh);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
   } catch (err) {
     next(err);
@@ -302,6 +305,51 @@ router.post("/resend-verification", authenticate, async (req, res, next) => {
     if (!user) return res.status(404).json({ error: "User not found." });
     if (user.emailVerified) return res.json({ ok: true });
     await sendVerificationEmail(user.id, user.email, user.name);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/refresh", async (req, res, next) => {
+  try {
+    const raw = req.cookies?.refresh_token as string | undefined;
+    if (!raw) return res.status(401).json({ error: "No refresh token" });
+
+    const { userId, newRaw } = await rotateRefreshToken(raw);
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, email: true, role: true } });
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const token = signToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: "15m" });
+    setCookieRefreshToken(res, newRaw);
+    res.json({ token });
+  } catch (err: unknown) {
+    const status = (err as { status?: number }).status;
+    if (status === 401) return res.status(401).json({ error: (err as Error).message });
+    next(err);
+  }
+});
+
+router.post("/logout", async (req, res) => {
+  const raw = req.cookies?.refresh_token as string | undefined;
+  if (raw) {
+    const tokenHash = crypto.createHash("sha256").update(raw).digest("hex");
+    await prisma.refreshToken.updateMany({
+      where: { tokenHash, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+  clearCookieRefreshToken(res);
+  res.json({ ok: true });
+});
+
+router.post("/logout-all", authenticate, async (req, res, next) => {
+  try {
+    await prisma.refreshToken.updateMany({
+      where: { userId: req.user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    clearCookieRefreshToken(res);
     res.json({ ok: true });
   } catch (err) {
     next(err);

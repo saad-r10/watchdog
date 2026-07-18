@@ -9,6 +9,7 @@ import { startBlocklistWorker } from "./workers/blocklist.worker";
 import { startSyntheticWorker } from "./workers/synthetic.worker";
 import { startAnomalyDetectionWorker } from "./workers/anomaly-detection.worker";
 import { startLighthouseWorker } from "./workers/lighthouse.worker";
+import { startRefreshTokenCleanupWorker } from "./workers/refresh-token-cleanup.worker";
 
 startUptimeWorker();
 startSslWorker();
@@ -20,5 +21,6 @@ startBlocklistWorker();
 startSyntheticWorker();
 startAnomalyDetectionWorker();
 startLighthouseWorker();
+startRefreshTokenCleanupWorker();
 
 console.log("All workers running");

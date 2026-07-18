@@ -4,6 +4,7 @@ import { tokenStore } from "../lib/auth";
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "",
+  withCredentials: true,
 });
 
 http.interceptors.request.use((config) => {
@@ -11,6 +12,50 @@ http.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+let isRefreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
+
+http.interceptors.response.use(
+  (r) => r,
+  async (error) => {
+    const original = error.config as typeof error.config & { _retry?: boolean };
+    const url: string = original?.url ?? "";
+    if (
+      error.response?.status !== 401 ||
+      original?._retry ||
+      url.includes("/auth/refresh") ||
+      url.includes("/auth/login")
+    ) {
+      return Promise.reject(error);
+    }
+    if (isRefreshing) {
+      return new Promise((resolve) => {
+        refreshQueue.push((token) => {
+          original.headers.Authorization = `Bearer ${token}`;
+          resolve(http(original));
+        });
+      });
+    }
+    original._retry = true;
+    isRefreshing = true;
+    try {
+      const { data } = await http.post<{ token: string }>("/api/auth/refresh");
+      const newToken = data.token;
+      tokenStore.set(newToken);
+      refreshQueue.forEach((cb) => cb(newToken));
+      refreshQueue = [];
+      original.headers.Authorization = `Bearer ${newToken}`;
+      return http(original);
+    } catch {
+      tokenStore.clear();
+      window.location.href = "/login";
+      return Promise.reject(error);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+);
 
 interface AuthUser {
   id: string;
@@ -51,6 +96,12 @@ export const api = {
       http.get<{ ok: boolean }>(`/api/auth/verify-email?token=${token}`).then((r) => r.data),
     resendVerification: () =>
       http.post<{ ok: boolean }>("/api/auth/resend-verification").then((r) => r.data),
+    refresh: () =>
+      http.post<{ token: string }>("/api/auth/refresh").then((r) => r.data.token),
+    logout: () =>
+      http.post<{ ok: boolean }>("/api/auth/logout").then((r) => r.data),
+    logoutAll: () =>
+      http.post<{ ok: boolean }>("/api/auth/logout-all").then((r) => r.data),
     me: () =>
       http.get<{ success: boolean; data: AuthUser }>("/api/users/me").then((r) => r.data.data),
     mfaSetup: () =>
