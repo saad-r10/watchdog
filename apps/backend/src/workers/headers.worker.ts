@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import axios from "axios";
+import { assertSsrfSafe } from "../lib/ssrf-guard";
 import { monitorRepository } from "../repositories/monitor.repository";
 import { analyseHeaders, analyseCookies, analyseMixedContent } from "../lib/monitor-utils";
 import { prisma } from "../db";
@@ -7,6 +8,7 @@ import type { Prisma } from "@prisma/client";
 
 async function checkHeaders(monitor: { id: string; url: string }) {
   try {
+    await assertSsrfSafe(monitor.url);
     const res = await axios.get(monitor.url, { timeout: 10_000, validateStatus: () => true });
     const isHttps = monitor.url.toLowerCase().startsWith("https://");
     const { present, missing } = analyseHeaders(res.headers as Record<string, string>);

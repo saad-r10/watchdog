@@ -2,12 +2,14 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { chromium } from "playwright";
 import type { LighthouseResult } from "@watchdog/shared-types";
+import { assertSsrfSafe } from "./ssrf-guard";
 
 const execFileAsync = promisify(execFile);
 const TIMEOUT_MS = 120_000;
 
 export async function runLighthouseCheck(url: string): Promise<LighthouseResult> {
   try {
+    await assertSsrfSafe(url);
     const { stdout } = await execFileAsync("npx", [
       "--no-install", "lighthouse", url,
       "--output=json", "--output-path=stdout", "--quiet",
