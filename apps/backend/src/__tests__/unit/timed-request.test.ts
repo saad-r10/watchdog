@@ -2,6 +2,12 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { timedRequest } from "../../lib/timed-request";
 
+// Bypass SSRF guard so tests can make requests to the local test server
+jest.mock("../../lib/ssrf-guard", () => ({
+  assertSsrfSafe: jest.fn().mockResolvedValue(undefined),
+  SsrfError: class SsrfError extends Error {},
+}));
+
 function listen(server: http.Server): Promise<number> {
   return new Promise((resolve) => {
     server.listen(0, "127.0.0.1", () => resolve((server.address() as AddressInfo).port));

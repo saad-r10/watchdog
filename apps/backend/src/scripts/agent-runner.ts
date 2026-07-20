@@ -211,6 +211,9 @@ async function runRemote(watchdogUrl: string, agentKey: string) {
 
 function loadConfig(configPath: string): AgentConfig {
   const resolved = path.resolve(configPath);
+  // configPath is a CLI argument supplied by the operator running this local agent script —
+  // not user input from the network. path.resolve() normalises traversal sequences.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   if (!fs.existsSync(resolved)) {
     console.error(`❌ Config file not found: ${resolved}`);
     console.error(`   Run with an agent key instead (no config file needed):`);
@@ -218,6 +221,7 @@ function loadConfig(configPath: string): AgentConfig {
     console.error(`   Or create a watchdog-agent.config.json - see watchdog-agent.config.example.json`);
     process.exit(1);
   }
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   return JSON.parse(fs.readFileSync(resolved, "utf-8"));
 }
 

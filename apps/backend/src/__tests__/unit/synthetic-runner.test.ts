@@ -6,6 +6,12 @@ jest.mock("playwright", () => ({
   chromium: { launch: jest.fn() },
 }));
 
+// Bypass SSRF guard so tests can exercise runner logic with arbitrary URLs
+jest.mock("../../lib/ssrf-guard", () => ({
+  assertSsrfSafe: jest.fn().mockResolvedValue(undefined),
+  SsrfError: class SsrfError extends Error {},
+}));
+
 const mockLaunch = chromium.launch as jest.Mock;
 
 function makePage() {

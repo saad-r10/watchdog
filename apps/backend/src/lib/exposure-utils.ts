@@ -1,4 +1,5 @@
 import axios from "axios";
+import { assertSsrfSafe } from "./ssrf-guard";
 
 const REQUEST_TIMEOUT = 8_000;
 
@@ -69,6 +70,8 @@ export async function checkExposedPaths(baseUrl: string): Promise<ExposedPathFin
 }
 
 export async function analyseExposure(baseUrl: string): Promise<ExposureAnalysisResult> {
+  await assertSsrfSafe(baseUrl);
+
   const [securityTxt, exposedPaths] = await Promise.all([
     checkSecurityTxt(baseUrl),
     checkExposedPaths(baseUrl),

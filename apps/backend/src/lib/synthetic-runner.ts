@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import type { SyntheticStep, SyntheticCheckResult, SyntheticStepResult } from "@watchdog/shared-types";
+import { assertSsrfSafe } from "./ssrf-guard";
 
 const DEFAULT_STEP_TIMEOUT_MS = 10_000;
 const DEFAULT_TOTAL_TIMEOUT_MS = 60_000;
@@ -40,6 +41,7 @@ export async function runSyntheticCheck(
       try {
         switch (step.action) {
           case "navigate":
+            await assertSsrfSafe(step.url);
             await page.goto(step.url, { timeout: stepTimeoutMs, waitUntil: "load" });
             break;
           case "fill":

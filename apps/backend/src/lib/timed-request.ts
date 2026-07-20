@@ -1,6 +1,7 @@
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
+import { assertSsrfSafe, SsrfError } from "./ssrf-guard";
 
 export interface PhaseTimings {
   /** DNS lookup duration. 0 when the host is an IP literal, null if the phase never ran. */
@@ -50,6 +51,15 @@ export async function timedRequest(
   url: string,
   { timeoutMs = 10_000, maxRedirects = 5, captureBody = false }: TimedRequestOptions = {}
 ): Promise<TimedResponse> {
+  try {
+    await assertSsrfSafe(url);
+  } catch (err) {
+    if (err instanceof SsrfError) {
+      return { ok: false, statusCode: null, timings: { dnsMs: null, tcpMs: null, tlsMs: null, ttfbMs: null, downloadMs: null, totalMs: 0, sizeBytes: null }, body: null };
+    }
+    throw err;
+  }
+
   const t0 = Date.now();
   const timings: PhaseTimings = {
     dnsMs: null,
