@@ -444,6 +444,16 @@ See `.env.example` at the root. Critical vars:
 | `RATE_LIMIT_API_WINDOW_MS` | Window (ms) for general API rate limiter — default `60000` (1 min) |
 | `RATE_LIMIT_API_MAX` | Max requests per window on `/api/*` — default `120` |
 | `SKIP_HIBP_CHECK` | Set to any truthy value to skip HaveIBeenPwned password-breach check at register/reset-password — for test environments only |
+| `WATCHDOG_SELF_URL` | Public URL of this Watchdog instance (e.g. `https://watchdog.dev`). When set, the backend auto-creates a **"Watchdog (self)"** monitor owned by the first `owner`-role user on startup so the app monitors its own SSL cert |
+
+---
+
+## TLS & HTTPS
+
+In production (`NODE_ENV=production`) the backend applies two layers of HTTPS enforcement:
+
+1. **HTTPS redirect** (`middleware/https-redirect.ts`) — inspects `X-Forwarded-Proto: http` (set by Railway's proxy) and returns a `301` redirect to the `https://` equivalent before any request reaches a route handler. `app.set("trust proxy", 1)` is required and already set.
+2. **HSTS** — `helmet` is configured with `max-age=63072000; includeSubDomains; preload` (2-year HSTS, HSTS-preload-eligible). TLS 1.2+ enforcement and cipher-suite hardening are handled at the Cloudflare/Railway infrastructure layer, not in Express. See `docs/tls-rotation.md` for the rotation runbook.
 
 ---
 
