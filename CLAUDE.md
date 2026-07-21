@@ -440,9 +440,14 @@ See `.env.example` at the root. Critical vars:
 | `VAPID_PRIVATE_KEY` | VAPID private key (keep secret) |
 | `VAPID_SUBJECT` | Contact URI for VAPID (`mailto:…` or `https://…`) |
 | `RATE_LIMIT_AUTH_WINDOW_MS` | Window (ms) for auth rate limiter — default `900000` (15 min) |
-| `RATE_LIMIT_AUTH_MAX` | Max requests per window on `/api/auth/*` — default `20` (also controls per-login limiter; set high in tests) |
+| `RATE_LIMIT_AUTH_MAX` | Max requests per window on `/api/auth/*` — default `20` |
 | `RATE_LIMIT_API_WINDOW_MS` | Window (ms) for general API rate limiter — default `60000` (1 min) |
-| `RATE_LIMIT_API_MAX` | Max requests per window on `/api/*` — default `120` |
+| `RATE_LIMIT_API_MAX` | Max requests per window on `/api/*` — default `120`; keyed by user ID when JWT is present, otherwise by IP |
+| `RATE_LIMIT_LOGIN_MAX` | Max login attempts per minute per IP — default `5`; set to `999` in test environments |
+| `RATE_LIMIT_REGISTER_MAX` | Max register attempts per minute per IP — default `3`; set to `999` in test environments |
+| `RATE_LIMIT_TEST_WEBHOOK_MAX` | Max webhook test calls per hour per authenticated user — default `10` |
+| `RATE_LIMIT_CHECKIN_MAX` | Max agent check-ins per minute per agent key — default `60` |
+| `REDIS_URL` | Redis connection string (e.g. `redis://localhost:6379`). When set, all rate-limit counters are stored in Redis so they are shared across backend replicas. Omit to use the in-process MemoryStore (single-replica only) |
 | `SKIP_HIBP_CHECK` | Set to any truthy value to skip HaveIBeenPwned password-breach check at register/reset-password — for test environments only |
 | `WATCHDOG_SELF_URL` | Public URL of this Watchdog instance (e.g. `https://watchdog.dev`). When set, the backend auto-creates a **"Watchdog (self)"** monitor owned by the first `owner`-role user on startup so the app monitors its own SSL cert |
 
