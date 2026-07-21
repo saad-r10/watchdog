@@ -419,9 +419,11 @@ The frontend uses **shadcn/ui** (in `src/components/ui/`) on **Tailwind v4** (co
 
 ## CI/CD
 
-- **CI:** GitHub Actions runs lint, typecheck, and Jest tests on every PR
+- **CI:** GitHub Actions runs lint, typecheck, Jest tests, `npm audit --audit-level=high` (all workspaces), and CodeQL static analysis on every PR
+- **Dependabot:** Weekly PRs for npm packages in all four workspaces and GitHub Actions; patch-level updates grouped into a single PR per workspace
 - **Pre-commit hook:** Husky runs lint-staged
 - **CD:** Railway auto-deploys on push to `main`
+- **Security policy:** See `docs/security-policy.md` for patching SLAs; `SECURITY.md` for responsible disclosure
 
 ---
 

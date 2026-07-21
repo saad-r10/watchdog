@@ -51,6 +51,23 @@ jobs:
       - name: Scan for secrets
         run: gitleaks detect --config .gitleaks.toml --source . --exit-code 1
 
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - name: Audit root workspace
+        run: npm audit --audit-level=high
+      - name: Audit backend
+        run: cd apps/backend && npm audit --audit-level=high
+      - name: Audit frontend
+        run: cd apps/frontend && npm audit --audit-level=high
+      - name: Audit shared-types
+        run: cd packages/shared-types && npm audit --audit-level=high
+
   test-backend:
     runs-on: ubuntu-latest
     services:
