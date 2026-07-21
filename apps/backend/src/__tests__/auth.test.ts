@@ -9,7 +9,17 @@ const LOCKOUT_EMAIL = "test-lockout@watchdog.test";
 const MFA_EMAIL = "test-mfa@watchdog.test";
 const SESSION_EMAIL = "test-session@watchdog.test";
 
+// Raise endpoint-specific rate limits so the lockout and session tests can
+// fire multiple login requests without hitting the limiter — the rate-limit
+// behaviour itself is tested in rate-limit.test.ts.
+beforeAll(() => {
+  process.env.RATE_LIMIT_LOGIN_MAX = "999";
+  process.env.RATE_LIMIT_REGISTER_MAX = "999";
+});
+
 afterAll(async () => {
+  delete process.env.RATE_LIMIT_LOGIN_MAX;
+  delete process.env.RATE_LIMIT_REGISTER_MAX;
   await prisma.user.deleteMany({
     where: { email: { in: [TEST_EMAIL, LOCKOUT_EMAIL, MFA_EMAIL, SESSION_EMAIL] } },
   });

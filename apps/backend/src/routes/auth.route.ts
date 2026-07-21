@@ -3,7 +3,6 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import https from "https";
 import { authenticator } from "otplib";
-import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { validate } from "../middleware/validate";
 import { prisma } from "../db";
@@ -15,32 +14,13 @@ import {
   setCookieRefreshToken,
   clearCookieRefreshToken,
 } from "../lib/refresh-token";
+import {
+  loginRateLimiter,
+  registerRateLimiter,
+  forgotPasswordRateLimiter,
+} from "../middleware/rate-limit";
 
 const router = Router();
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: () => parseInt(process.env.RATE_LIMIT_AUTH_MAX ?? "10"),
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many login attempts. Please try again in 15 minutes." },
-});
-
-const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many accounts created from this IP. Please try again later." },
-});
-
-const forgotPasswordLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many reset attempts. Please try again in 15 minutes." },
-});
 
 const MAX_LOGIN_ATTEMPTS = 5;
 
@@ -77,7 +57,7 @@ const registerSchema = z.object({
 
 const loginSchema = registerSchema.omit({ name: true });
 
-router.post("/register", registerLimiter, validate(registerSchema), async (req, res, next) => {
+router.post("/register", registerRateLimiter, validate(registerSchema), async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
 
@@ -104,7 +84,7 @@ router.post("/register", registerLimiter, validate(registerSchema), async (req, 
   }
 });
 
-router.post("/login", loginLimiter, validate(loginSchema), async (req, res, next) => {
+router.post("/login", loginRateLimiter, validate(loginSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
@@ -217,7 +197,7 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8),
 });
 
-router.post("/forgot-password", forgotPasswordLimiter, validate(forgotPasswordSchema), async (req, res, next) => {
+router.post("/forgot-password", forgotPasswordRateLimiter, validate(forgotPasswordSchema), async (req, res, next) => {
   try {
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
