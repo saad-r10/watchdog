@@ -7,6 +7,7 @@ import { requireRole } from "../middleware/require-role";
 import { authenticateAgent } from "../middleware/agent-auth";
 import { agentService } from "../services/agent.service";
 import { AgentCheckResultSchema, CreateAgentSchema, UpdateAgentSchema } from "@watchdog/shared-types";
+import { agentCheckinRateLimiter } from "../middleware/rate-limit";
 
 const router = Router();
 
@@ -85,7 +86,7 @@ router.get("/config", authenticateAgent, async (req, res, next) => {
   }
 });
 
-router.post("/checkin", authenticateAgent, validate(AgentCheckResultSchema), async (req, res, next) => {
+router.post("/checkin", agentCheckinRateLimiter, authenticateAgent, validate(AgentCheckResultSchema), async (req, res, next) => {
   try {
     await agentService.recordCheckin(req.agentId, req.body.results);
     res.json({ success: true });

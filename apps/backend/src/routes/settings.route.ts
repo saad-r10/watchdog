@@ -8,6 +8,7 @@ import { sendSlackAlert } from "../services/slack.service";
 import { sendDiscordAlert } from "../services/discord.service";
 import { sendTelegramAlert } from "../services/telegram.service";
 import { sendPushToUser, getVapidPublicKey } from "../services/push.service";
+import { testWebhookRateLimiter } from "../middleware/rate-limit";
 
 const router = Router();
 router.use(authenticate);
@@ -50,7 +51,7 @@ router.put("/", validate(updateSchema), async (req, res, next) => {
   }
 });
 
-router.post("/test-webhook", async (req, res, next) => {
+router.post("/test-webhook", testWebhookRateLimiter, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { webhookUrl: true } });
     if (!user?.webhookUrl) {
