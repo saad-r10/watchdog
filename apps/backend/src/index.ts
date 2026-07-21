@@ -6,6 +6,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { errorHandler } from "./middleware/error";
 import { authRateLimiter, apiRateLimiter } from "./middleware/rate-limit";
+import { httpsRedirect } from "./middleware/https-redirect";
 import authRouter from "./routes/auth.route";
 import monitorsRouter from "./routes/monitors.route";
 import checksRouter from "./routes/checks.route";
@@ -17,6 +18,7 @@ import statusRouter from "./routes/status.route";
 import maintenanceRouter from "./routes/maintenance.route";
 import dashboardRouter from "./routes/dashboard.route";
 import notificationsRouter from "./routes/notifications.route";
+import { ensureSelfMonitor } from "./lib/self-monitor";
 
 if (process.env.NODE_ENV === "production") {
   execSync("npx prisma migrate deploy", { stdio: "inherit" });
@@ -24,7 +26,22 @@ if (process.env.NODE_ENV === "production") {
 
 const app = express();
 
-app.use(helmet());
+// Trust the first proxy hop (Railway / Cloudflare) so X-Forwarded-Proto is reliable
+app.set("trust proxy", 1);
+
+if (process.env.NODE_ENV === "production") {
+  app.use(httpsRedirect);
+}
+
+app.use(
+  helmet({
+    hsts: {
+      maxAge: 63072000, // 2 years
+      includeSubDomains: true,
+      preload: true,
+    },
+  })
+);
 app.use(cors({
   origin: process.env.FRONTEND_URL ?? "http://localhost:5173",
   credentials: true,
@@ -50,7 +67,12 @@ app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT ?? 3001;
-  app.listen(PORT, () => console.log(`API running on :${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`API running on :${PORT}`);
+    ensureSelfMonitor().catch((err) =>
+      console.error("[self-monitor] setup failed:", err)
+    );
+  });
 }
 
 export default app;
