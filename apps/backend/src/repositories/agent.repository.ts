@@ -21,12 +21,14 @@ export const agentRepository = {
     return prisma.agent.create({ data });
   },
 
-  async update(id: string, data: { name?: string; region?: string | null }) {
-    return prisma.agent.update({ where: { id }, data });
+  async update(id: string, data: { name?: string; region?: string | null }, userId?: string) {
+    const where = userId ? { id, userId } : { id };
+    return prisma.agent.update({ where, data });
   },
 
-  async delete(id: string) {
-    return prisma.agent.delete({ where: { id } });
+  async delete(id: string, userId?: string) {
+    const where = userId ? { id, userId } : { id };
+    return prisma.agent.delete({ where });
   },
 
   async updateLastSeen(id: string) {

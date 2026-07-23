@@ -53,7 +53,7 @@ export const agentService = {
       err.status = 404;
       throw err;
     }
-    return agentRepository.update(id, data);
+    return agentRepository.update(id, data, userId);
   },
 
   async delete(id: string, userId: string) {
@@ -63,7 +63,7 @@ export const agentService = {
       err.status = 404;
       throw err;
     }
-    await agentRepository.delete(id);
+    await agentRepository.delete(id, userId);
   },
 
   async getConfig(agentId: string) {

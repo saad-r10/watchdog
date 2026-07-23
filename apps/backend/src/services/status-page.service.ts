@@ -38,7 +38,7 @@ export const statusPageService = {
   async delete(id: string, userId: string) {
     const page = await statusPageRepository.findById(id);
     if (!page || page.userId !== userId) notFound();
-    await statusPageRepository.delete(id);
+    await statusPageRepository.delete(id, userId);
   },
 
   async setMonitors(id: string, userId: string, monitorIds: string[]) {
