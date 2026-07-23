@@ -267,6 +267,7 @@ Eleven recurring workers defined in `apps/backend/src/workers/`:
 | `anomalyDetectionWorker` | Every 15 minutes | Response-time anomaly detection via `lib/anomaly-utils.ts` — for each monitor, computes a rolling mean/stddev (z-score, `ANOMALY_SIGMA = 3`) over the trailing 7 days of `Check.responseTime` (min `MIN_SAMPLE_SIZE = 20` samples) and opens/resolves a `performance_degraded` incident via `monitorStatusService.evaluatePerformanceStatus` when the latest check exceeds the threshold |
 | `lighthouseWorker` | Daily | For monitors with `Monitor.lighthouseEnabled`, runs a Lighthouse audit (`lib/lighthouse-runner.ts`, Lighthouse CLI via `execFile` against Playwright's Chromium) scoring performance/accessibility/best-practices/SEO (0-100 each), stores the result on `Check.lighthouseResult`, and opens/resolves a `lighthouse_budget_exceeded` incident via `monitorStatusService.evaluateLighthouseStatus` when any score drops below its per-monitor budget (`Monitor.lighthouse*Budget`, default 80). No-op unless `LIGHTHOUSE_MONITORING_ENABLED=true`; monitors are checked in batches of 2 (`CONCURRENCY`) since audits are resource-intensive |
 | `refreshTokenCleanupWorker` | Daily (03:00) | Deletes expired `RefreshToken` rows to prevent unbounded table growth |
+| `dataRetentionCleanupWorker` | Daily (02:00) | GDPR data retention: prunes `Check` records older than 90 days, resolved `Incident` and `Alert` records older than 1 year, and hard-deletes `User` rows where `deletionScheduledAt ≤ now()` (30-day grace period after `DELETE /api/users/me`) |
 
 Workers create `Incident` records on state changes (up→down, down→up) and trigger alert sends via `AlertService`. `uptimeWorker` and `agentService.recordCheckin` both delegate downtime incident open/resolve logic to the shared `monitorStatusService.evaluateUptimeStatus` — see "Multi-Region Agents" below. `ctWorker` creates point-in-time `unexpected_cert` incidents (already resolved) rather than open/ongoing ones. `dnsWorker` records findings on `Check.dnsFindings` only and does not create incidents. `exposureWorker` records findings on `Check.exposureFindings` only and does not create incidents. `blocklistWorker` opens a `domain_blocklisted` incident when a monitor's hostname becomes listed and resolves it once the hostname is clean again. `uptimeWorker` creates a point-in-time, already-resolved `content_changed` incident when `Check.contentHash` differs from the previous check's hash (opt-in via `Monitor.contentChangeEnabled`, off by default) — unless `Monitor.contentChangeSnoozeUntil` is in the future, in which case the new hash is still recorded but no incident/alert is raised. `POST /api/monitors/:id/snooze-content-change` (body: `{ hours: 1-168 }`) sets the snooze window, and `GET /api/monitors/:id/content-change` returns the current enabled/snoozed state plus the last hash and last-detected-change time. `syntheticWorker` opens/resolves a `synthetic_failure` incident via `monitorStatusService.evaluateSyntheticStatus` based on `SyntheticCheckResult.success`, storing the full step-by-step result on `Check.syntheticResult`. `anomalyDetectionWorker` opens/resolves a `performance_degraded` incident via `monitorStatusService.evaluatePerformanceStatus`, gated on `User.alertPerformanceDegraded`. `lighthouseWorker` opens/resolves a `lighthouse_budget_exceeded` incident via `monitorStatusService.evaluateLighthouseStatus`, gated on `User.alertLighthouseBudget`.
 
@@ -296,6 +297,16 @@ Login flow when MFA is enabled: `POST /api/auth/login` returns `{ requiresMfa: t
 | `POST /api/users/me/mfa/setup` | JWT | Generate TOTP secret + QR code (does not enable MFA yet) |
 | `POST /api/users/me/mfa/enable` | JWT | Enable MFA after verifying a TOTP code |
 | `DELETE /api/users/me/mfa` | JWT | Disable MFA (body: `{ code }`) |
+
+### Account Deletion & Data Portability (GDPR)
+
+| Endpoint | Auth | Purpose |
+|----------|------|---------|
+| `DELETE /api/users/me` | JWT | Schedule account deletion (30-day grace period); revokes all refresh tokens; sets `User.deletionScheduledAt`; hard delete runs via `dataRetentionCleanupWorker` |
+| `POST /api/users/me/cancel-deletion` | JWT | Cancel a pending deletion (clears `deletionScheduledAt`) |
+| `GET /api/users/me/export` | JWT | Download all user data as a JSON attachment (GDPR Article 20 portability) |
+
+The `GET /api/users/me` response now includes `deletionScheduledAt` so the frontend can show a grace-period banner. See `docs/pii-inventory.md` for the full PII inventory and retention schedule.
 
 ### Account Lockout
 
@@ -380,7 +391,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 
 | Model | Purpose |
 |-------|---------|
-| `User` | Registered user; `role` (`owner`/`admin`/`viewer`, default `owner`); `mfaEnabled` + `mfaSecret` (TOTP); `loginAttempts` + `lockedUntil` (account lockout); alert channel settings include `webhookUrl`, `slackWebhookUrl`, `discordWebhookUrl`, `telegramBotToken`, `telegramChatId`; `alertWebPush` enables browser Web Push (VAPID) delivery |
+| `User` | Registered user; `role` (`owner`/`admin`/`viewer`, default `owner`); `mfaEnabled` + `mfaSecret` (TOTP); `loginAttempts` + `lockedUntil` (account lockout); alert channel settings include `webhookUrl`, `slackWebhookUrl`, `discordWebhookUrl`, `telegramBotToken`, `telegramChatId`; `alertWebPush` enables browser Web Push (VAPID) delivery; `deletionScheduledAt` (nullable) — set to `now + 30 days` on `DELETE /api/users/me` and cleared on `POST /api/users/me/cancel-deletion`; hard-deleted by the `dataRetentionCleanupWorker` once the timestamp passes |
 | `PushSubscription` | One row per browser/device push subscription for a User — stores the W3C Push API `endpoint`, `p256dh`, and `auth` keys; cleaned up automatically on 410 Gone responses from the push service |
 | `Agent` | API-key-authenticated agent that reports check results from user infrastructure; optionally tagged with a free-text `region` label |
 | `Monitor` | A URL to watch (belongs to User); `regionDownThreshold` (default 1) sets how many assigned agents/regions must report "down" to open a downtime incident |

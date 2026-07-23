@@ -32,9 +32,10 @@ model User {
   discordWebhookUrl String?
   telegramBotToken String?
   telegramChatId   String?
-  alertWebPush     Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  alertWebPush        Boolean   @default(false)
+  deletionScheduledAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   monitors                  Monitor[]
   alerts                    Alert[]
