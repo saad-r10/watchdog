@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import { prisma } from "../db";
+import { userService } from "../services/user.service";
 
 const router = Router();
 router.use(authenticate);
@@ -13,7 +14,7 @@ router.get("/me", async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, email: true, name: true, emailVerified: true, mfaEnabled: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, emailVerified: true, mfaEnabled: true, role: true, createdAt: true, deletionScheduledAt: true },
     });
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json({ success: true, data: user });
@@ -90,6 +91,39 @@ router.delete("/me/mfa", validate(mfaDisableSchema), async (req, res, next) => {
       data: { mfaEnabled: false, mfaSecret: null },
     });
     res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Schedule account deletion (30-day grace period before hard delete)
+router.delete("/me", async (req, res, next) => {
+  try {
+    const deletionScheduledAt = await userService.scheduleDeletion(req.user.id);
+    res.clearCookie("refresh_token", { path: "/api/auth", httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production" });
+    res.status(202).json({ success: true, data: { message: "Account scheduled for deletion. You have 30 days to cancel.", deletionScheduledAt } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Cancel a previously scheduled account deletion
+router.post("/me/cancel-deletion", async (req, res, next) => {
+  try {
+    await userService.cancelDeletion(req.user.id);
+    res.json({ success: true, data: { message: "Account deletion has been cancelled." } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Export all user data (GDPR Article 20 — portability)
+router.get("/me/export", async (req, res, next) => {
+  try {
+    const data = await userService.exportData(req.user.id);
+    res.setHeader("Content-Disposition", 'attachment; filename="watchdog-export.json"');
+    res.setHeader("Content-Type", "application/json");
+    res.json(data);
   } catch (err) {
     next(err);
   }

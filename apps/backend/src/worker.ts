@@ -10,6 +10,7 @@ import { startSyntheticWorker } from "./workers/synthetic.worker";
 import { startAnomalyDetectionWorker } from "./workers/anomaly-detection.worker";
 import { startLighthouseWorker } from "./workers/lighthouse.worker";
 import { startRefreshTokenCleanupWorker } from "./workers/refresh-token-cleanup.worker";
+import { startDataRetentionCleanupWorker } from "./workers/data-retention-cleanup.worker";
 
 startUptimeWorker();
 startSslWorker();
@@ -22,5 +23,6 @@ startSyntheticWorker();
 startAnomalyDetectionWorker();
 startLighthouseWorker();
 startRefreshTokenCleanupWorker();
+startDataRetentionCleanupWorker();
 
 console.log("All workers running");
