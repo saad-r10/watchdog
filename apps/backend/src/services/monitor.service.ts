@@ -83,21 +83,27 @@ export const monitorService = {
   ) {
     await monitorService.getById(id, userId);
     const { syntheticSteps, ...rest } = input;
-    const monitor = await monitorRepository.update(id, {
-      ...rest,
-      ...(syntheticSteps !== undefined ? { syntheticSteps: syntheticSteps as unknown as Prisma.InputJsonValue } : {}),
-    });
+    const monitor = await monitorRepository.update(
+      id,
+      {
+        ...rest,
+        ...(syntheticSteps !== undefined ? { syntheticSteps: syntheticSteps as unknown as Prisma.InputJsonValue } : {}),
+      },
+      userId
+    );
     return monitorService.getById(monitor.id, userId);
   },
   async delete(id: string, userId: string) {
     await monitorService.getById(id, userId);
-    await monitorRepository.delete(id);
+    await monitorRepository.delete(id, userId);
   },
   async snoozeContentChange(id: string, userId: string, hours: number) {
     await monitorService.getById(id, userId);
-    return monitorRepository.update(id, {
-      contentChangeSnoozeUntil: new Date(Date.now() + hours * 3_600_000),
-    });
+    return monitorRepository.update(
+      id,
+      { contentChangeSnoozeUntil: new Date(Date.now() + hours * 3_600_000) },
+      userId
+    );
   },
   async assignAgent(monitorId: string, userId: string, agentId: string) {
     await monitorService.getById(monitorId, userId);

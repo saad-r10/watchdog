@@ -48,10 +48,12 @@ export const monitorRepository = {
       include: AGENT_SELECT,
     });
   },
-  async update(id: string, data: Prisma.MonitorUpdateInput): Promise<Monitor> {
-    return prisma.monitor.update({ where: { id }, data });
+  async update(id: string, data: Prisma.MonitorUpdateInput, userId?: string): Promise<Monitor> {
+    const where = userId ? { id, userId } : { id };
+    return prisma.monitor.update({ where, data });
   },
-  async delete(id: string): Promise<void> {
-    await prisma.monitor.delete({ where: { id } });
+  async delete(id: string, userId?: string): Promise<void> {
+    const where = userId ? { id, userId } : { id };
+    await prisma.monitor.delete({ where });
   },
 };

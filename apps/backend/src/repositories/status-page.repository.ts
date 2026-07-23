@@ -28,8 +28,9 @@ export const statusPageRepository = {
     return prisma.statusPage.create({ data });
   },
 
-  async delete(id: string) {
-    return prisma.statusPage.delete({ where: { id } });
+  async delete(id: string, userId?: string) {
+    const where = userId ? { id, userId } : { id };
+    return prisma.statusPage.delete({ where });
   },
 
   async setMonitors(statusPageId: string, monitorIds: string[]) {
