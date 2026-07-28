@@ -19,6 +19,7 @@ import {
   registerRateLimiter,
   forgotPasswordRateLimiter,
 } from "../middleware/rate-limit";
+import { auditService } from "../services/audit.service";
 
 const router = Router();
 
@@ -110,6 +111,7 @@ router.post("/login", loginRateLimiter, validate(loginSchema), async (req, res, 
         where: { id: user.id },
         data: { loginAttempts: newAttempts, lockedUntil },
       });
+      auditService.log({ userId: user.id, action: "LOGIN_FAILED", req, metadata: { email } });
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
@@ -133,6 +135,7 @@ router.post("/login", loginRateLimiter, validate(loginSchema), async (req, res, 
     const token = signToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: "15m" });
     const rawRefresh = await createRefreshToken(user.id);
     setCookieRefreshToken(res, rawRefresh);
+    auditService.log({ userId: user.id, action: "LOGIN", req });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
   } catch (err) {
     next(err);
@@ -172,6 +175,7 @@ router.post("/mfa-verify", validate(mfaVerifySchema), async (req, res, next) => 
     const token = signToken({ id: user.id, email: user.email, role: user.role }, { expiresIn: "15m" });
     const rawRefresh = await createRefreshToken(user.id);
     setCookieRefreshToken(res, rawRefresh);
+    auditService.log({ userId: user.id, action: "LOGIN", req, metadata: { mfa: true } });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified } });
   } catch (err) {
     next(err);
@@ -248,6 +252,7 @@ router.post("/reset-password", validate(resetPasswordSchema), async (req, res, n
       prisma.user.update({ where: { id: record.userId }, data: { password: hash } }),
       prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
+    auditService.log({ userId: record.userId, action: "PASSWORD_CHANGED", req });
 
     res.json({ ok: true });
   } catch (err) {
@@ -312,13 +317,17 @@ router.post("/refresh", async (req, res, next) => {
 
 router.post("/logout", async (req, res) => {
   const raw = req.cookies?.refresh_token as string | undefined;
+  let userId: string | undefined;
   if (raw) {
     const tokenHash = crypto.createHash("sha256").update(raw).digest("hex");
+    const record = await prisma.refreshToken.findUnique({ where: { tokenHash }, select: { userId: true } });
+    userId = record?.userId;
     await prisma.refreshToken.updateMany({
       where: { tokenHash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
   }
+  auditService.log({ userId, action: "LOGOUT", req });
   clearCookieRefreshToken(res);
   res.json({ ok: true });
 });

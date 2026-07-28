@@ -6,6 +6,7 @@ import { validate } from "../middleware/validate";
 import { authenticate } from "../middleware/auth";
 import { prisma } from "../db";
 import { userService } from "../services/user.service";
+import { auditService } from "../services/audit.service";
 
 const router = Router();
 router.use(authenticate);
@@ -65,6 +66,7 @@ router.post("/me/mfa/enable", validate(mfaEnableSchema), async (req, res, next) 
     if (!valid) return res.status(401).json({ error: "Invalid verification code." });
 
     await prisma.user.update({ where: { id: req.user.id }, data: { mfaEnabled: true } });
+    auditService.log({ userId: req.user.id, action: "MFA_ENABLED", req });
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -90,6 +92,7 @@ router.delete("/me/mfa", validate(mfaDisableSchema), async (req, res, next) => {
       where: { id: req.user.id },
       data: { mfaEnabled: false, mfaSecret: null },
     });
+    auditService.log({ userId: req.user.id, action: "MFA_DISABLED", req });
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -100,6 +103,7 @@ router.delete("/me/mfa", validate(mfaDisableSchema), async (req, res, next) => {
 router.delete("/me", async (req, res, next) => {
   try {
     const deletionScheduledAt = await userService.scheduleDeletion(req.user.id);
+    auditService.log({ userId: req.user.id, action: "ACCOUNT_DELETED", req });
     res.clearCookie("refresh_token", { path: "/api/auth", httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production" });
     res.status(202).json({ success: true, data: { message: "Account scheduled for deletion. You have 30 days to cancel.", deletionScheduledAt } });
   } catch (err) {
@@ -112,6 +116,30 @@ router.post("/me/cancel-deletion", async (req, res, next) => {
   try {
     await userService.cancelDeletion(req.user.id);
     res.json({ success: true, data: { message: "Account deletion has been cancelled." } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Paginated audit log for the authenticated user
+router.get("/me/audit-log", async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10));
+    const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10)));
+    const userId = req.user.id;
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: { id: true, action: true, resourceType: true, resourceId: true, ipAddress: true, userAgent: true, metadata: true, createdAt: true },
+      }),
+      prisma.auditLog.count({ where: { userId } }),
+    ]);
+
+    res.json({ success: true, data: { logs, total, page, limit } });
   } catch (err) {
     next(err);
   }

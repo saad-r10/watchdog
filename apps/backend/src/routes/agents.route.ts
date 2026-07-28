@@ -8,6 +8,7 @@ import { authenticateAgent } from "../middleware/agent-auth";
 import { agentService } from "../services/agent.service";
 import { AgentCheckResultSchema, CreateAgentSchema, UpdateAgentSchema } from "@watchdog/shared-types";
 import { agentCheckinRateLimiter } from "../middleware/rate-limit";
+import { auditService } from "../services/audit.service";
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.post("/", authenticate, requireRole("admin"), validate(CreateAgentSchema)
     const { agent, key } = await agentService.create(req.user.id, req.body.name, req.body.region);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { keyHash, ...safeAgent } = agent;
+    auditService.log({ userId: req.user.id, action: "AGENT_CREATED", resourceType: "agent", resourceId: agent.id, req, metadata: { name: agent.name } });
     res.status(201).json({ success: true, data: { ...safeAgent, key } });
   } catch (err) {
     next(err);
@@ -48,6 +50,7 @@ router.patch("/:id", authenticate, requireRole("admin"), validate(UpdateAgentSch
 router.delete("/:id", authenticate, requireRole("admin"), async (req, res, next) => {
   try {
     await agentService.delete(req.params.id, req.user.id);
+    auditService.log({ userId: req.user.id, action: "AGENT_REVOKED", resourceType: "agent", resourceId: req.params.id, req });
     res.status(204).end();
   } catch (err) {
     next(err);

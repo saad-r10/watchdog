@@ -305,6 +305,7 @@ Login flow when MFA is enabled: `POST /api/auth/login` returns `{ requiresMfa: t
 | `DELETE /api/users/me` | JWT | Schedule account deletion (30-day grace period); revokes all refresh tokens; sets `User.deletionScheduledAt`; hard delete runs via `dataRetentionCleanupWorker` |
 | `POST /api/users/me/cancel-deletion` | JWT | Cancel a pending deletion (clears `deletionScheduledAt`) |
 | `GET /api/users/me/export` | JWT | Download all user data as a JSON attachment (GDPR Article 20 portability) |
+| `GET /api/users/me/audit-log` | JWT | Paginated audit trail of security-sensitive actions (`?page=1&limit=20`); returns `{ logs, total, page, limit }` |
 
 The `GET /api/users/me` response now includes `deletionScheduledAt` so the frontend can show a grace-period banner. See `docs/pii-inventory.md` for the full PII inventory and retention schedule.
 
@@ -404,6 +405,7 @@ Key models in `apps/backend/prisma/schema.prisma`:
 | `MaintenanceWindow` | Scheduled downtime window for a Monitor — alerts suppressed, excluded from uptime % |
 | `MonitorCertificate` | Certificate Transparency baseline — one row per crt.sh cert seen for a Monitor's hostname, used to diff and detect unrecognized new certs |
 | `RefreshToken` | Server-side refresh token for session management — `tokenHash` (SHA-256 of the raw cookie value), `family` UUID (shared across a rotation chain for replay-attack detection), `expiresAt` (7 days), `revokedAt` |
+| `AuditLog` | Append-only audit trail row — `userId` (nullable, `SetNull` on delete), `action` (`AuditAction` enum: `LOGIN`, `LOGIN_FAILED`, `LOGOUT`, `PASSWORD_CHANGED`, `MFA_ENABLED`, `MFA_DISABLED`, `MONITOR_CREATED`, `MONITOR_DELETED`, `AGENT_CREATED`, `AGENT_REVOKED`, `ALERT_SETTINGS_CHANGED`, `ACCOUNT_DELETED`), `resourceType`/`resourceId` for scoped events, `ipAddress`, `userAgent`, `metadata` (JSON). No `UPDATE`/`DELETE` paths exist in application code. |
 
 ---
 

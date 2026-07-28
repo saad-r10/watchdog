@@ -45,6 +45,7 @@ model User {
   emailVerificationTokens   EmailVerificationToken[]
   pushSubscriptions         PushSubscription[]
   refreshTokens             RefreshToken[]
+  auditLogs                 AuditLog[]
 }
 
 model Agent {
@@ -290,4 +291,35 @@ enum UserRole {
   owner
   admin
   viewer
+}
+
+enum AuditAction {
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  PASSWORD_CHANGED
+  MFA_ENABLED
+  MFA_DISABLED
+  MONITOR_CREATED
+  MONITOR_DELETED
+  AGENT_CREATED
+  AGENT_REVOKED
+  ALERT_SETTINGS_CHANGED
+  ACCOUNT_DELETED
+}
+
+model AuditLog {
+  id           String      @id @default(uuid())
+  userId       String?
+  action       AuditAction
+  resourceType String?
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
 }

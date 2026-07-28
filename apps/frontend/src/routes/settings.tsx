@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ShieldCheck, ShieldOff } from "lucide-react";
-import { api } from "../services/api";
+import { ShieldCheck, ShieldOff, ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
+import { api, type AuditLogEntry } from "../services/api";
 import { useAuth } from "../hooks/useAuth";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 
@@ -12,6 +12,9 @@ export default function SettingsPage() {
   const qc = useQueryClient();
   const { user, setUser } = useAuth();
   const { data, isLoading } = useQuery({ queryKey: ["settings"], queryFn: api.settings.get });
+
+  const [auditPage, setAuditPage] = useState(1);
+  const auditQuery = useQuery({ queryKey: ["audit-log", auditPage], queryFn: () => api.auditLog.list(auditPage) });
 
   // MFA state machine: idle → setup (show QR) → enable (verify code) | disable
   const [mfaState, setMfaState] = useState<"idle" | "setup" | "disable">("idle");
@@ -501,6 +504,74 @@ export default function SettingsPage() {
           </div>
         </motion.form>
       )}
+
+      {/* Audit Log */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-foreground">Security audit log</h2>
+        </div>
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          {auditQuery.isLoading ? (
+            <div className="p-6 space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+              ))}
+            </div>
+          ) : !auditQuery.data?.logs.length ? (
+            <div className="p-6 text-sm text-muted-foreground text-center">No activity yet.</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {auditQuery.data.logs.map((entry: AuditLogEntry) => (
+                <div key={entry.id} className="px-5 py-3 flex items-start gap-4 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-mono text-xs bg-muted text-foreground px-1.5 py-0.5 rounded">
+                      {entry.action}
+                    </span>
+                    {entry.resourceType && entry.resourceId && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {entry.resourceType} {entry.resourceId.slice(0, 8)}…
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0 space-y-0.5">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(entry.createdAt).toLocaleString()}
+                    </p>
+                    {entry.ipAddress && (
+                      <p className="text-xs text-muted-foreground font-mono">{entry.ipAddress}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {auditQuery.data && auditQuery.data.total > auditQuery.data.limit && (
+            <div className="px-5 py-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {((auditPage - 1) * auditQuery.data.limit) + 1}–
+                {Math.min(auditPage * auditQuery.data.limit, auditQuery.data.total)} of {auditQuery.data.total}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setAuditPage((p) => Math.max(1, p - 1))}
+                  disabled={auditPage === 1}
+                  className="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setAuditPage((p) => p + 1)}
+                  disabled={auditPage * auditQuery.data.limit >= auditQuery.data.total}
+                  className="p-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

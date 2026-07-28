@@ -5,6 +5,7 @@ import { authenticate } from "../middleware/auth";
 import { requireRole } from "../middleware/require-role";
 import { monitorService } from "../services/monitor.service";
 import { SnoozeContentChangeSchema, SyntheticStepsSchema } from "@watchdog/shared-types";
+import { auditService } from "../services/audit.service";
 
 const router = Router();
 router.use(authenticate);
@@ -39,6 +40,7 @@ router.get("/", async (req, res, next) => {
 router.post("/", requireRole("admin"), validate(createSchema), async (req, res, next) => {
   try {
     const monitor = await monitorService.create(req.user.id, req.body);
+    auditService.log({ userId: req.user.id, action: "MONITOR_CREATED", resourceType: "monitor", resourceId: monitor.id, req, metadata: { name: monitor.name, url: monitor.url } });
     res.status(201).json({ success: true, data: monitor });
   } catch (err) {
     next(err);
@@ -118,6 +120,7 @@ router.post("/:id/snooze-content-change", validate(SnoozeContentChangeSchema), a
 router.delete("/:id", requireRole("admin"), async (req, res, next) => {
   try {
     await monitorService.delete(req.params.id, req.user.id);
+    auditService.log({ userId: req.user.id, action: "MONITOR_DELETED", resourceType: "monitor", resourceId: req.params.id, req });
     res.status(204).end();
   } catch (err) {
     next(err);
