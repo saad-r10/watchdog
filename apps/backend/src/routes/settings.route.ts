@@ -9,6 +9,7 @@ import { sendDiscordAlert } from "../services/discord.service";
 import { sendTelegramAlert } from "../services/telegram.service";
 import { sendPushToUser, getVapidPublicKey } from "../services/push.service";
 import { testWebhookRateLimiter } from "../middleware/rate-limit";
+import { auditService } from "../services/audit.service";
 
 const router = Router();
 router.use(authenticate);
@@ -45,6 +46,7 @@ router.get("/", async (req, res, next) => {
 router.put("/", validate(updateSchema), async (req, res, next) => {
   try {
     const user = await prisma.user.update({ where: { id: req.user.id }, data: req.body, select: SELECT });
+    auditService.log({ userId: req.user.id, action: "ALERT_SETTINGS_CHANGED", req });
     res.json({ success: true, data: user });
   } catch (err) {
     next(err);

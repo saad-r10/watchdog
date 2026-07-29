@@ -80,6 +80,17 @@ export interface MfaSetupData {
   qrCode: string;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
 export const api = {
   auth: {
     register: (data: { email: string; password: string; name: string }) =>
@@ -181,6 +192,12 @@ export const api = {
       http.post<{ success: boolean }>("/api/users/me/settings/push-subscription", { endpoint, keys }).then((r) => r.data),
     deletePushSubscription: (endpoint: string) =>
       http.delete<{ success: boolean }>("/api/users/me/settings/push-subscription", { data: { endpoint } }).then((r) => r.data),
+  },
+  auditLog: {
+    list: (page = 1, limit = 20) =>
+      http
+        .get<{ success: boolean; data: { logs: AuditLogEntry[]; total: number; page: number; limit: number } }>("/api/users/me/audit-log", { params: { page, limit } })
+        .then((r) => r.data.data),
   },
   agents: {
     list: () =>
