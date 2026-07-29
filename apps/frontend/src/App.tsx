@@ -15,6 +15,7 @@ import OnboardingPage from "./routes/onboarding";
 import ForgotPasswordPage from "./routes/forgot-password";
 import ResetPasswordPage from "./routes/reset-password";
 import VerifyEmailPage from "./routes/verify-email";
+import PrivacyPage from "./routes/privacy";
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/agents" element={<Navigate to="/monitors" replace />} />
       <Route path="/status-pages" element={<PrivateLayout><StatusPagesPage /></PrivateLayout>} />
       <Route path="/status/:slug" element={<StatusPagePublic />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
     </Routes>
   );
 }

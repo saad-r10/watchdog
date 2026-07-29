@@ -189,9 +189,14 @@ export default function LandingPage() {
               Watchdog
             </span>
           </div>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            © {new Date().getFullYear()} - Always watching
-          </p>
+          <div className="flex items-center gap-6">
+            <Link to="/privacy" className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+              Privacy
+            </Link>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              © {new Date().getFullYear()} - Always watching
+            </p>
+          </div>
         </div>
       </footer>
     </div>
