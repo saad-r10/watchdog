@@ -14,7 +14,7 @@
     "@base-ui/react": "^1.5.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@tailwindcss/vite": "^4.3.0",
-    "@tanstack/react-query": "^5.32.0",
+    "@tanstack/react-query": "^5.101.3",
     "@watchdog/shared-types": "*",
     "axios": "^1.7.0",
     "class-variance-authority": "^0.7.1",
